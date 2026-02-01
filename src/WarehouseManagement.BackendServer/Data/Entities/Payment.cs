@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.BackendServer.Data.Enum;
 using WarehouseManagement.BackendServer.Data.Interfaces;
 
@@ -14,6 +15,7 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         public int OrderId { get; set; }
         public Order Order { get; set; } = null!;
 
+        [Precision(18, 2)]
         public decimal Amount { get; set; }
 
         public string Method { get; set; } = string.Empty;

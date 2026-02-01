@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.BackendServer.Data.Enum;
 using WarehouseManagement.BackendServer.Data.Interfaces;
 
@@ -21,6 +22,7 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         
         public DateTime? DeliveryDate { get; set; }
 
+        [Precision(18,2)]
         public decimal TotalAmount { get; set; }
 
         public OrderStatus Status { get; set; }
