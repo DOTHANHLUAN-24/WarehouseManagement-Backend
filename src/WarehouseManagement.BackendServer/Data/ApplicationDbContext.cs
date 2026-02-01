@@ -34,6 +34,7 @@ namespace WarehouseManagement.BackendServer.Data
         public DbSet<StockTransaction> StockTransactions { get; set; }
         public DbSet<Supplier> Suppliers { get; set; }
         public DbSet<Warehouse> Warehouses { get; set; }
+        public DbSet<Voucher> Vouchers { get; set; }
 
     }
 }

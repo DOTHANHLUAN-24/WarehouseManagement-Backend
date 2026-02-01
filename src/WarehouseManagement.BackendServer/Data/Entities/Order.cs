@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
-using WarehouseManagement.BackendServer.Data.Enum;
+using WarehouseManagement.BackendServer.Data.Enums;
 using WarehouseManagement.BackendServer.Data.Interfaces;
 
 namespace WarehouseManagement.BackendServer.Data.Entities
@@ -36,6 +36,10 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         public Shipment? Shipment { get; set; }
         
         public Payment? Payment { get; set; }
+
+        public int? VoucherId { get; set; }
+
+        public Voucher? Voucher { get; set; }
 
         public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
     }

@@ -1,4 +1,4 @@
-﻿namespace WarehouseManagement.BackendServer.Data.Enum
+﻿namespace WarehouseManagement.BackendServer.Data.Enums
 {
     public enum PaymentStatus
     {
