@@ -8,16 +8,15 @@ namespace WarehouseManagement.BackendServer.Data.Entities
     public class Category : IDateTracking
     {
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
 
-        [MaxLength(200)]
         [Required]
+        [MaxLength(200)]
         public string Name { get; set; } = string.Empty;
 
+        [Required]
         [MaxLength(200)]
         [Column(TypeName = "varchar(200)")]
-        [Required]
         public string SeoAlias { get; set; } = string.Empty;
 
         [MaxLength(500)]

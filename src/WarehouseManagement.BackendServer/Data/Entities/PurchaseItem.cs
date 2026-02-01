@@ -7,10 +7,6 @@ namespace WarehouseManagement.BackendServer.Data.Entities
     [Table("PurchaseItems")]
     public class PurchaseItem : IDateTracking
     {
-        [Key]
-        public int Id { get; set; }
-
-        [Required]
         public int PurchaseId { get; set; }
 
         public Purchase Purchase { get; set; } = null!;
