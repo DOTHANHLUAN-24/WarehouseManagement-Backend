@@ -47,8 +47,6 @@ namespace WarehouseManagement.BackendServer.Data.Entities
 
         public bool IsActive { get; set; } = true;
 
-        public bool IsDeleted { get; set; }
-
         public DateTime CreateDate { get; set; }
 
         public DateTime? LastModifiedDate { get; set; }
