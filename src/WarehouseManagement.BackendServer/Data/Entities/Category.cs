@@ -31,8 +31,7 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         public DateTime CreateDate { get; set; }
 
         public DateTime? LastModifiedDate { get; set; }
-
-        public bool IsDeleted { get; set; }
+        
         public ICollection<Product> Products { get; set; } = new List<Product>();
     }
 }

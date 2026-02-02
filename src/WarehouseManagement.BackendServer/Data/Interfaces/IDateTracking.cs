@@ -5,7 +5,5 @@
         DateTime CreateDate { get; set; }
 
         DateTime? LastModifiedDate { get; set; }
-
-        bool IsDeleted { get; set; }
     }
 }

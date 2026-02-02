@@ -6,6 +6,12 @@ namespace WarehouseManagement.BackendServer.Data.Entities
     [Table("Permissions")]
     public class Permission
     {
+        public Permission(string functionId, string action)
+        {
+            FunctionId = functionId;
+            Action = action;
+        }
+
         [Key]
         public int Id { get; set; }
 

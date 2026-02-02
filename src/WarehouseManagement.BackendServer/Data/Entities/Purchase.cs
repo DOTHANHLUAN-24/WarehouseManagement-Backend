@@ -25,8 +25,6 @@ namespace WarehouseManagement.BackendServer.Data.Entities
 
         public DateTime? LastModifiedDate { get; set; }
 
-        public bool IsDeleted { get; set; }
-
         public ICollection<PurchaseItem> PurchaseItems { get; set; } = new List<PurchaseItem>();
     }
 }

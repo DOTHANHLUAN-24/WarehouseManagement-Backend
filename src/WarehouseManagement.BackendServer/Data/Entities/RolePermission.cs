@@ -6,6 +6,12 @@ namespace WarehouseManagement.BackendServer.Data.Entities
     [Table("RolePermissions")]
     public class RolePermission
     {
+        public RolePermission(string roleId, int permissionId)
+        {
+            RoleId = roleId;
+            PermissionId = permissionId;
+        }
+
         [Required]
         public string RoleId { get; set; } = string.Empty;
 

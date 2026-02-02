@@ -17,22 +17,24 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         public Product Product { get; set; } = null!;
 
         [Required]
+        public int WarehouseId { get; set; }
+
+        public Warehouse Warehouse { get; set; } = null!;
+
+        [Required]
         public int QuantityChange { get; set; }
 
         [Required]
-
         public StockTransactionType TransactionType { get; set; }
 
         [Required]
-        public string ReferenceType { get; set; } = string.Empty; // Order / Purchase
+        public ReferenceType ReferenceType { get; set; }
 
-        [Required]
-        public int ReferenceId { get; set; }
+        public int? ReferenceId { get; set; }
+
+        public int BalanceAfter { get; set; }
 
         public DateTime CreateDate { get; set; }
-
         public DateTime? LastModifiedDate { get; set; }
-
-        public bool IsDeleted { get; set; }
     }
 }

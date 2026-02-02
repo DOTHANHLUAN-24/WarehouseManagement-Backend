@@ -31,8 +31,6 @@ namespace WarehouseManagement.BackendServer.Data.Entities
 
         public DateTime? LastModifiedDate { get; set; }
 
-        public bool IsDeleted { get; set; }
-
         public Shipment? Shipment { get; set; }
         
         public Payment? Payment { get; set; }

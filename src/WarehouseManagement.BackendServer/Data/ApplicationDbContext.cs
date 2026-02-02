@@ -51,6 +51,11 @@ namespace WarehouseManagement.BackendServer.Data
                 .HasForeignKey(f => f.ParentId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            builder.Entity<ProductComment>()
+                .HasOne(c => c.Parent)
+                .WithMany(c => c.Replies)
+                .HasForeignKey(c => c.ParentId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
 
         public DbSet<Order> Orders { get; set; }
