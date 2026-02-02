@@ -18,6 +18,11 @@ namespace WarehouseManagement.BackendServer.Controllers
         [HttpPost]
         public async Task<IActionResult> PostRole(RoleCreateRequest request)
         {
+            if(!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             if (await _roleManager.RoleExistsAsync(request.Name))
                 return BadRequest("Role already exists");
 
@@ -119,17 +124,22 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// <param name="roleViewModel">Role model</param>
         /// <returns>Results of the update process</returns>
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutRole(string id, [FromBody] RoleViewModel roleViewModel)
+        public async Task<IActionResult> PutRole(string id, [FromBody] RoleCreateRequest request)
         {
-            if (id != roleViewModel.Id)
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            if (id != request.Id)
                 return BadRequest();
 
             var role = await _roleManager.FindByIdAsync(id);
             if (role == null)
                 return NotFound();
             
-            role.Name = roleViewModel.Name;
-            role.NormalizedName = roleViewModel.Name.ToUpper();
+            role.Name = request.Name;
+            role.NormalizedName = request.Name.ToUpper();
             
             var result = await _roleManager.UpdateAsync(role);
             if (result.Succeeded)
