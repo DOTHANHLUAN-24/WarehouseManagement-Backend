@@ -1,0 +1,164 @@
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using WarehouseManagement.BackendServer.Data;
+using WarehouseManagement.BackendServer.Data.Entities;
+using WarehouseManagement.ViewModels.Systems;
+using WarehouseManagement.ViewModels.Systems.User;
+
+namespace WarehouseManagement.BackendServer.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class UsersController(UserManager<User> _userManager) : ControllerBase
+    {
+        /// <summary>
+        /// Create a new user
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public async Task<IActionResult> PostUser(UserCreateRequest request)
+        {
+            var user = new User
+            {
+                Id = Guid.NewGuid().ToString(),
+                Email = request.Email,
+                UserName = request.UserName,
+                LastName = request.LastName,
+                FirstName = request.FirstName,
+                PhoneNumber = request.PhoneNumber
+            };
+
+            var existingUser = await _userManager.FindByEmailAsync(user.Email);
+            if (existingUser != null)
+            {
+                return BadRequest("The email you use already exists in the database.");
+            }
+
+
+            var result = await _userManager.CreateAsync(user, request.Password);
+            if (result.Succeeded)
+            {
+                return CreatedAtAction(nameof(GetById), new { id = user.Id }, request);
+            }
+            else
+            {
+                return BadRequest("Failed to create a user");
+            }
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(string id)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+                return NotFound("Can't found the user.");
+            
+            var userVM = new UserViewModel()
+            {
+                Id = user.Id,
+                UserName = user.UserName!,
+                Email = user.Email!,
+                PhoneNumber = user.PhoneNumber!,
+                FirstName = user.FirstName,
+                LastName = user.LastName
+            };
+
+            return Ok(userVM);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetUsers()
+        {
+            var users = await _userManager.Users
+                .Select(u => new UserViewModel()
+                {
+                    Id = u.Id,
+                    Email = u.Email!, 
+                    PhoneNumber = u.PhoneNumber!,
+                    FirstName = u.FirstName,
+                    LastName = u.LastName,
+                    UserName = u.UserName!
+                })
+                .ToListAsync();
+            return Ok(users);
+        }
+
+        [HttpGet("filter")]
+        public async Task<IActionResult> GetUsersPaging(string? filter, int pageIndex, int pageSize)
+        {
+            var query = _userManager.Users;
+            
+            if (!string.IsNullOrEmpty(filter))
+            {
+                query = query.Where(x => x.Id.Contains(filter) || x.UserName!.Contains(filter));
+            }
+
+            var totalRecords = await query.CountAsync();
+
+            var items = await query.Skip((pageIndex - 1) * pageSize)
+                .Take(pageSize)
+                .Select(u => new UserViewModel()
+                {
+                    Id = u.Id,
+                    Email = u.Email!,
+                    PhoneNumber = u.PhoneNumber!,
+                    FirstName = u.FirstName,
+                    LastName = u.LastName,
+                    UserName = u.UserName!
+                }).ToListAsync();
+
+            var pagination = new Pagination<UserViewModel>
+            {
+                Items = items,
+                TotalRecords = totalRecords
+            };
+
+            return Ok(pagination);
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutUser(string id, [FromBody] UserUpdateRequest request)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+                return NotFound("Can't found the user.");
+
+            user.FirstName = request.FirstName;
+            user.LastName = request.LastName;
+
+            var result = await _userManager.UpdateAsync(user);
+            if (result.Succeeded)
+            {
+                return NoContent();
+            }
+            return BadRequest();
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteUser(string id)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+                return NotFound();
+
+            var result = await _userManager.DeleteAsync(user);
+            if (result.Succeeded)
+            {
+                var userVM = new UserViewModel()
+                {
+                    Id = user.Id,
+                    UserName = user.UserName!,
+                    Email = user.Email!,
+                    PhoneNumber = user.PhoneNumber!,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName
+                };
+                return Ok(userVM);
+            }
+
+            return BadRequest("Failed to deleted the user");
+        }
+    }
+}

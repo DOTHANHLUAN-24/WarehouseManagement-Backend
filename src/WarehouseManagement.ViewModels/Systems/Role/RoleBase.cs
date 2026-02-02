@@ -1,6 +1,6 @@
-﻿namespace WarehouseManagement.ViewModels.Systems
+﻿namespace WarehouseManagement.ViewModels.Systems.Role
 {
-    public class RoleViewModel
+    public class RoleBase
     {
         public string Id { get; set; } = string.Empty;
 

@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using WarehouseManagement.BackendServer.Data;
 using WarehouseManagement.ViewModels.Systems;
+using WarehouseManagement.ViewModels.Systems.Role;
 
 namespace WarehouseManagement.BackendServer.Controllers
 {
@@ -16,22 +16,22 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// <param name="roleViewModel">Role model</param>
         /// <returns>Results of the add process</returns>
         [HttpPost]
-        public async Task<IActionResult> PostRole(RoleViewModel roleViewModel)
+        public async Task<IActionResult> PostRole(RoleCreateRequest request)
         {
-            if (await _roleManager.RoleExistsAsync(roleViewModel.Name))
+            if (await _roleManager.RoleExistsAsync(request.Name))
                 return BadRequest("Role already exists");
 
             var role = new IdentityRole()
             {
-                Id = roleViewModel.Id,
-                Name = roleViewModel.Name,
-                NormalizedName = roleViewModel.Name.ToUpper()
+                Id = request.Id,
+                Name = request.Name,
+                NormalizedName = request.Name.ToUpper()
             };
 
             var result = await _roleManager.CreateAsync(role);
             if (result.Succeeded)
             {
-                return CreatedAtAction(nameof(GetById), new { id = role.Id }, roleViewModel);
+                return CreatedAtAction(nameof(GetById), new { id = role.Id }, request);
             }
             else
             {
@@ -50,11 +50,13 @@ namespace WarehouseManagement.BackendServer.Controllers
             var role = await _roleManager.FindByIdAsync(id);
             if (role == null)
                 return NotFound();
+            
             var roleVM = new RoleViewModel()
             {
                 Id = role.Id,
                 Name = role.Name!
             };
+            
             return Ok(roleVM);
         }
 
@@ -86,6 +88,7 @@ namespace WarehouseManagement.BackendServer.Controllers
         public async Task<IActionResult> GetRolesPaging(string? filter, int pageIndex, int pageSize)
         {
             var query = _roleManager.Roles;
+           
             if (!string.IsNullOrEmpty(filter))
             {
                 query = query.Where(x => x.Id.Contains(filter) || x.Name!.Contains(filter));
@@ -120,16 +123,20 @@ namespace WarehouseManagement.BackendServer.Controllers
         {
             if (id != roleViewModel.Id)
                 return BadRequest();
+
             var role = await _roleManager.FindByIdAsync(id);
             if (role == null)
                 return NotFound();
+            
             role.Name = roleViewModel.Name;
             role.NormalizedName = roleViewModel.Name.ToUpper();
+            
             var result = await _roleManager.UpdateAsync(role);
             if (result.Succeeded)
             {
                 return NoContent();
             }
+            
             return BadRequest(result.Errors);
         }
 
@@ -141,10 +148,10 @@ namespace WarehouseManagement.BackendServer.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteRole(string id)
         {
-
             var role = await _roleManager.FindByIdAsync(id);
             if (role == null)
                 return NotFound();
+            
             var result = await _roleManager.DeleteAsync(role);
             if (result.Succeeded)
             {
@@ -155,6 +162,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                 };
                 return Ok(roleVM);
             }
+            
             return BadRequest(result.Errors);
         }
     }
