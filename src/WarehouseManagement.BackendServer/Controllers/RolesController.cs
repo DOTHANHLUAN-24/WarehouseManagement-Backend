@@ -18,11 +18,6 @@ namespace WarehouseManagement.BackendServer.Controllers
         [HttpPost]
         public async Task<IActionResult> PostRole(RoleCreateRequest request)
         {
-            if(!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
             if (await _roleManager.RoleExistsAsync(request.Name))
                 return BadRequest("Role already exists");
 
@@ -126,11 +121,6 @@ namespace WarehouseManagement.BackendServer.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutRole(string id, [FromBody] RoleCreateRequest request)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
             if (id != request.Id)
                 return BadRequest();
 
