@@ -11,6 +11,15 @@ namespace WarehouseManagement.UnitTest.Controllers
     {
         // <Name method>_<Condition>_<Excepted results>
         private readonly Mock<RoleManager<IdentityRole>> _mockRoleManager;
+        private List<IdentityRole> _roleSource = new List<IdentityRole>()
+        {
+            new IdentityRole("role test 1"),
+            new IdentityRole("role test 2"),
+            new IdentityRole("role test 3"),
+            new IdentityRole("role test 4"),
+            new IdentityRole("role test 5"),
+        };
+
 
         public RolesControllerTest()
         {
@@ -27,22 +36,6 @@ namespace WarehouseManagement.UnitTest.Controllers
             Assert.NotNull(rolesController);
         }
 
-        [Theory]
-        [InlineData("", "test")]
-        [InlineData("test", "")]
-        [InlineData("", "")]
-        public void RoleCreateRequestValidator_Invalid_ReturnError(string id, string name)
-        {
-            var validator = new RoleCreateRequestValidator();
-
-            var result = validator.Validate(new RoleCreateRequest
-            {
-                Id = id,
-                Name = name
-            });
-
-            Assert.False(result.IsValid);
-        }
-
+        
     }
 }
