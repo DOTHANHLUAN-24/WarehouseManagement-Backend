@@ -6,16 +6,14 @@ namespace WarehouseManagement.BackendServer.UnitTest
     // Fake database for testing
     public class InMemoryContextFactory
     {
-        public ApplicationDbContext GetApplicationDbContext()
+        public ApplicationDbContext Create()
         {
             var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-                .UseInMemoryDatabase(databaseName: "InMemoryApplicationDatabase")
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
                 .Options;
 
-            var dbContext = new ApplicationDbContext(options);
-
-            return dbContext;
-           
+            return new ApplicationDbContext(options);
         }
     }
+
 }
