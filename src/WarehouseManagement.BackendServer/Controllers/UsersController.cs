@@ -10,7 +10,7 @@ namespace WarehouseManagement.BackendServer.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class UsersController(UserManager<User> _userManager) : ControllerBase
+    public class UsersController(UserManager<User> _userManager) : BaseController
     {
         /// <summary>
         /// Create a new user

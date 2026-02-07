@@ -8,7 +8,7 @@ namespace WarehouseManagement.BackendServer.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class RolesController(RoleManager<IdentityRole> _roleManager) : ControllerBase
+    public class RolesController(RoleManager<IdentityRole> _roleManager) : BaseController
     {
         /// <summary>
         /// Create a new role
