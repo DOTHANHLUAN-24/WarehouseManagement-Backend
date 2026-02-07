@@ -97,7 +97,7 @@ namespace WarehouseManagement.UnitTest.Controllers
         }
 
         [Fact]
-        public async Task PostRole_ValidInput_Failed()
+        public async Task PostRole_CreateFailed_ReturnBadRequest()
         {
             // Arrange
             var mockRoleManager = CreateMockRoleManager();
@@ -110,8 +110,8 @@ namespace WarehouseManagement.UnitTest.Controllers
             // Act
             var result = await controller.PostRole(new RoleCreateRequest
             {
-                Id = "Test",
-                Name = "Test"
+                Id = "test",
+                Name = "test"
             });
 
             // Assert
