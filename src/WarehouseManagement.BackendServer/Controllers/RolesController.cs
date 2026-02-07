@@ -43,7 +43,7 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// Get a role by id
         /// </summary>
         /// <param name="id">Role id</param>
-        /// <returns>The role with the Id</returns>
+        /// <returns>The role with the id</returns>
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(string id)
         {
@@ -61,7 +61,7 @@ namespace WarehouseManagement.BackendServer.Controllers
         }
 
         /// <summary>
-        /// Get all roles in the system.
+        /// Get all roles in the system
         /// </summary>
         /// <returns>List of roles</returns>
         [HttpGet]
@@ -83,7 +83,7 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// <param name="filter">Search keyword</param>
         /// <param name="pageIndex">Page index</param>
         /// <param name="pageSize">Size of page</param>
-        /// <returns></returns>
+        /// <returns>Roles list filtered by keyword</returns>
         [HttpGet("filter")]
         public async Task<IActionResult> GetRolesPaging(string? filter, int pageIndex, int pageSize)
         {

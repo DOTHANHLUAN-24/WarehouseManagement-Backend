@@ -48,6 +48,11 @@ namespace WarehouseManagement.BackendServer.Controllers
             }
         }
 
+        /// <summary>
+        /// Get a user by id
+        /// </summary>
+        /// <param name="id">User id</param>
+        /// <returns>The user with the id</returns>
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(string id)
         {
@@ -68,6 +73,10 @@ namespace WarehouseManagement.BackendServer.Controllers
             return Ok(userVM);
         }
 
+        /// <summary>
+        /// Get all users in the system
+        /// </summary>
+        /// <returns>List of users</returns>
         [HttpGet]
         public async Task<IActionResult> GetUsers()
         {
@@ -85,6 +94,13 @@ namespace WarehouseManagement.BackendServer.Controllers
             return Ok(users);
         }
 
+        /// <summary>
+        /// Get paged users filtered by id or name
+        /// </summary>
+        /// <param name="filter">Search keyword</param>
+        /// <param name="pageIndex">Page index</param>
+        /// <param name="pageSize">Size of page</param>
+        /// <returns>Users list filtered by keyword</returns>
         [HttpGet("filter")]
         public async Task<IActionResult> GetUsersPaging(string? filter, int pageIndex, int pageSize)
         {
@@ -118,6 +134,12 @@ namespace WarehouseManagement.BackendServer.Controllers
             return Ok(pagination);
         }
 
+        /// <summary>
+        /// Update a user by id
+        /// </summary>
+        /// <param name="id">User id</param>
+        /// <param name="request">User model</param>
+        /// <returns>Results of the update process</returns>
         [HttpPut("{id}")]
         public async Task<IActionResult> PutUser(string id, [FromBody] UserUpdateRequest request)
         {
@@ -136,6 +158,11 @@ namespace WarehouseManagement.BackendServer.Controllers
             return BadRequest();
         }
 
+        /// <summary>
+        /// Delete a user by id
+        /// </summary>
+        /// <param name="id">User id</param>
+        /// <returns>Results of the delete process</returns>
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(string id)
         {
