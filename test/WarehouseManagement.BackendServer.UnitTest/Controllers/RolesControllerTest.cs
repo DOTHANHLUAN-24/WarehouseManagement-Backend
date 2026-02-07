@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Moq;
 using WarehouseManagement.BackendServer.Controllers;
 using WarehouseManagement.BackendServer.Data;
@@ -33,14 +34,25 @@ namespace WarehouseManagement.UnitTest.Controllers
         private RoleManager<IdentityRole> CreateRealRoleManager(ApplicationDbContext context)
         {
             var store = new RoleStore<IdentityRole, ApplicationDbContext>(context);
+
+            var roleValidators = new List<IRoleValidator<IdentityRole>>
+            {
+                new RoleValidator<IdentityRole>()
+            };
+
+            var normalizer = new UpperInvariantLookupNormalizer();
+            var errorDescriber = new IdentityErrorDescriber();
+            var logger = new Mock<ILogger<RoleManager<IdentityRole>>>().Object;
+
             return new RoleManager<IdentityRole>(
                 store,
-                null!, // IRoleValidator
-                null!, // ILookupNormalizer
-                null!, // IdentityErrorDescriber
-                null!  // ILogger
+                roleValidators,
+                normalizer,
+                errorDescriber,
+                logger
             );
         }
+
 
         // =========================
         // Constructor
@@ -85,7 +97,7 @@ namespace WarehouseManagement.UnitTest.Controllers
         }
 
         [Fact]
-        public async Task PostRole_ValidInput_Failed()
+        public async Task PostRole_CreateFailed_ReturnBadRequest()
         {
             // Arrange
             var mockRoleManager = CreateMockRoleManager();
@@ -98,8 +110,8 @@ namespace WarehouseManagement.UnitTest.Controllers
             // Act
             var result = await controller.PostRole(new RoleCreateRequest
             {
-                Id = "Test",
-                Name = "Test"
+                Id = "test",
+                Name = "test"
             });
 
             // Assert
