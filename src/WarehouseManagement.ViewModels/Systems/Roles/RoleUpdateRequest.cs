@@ -1,6 +1,6 @@
 ﻿namespace WarehouseManagement.ViewModels.Systems.Roles
 {
-    public class RoleViewModel : RoleBase
+    public class RoleUpdateRequest : RoleBase
     {
     }
 }

@@ -1,12 +1,221 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.BackendServer.Data;
+using WarehouseManagement.BackendServer.Data.Entities;
+using WarehouseManagement.ViewModels.Systems;
+using WarehouseManagement.ViewModels.Systems.Functions;
 
 namespace WarehouseManagement.BackendServer.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class FunctionsController(ApplicationDbContext _context) : ControllerBase
+    public class FunctionsController(ApplicationDbContext _context, ILogger<FunctionsController> _logger) : BaseController
     {
-        
+        [HttpPost]
+        public async Task<IActionResult> PostFunction([FromBody] FunctionCreateRequest request)
+        {
+            _logger.LogInformation("Begin PostFunction API");
+
+            var function = new Function
+            {
+                Id = request.Id,
+                Name = request.Name,
+                Url = request.Url,
+                SortOrder = request.SortOrder,
+                ParentId = request.ParentId,
+                Icon = request.Icon
+            };
+
+            _context.Functions.Add(function);
+            var result = await _context.SaveChangesAsync();
+
+            if (result > 0)
+            {
+                _logger.LogInformation("PostFunction API success. Id={Id}", function.Id);
+
+                return CreatedAtAction(
+                    nameof(GetById),
+                    new { id = function.Id },
+                    function
+                );
+            }
+
+            _logger.LogError("PostFunction API failed to save changes. Id={Id}", request.Id);
+
+            return BadRequest();
+        }
+
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(string id)
+        {
+            _logger.LogInformation("Get Function by id started. Id={Id}", id);
+
+            var function = await _context.Functions.FindAsync(id);
+            if (function == null)
+            {
+                _logger.LogWarning( "Get Function by id not found. Id={Id}", id );
+
+                return NotFound();
+            }
+
+            var functionVM = new FunctionViewModel
+            {
+                Id = function.Id,
+                Name = function.Name,
+                Url = function.Url,
+                SortOrder = function.SortOrder,
+                ParentId = function.ParentId!,
+                Icon = function.Icon
+            };
+
+            _logger.LogInformation(
+                "Get Function by id success. Id={Id}",
+                id
+            );
+
+            return Ok(functionVM);
+        }
+
+
+
+        [HttpGet]
+        public async Task<IActionResult> GetFunctions()
+        {
+            _logger.LogInformation("Begin GetFunctions API");
+
+            var functions = _context.Functions;
+            var functionViewModels = await functions
+                .Select(f => new FunctionViewModel
+                {
+                    Id = f.Id,
+                    Name = f.Name,
+                    Url = f.Url,
+                    SortOrder = f.SortOrder,
+                    ParentId = f.ParentId!,
+                    Icon = f.Icon
+                }).ToListAsync();
+
+            _logger.LogInformation("End GetFunctions API - Success");
+
+            return Ok(functionViewModels);
+        }
+
+        [HttpGet("filter")]
+        public async Task<IActionResult> GetFunctionsPaging(string? filter, int pageIndex, int pageSize)
+        {
+            _logger.LogInformation("Begin GetFunctionsPaging API");
+
+            var query = _context.Functions.AsQueryable();
+
+            if (!string.IsNullOrEmpty(filter))
+            {
+                _logger.LogInformation("Continues GetFunctionsPaging API - Check keyword if keyword not null");
+
+                query = query.Where(x => x.Id.Contains(filter.ToLower())
+                || x.Name.Contains(filter.ToLower()));
+            }
+
+            var totalRecord = await query.CountAsync();
+
+            var items = await query.Skip((pageIndex - 1) * pageSize)
+                .Take(pageSize)
+                .Select(f => new FunctionViewModel()
+                {
+                    Id = f.Id,
+                    Name = f.Name,
+                    Url = f.Url,
+                    SortOrder = f.SortOrder,
+                    ParentId = f.ParentId!,
+                    Icon = f.Icon
+                }).ToListAsync();
+
+            var pagination = new Pagination<FunctionViewModel>
+            {
+                Items = items,
+                TotalRecords = totalRecord
+            };
+
+            _logger.LogInformation("End GetFunctionsPaging API - Success");
+
+            return Ok(pagination);
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutFunction(string id, [FromBody] FunctionUpdateRequest request)
+        {
+            _logger.LogInformation("Begin PutFunction API. Id={Id}", id);
+
+            if (id != request.Id)
+            {
+                _logger.LogWarning(
+                    "PUT Function id mismatch. RouteId={RouteId}, BodyId={BodyId}",
+                    id,
+                    request.Id
+                );
+
+                return BadRequest("Route id and body id do not match.");
+            }
+
+            var function = await _context.Functions.FindAsync(id);
+            if (function == null)
+            {
+                _logger.LogInformation(
+                    "PUT Function not found. Id={Id}",
+                    id
+                );
+                return NotFound();
+            }
+
+            function.Name = request.Name;
+            function.ParentId = request.ParentId;
+            function.SortOrder = request.SortOrder;
+            function.Url = request.Url;
+            function.Icon = request.Icon;
+
+            _context.Functions.Update(function);
+            var result = await _context.SaveChangesAsync();
+
+            if (result > 0)
+            {
+                _logger.LogInformation(
+                    "PUT Function success. Id={Id}",
+                    id
+                );
+                return NoContent();
+            }
+
+            _logger.LogError(
+                "PUT Function failed to save changes. Id={Id}",
+                id
+            );
+
+            return BadRequest();
+        }
+
+
+        [HttpDelete]
+        public async Task<IActionResult> DeleteFunction(string id)
+        {
+            var function = await _context.Functions.FindAsync(id);
+            if (function == null)
+                return NotFound();
+
+            _context.Functions.Remove(function);
+            var result = await _context.SaveChangesAsync();
+            if (result > 0)
+            {
+                var functionViewModel = new FunctionViewModel()
+                {
+                    Id = function.Id,
+                    Name = function.Name,
+                    Url = function.Url,
+                    ParentId = function.ParentId!,
+                    SortOrder = function.SortOrder
+                };
+                return Ok(functionViewModel);
+            }
+            return BadRequest();
+        }
     }
 }

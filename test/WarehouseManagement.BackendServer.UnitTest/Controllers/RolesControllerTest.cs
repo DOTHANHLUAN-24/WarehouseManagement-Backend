@@ -7,7 +7,7 @@ using WarehouseManagement.BackendServer.Controllers;
 using WarehouseManagement.BackendServer.Data;
 using WarehouseManagement.BackendServer.UnitTest;
 using WarehouseManagement.ViewModels.Systems;
-using WarehouseManagement.ViewModels.Systems.Role;
+using WarehouseManagement.ViewModels.Systems.Roles;
 
 namespace WarehouseManagement.UnitTest.Controllers
 {
@@ -320,7 +320,7 @@ namespace WarehouseManagement.UnitTest.Controllers
             var controller = new RolesController(roleManager);
 
             // Act
-            var result = await controller.PutRole("test", new RoleCreateRequest
+            var result = await controller.PutRole("test", new RoleUpdateRequest
             {
                 Id = "test",
                 Name="test"
@@ -341,7 +341,7 @@ namespace WarehouseManagement.UnitTest.Controllers
             var controller = new RolesController(roleManager);
 
             // Act
-            var result = await controller.PutRole("test", new RoleCreateRequest
+            var result = await controller.PutRole("test", new RoleUpdateRequest
             {
                 Id = "test",
                 Name = "45d45a6"

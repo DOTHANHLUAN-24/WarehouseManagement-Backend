@@ -2,13 +2,13 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.ViewModels.Systems;
-using WarehouseManagement.ViewModels.Systems.Role;
+using WarehouseManagement.ViewModels.Systems.Roles;
 
 namespace WarehouseManagement.BackendServer.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class RolesController(RoleManager<IdentityRole> _roleManager) : ControllerBase
+    public class RolesController(RoleManager<IdentityRole> _roleManager) : BaseController
     {
         /// <summary>
         /// Create a new role
@@ -87,11 +87,12 @@ namespace WarehouseManagement.BackendServer.Controllers
         [HttpGet("filter")]
         public async Task<IActionResult> GetRolesPaging(string? filter, int pageIndex, int pageSize)
         {
+
             var query = _roleManager.Roles;
            
             if (!string.IsNullOrEmpty(filter))
             {
-                query = query.Where(x => x.Id.Contains(filter) || x.Name!.Contains(filter));
+                query = query.Where(x => x.Id.Contains(filter.ToLower()) || x.Name!.Contains(filter.ToLower()));
             }
 
             var totalRecords = await query.CountAsync();
@@ -119,7 +120,7 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// <param name="roleViewModel">Role model</param>
         /// <returns>Results of the update process</returns>
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutRole(string id, [FromBody] RoleCreateRequest request)
+        public async Task<IActionResult> PutRole(string id, [FromBody] RoleUpdateRequest  request)
         {
             if (id != request.Id)
                 return BadRequest();
@@ -155,12 +156,12 @@ namespace WarehouseManagement.BackendServer.Controllers
             var result = await _roleManager.DeleteAsync(role);
             if (result.Succeeded)
             {
-                var roleVM = new RoleViewModel()
+                var roleViewModel = new RoleViewModel()
                 {
                     Id = role.Id,
                     Name = role.Name!
                 };
-                return Ok(roleVM);
+                return Ok(roleViewModel);
             }
             
             return BadRequest(result.Errors);
