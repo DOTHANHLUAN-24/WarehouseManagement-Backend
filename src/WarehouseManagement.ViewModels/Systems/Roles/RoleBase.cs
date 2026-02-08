@@ -1,4 +1,4 @@
-﻿namespace WarehouseManagement.ViewModels.Systems.Role
+﻿namespace WarehouseManagement.ViewModels.Systems.Roles
 {
     public class RoleBase
     {

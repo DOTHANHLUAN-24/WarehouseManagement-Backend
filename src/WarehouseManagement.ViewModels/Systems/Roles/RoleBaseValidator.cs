@@ -1,6 +1,6 @@
 ﻿using FluentValidation;
 
-namespace WarehouseManagement.ViewModels.Systems.Role
+namespace WarehouseManagement.ViewModels.Systems.Roles
 {
     public class RoleBaseValidator<T> : AbstractValidator<T> 
         where T : RoleBase
