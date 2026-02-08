@@ -12,6 +12,8 @@ namespace WarehouseManagement.BackendServer.Data.Entities
             PermissionId = permissionId;
         }
 
+        public RolePermission() { }
+
         [Required]
         public string RoleId { get; set; } = string.Empty;
 

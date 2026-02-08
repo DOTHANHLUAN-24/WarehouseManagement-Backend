@@ -9,6 +9,10 @@ namespace WarehouseManagement.BackendServer.Controllers
     [Route("api/[controller]")]
     public class PermissionsController(IConfiguration _configuration) : BaseController
     {
+        /// <summary>
+        /// Get all permission in the system
+        /// </summary>
+        /// <returns>List of permissions</returns>
         [HttpGet]
         public async Task<IActionResult> GetPermissionViews()
         {
