@@ -11,6 +11,11 @@ namespace WarehouseManagement.BackendServer.Controllers
     [ApiController]
     public class FunctionsController(ApplicationDbContext _context, ILogger<FunctionsController> _logger) : BaseController
     {
+        /// <summary>
+        /// Create a new function
+        /// </summary>
+        /// <param name="request">Function model</param>
+        /// <returns>Results of the add process</returns>
         [HttpPost]
         public async Task<IActionResult> PostFunction([FromBody] FunctionCreateRequest request)
         {
@@ -33,11 +38,7 @@ namespace WarehouseManagement.BackendServer.Controllers
             {
                 _logger.LogInformation("PostFunction API success. Id={Id}", function.Id);
 
-                return CreatedAtAction(
-                    nameof(GetById),
-                    new { id = function.Id },
-                    function
-                );
+                return CreatedAtAction( nameof(GetById), new { id = function.Id }, function );
             }
 
             _logger.LogError("PostFunction API failed to save changes. Id={Id}", request.Id);
@@ -45,16 +46,20 @@ namespace WarehouseManagement.BackendServer.Controllers
             return BadRequest();
         }
 
-
+        /// <summary>
+        /// Get a function by id
+        /// </summary>
+        /// <param name="id">Function id</param>
+        /// <returns>The function with the id</returns>
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(string id)
         {
-            _logger.LogInformation("Get Function by id started. Id={Id}", id);
+            _logger.LogInformation("Begin GetFunctionById. Id={Id}", id);
 
             var function = await _context.Functions.FindAsync(id);
             if (function == null)
             {
-                _logger.LogWarning( "Get Function by id not found. Id={Id}", id );
+                _logger.LogWarning("Get Function not found. Id={Id}", id);
 
                 return NotFound();
             }
@@ -69,16 +74,15 @@ namespace WarehouseManagement.BackendServer.Controllers
                 Icon = function.Icon
             };
 
-            _logger.LogInformation(
-                "Get Function by id success. Id={Id}",
-                id
-            );
+            _logger.LogInformation( "Get Function by id success. Id={Id}", id );
 
             return Ok(functionVM);
         }
 
-
-
+        /// <summary>
+        /// Get all functions in the system
+        /// </summary>
+        /// <returns>List of functions</returns>
         [HttpGet]
         public async Task<IActionResult> GetFunctions()
         {
@@ -96,24 +100,31 @@ namespace WarehouseManagement.BackendServer.Controllers
                     Icon = f.Icon
                 }).ToListAsync();
 
-            _logger.LogInformation("End GetFunctions API - Success");
+            _logger.LogInformation("GetFunctions API success to get all function in system.");
 
             return Ok(functionViewModels);
         }
 
+        /// <summary>
+        /// Get paged functions filtered by id or name.
+        /// </summary>
+        /// <param name="filter">Search keyword</param>
+        /// <param name="pageIndex">Page index</param>
+        /// <param name="pageSize">Size of page</param>
+        /// <returns>Functions list filtered by keyword</returns>
         [HttpGet("filter")]
         public async Task<IActionResult> GetFunctionsPaging(string? filter, int pageIndex, int pageSize)
         {
-            _logger.LogInformation("Begin GetFunctionsPaging API");
+            _logger.LogInformation("Begin GetFunctionsPaging API. Filter = {filter}", filter);
 
             var query = _context.Functions.AsQueryable();
 
             if (!string.IsNullOrEmpty(filter))
             {
-                _logger.LogInformation("Continues GetFunctionsPaging API - Check keyword if keyword not null");
+                _logger.LogInformation( "GetFunctionsPaging with filter applied. Filter={Filter}", filter);
 
-                query = query.Where(x => x.Id.Contains(filter.ToLower())
-                || x.Name.Contains(filter.ToLower()));
+                query = query.Where(x => x.Id.ToLower().Contains(filter)
+                || x.Name.ToLower().Contains(filter));
             }
 
             var totalRecord = await query.CountAsync();
@@ -136,11 +147,17 @@ namespace WarehouseManagement.BackendServer.Controllers
                 TotalRecords = totalRecord
             };
 
-            _logger.LogInformation("End GetFunctionsPaging API - Success");
+            _logger.LogInformation("GetFunctionsPaging API success to find all function container keyword: {filter}.", filter);
 
             return Ok(pagination);
         }
 
+        /// <summary>
+        /// Update a function by id
+        /// </summary>
+        /// <param name="id">Function id</param>
+        /// <param name="request">Function model</param>
+        /// <returns>Results of the update process</returns>
         [HttpPut("{id}")]
         public async Task<IActionResult> PutFunction(string id, [FromBody] FunctionUpdateRequest request)
         {
@@ -148,11 +165,7 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             if (id != request.Id)
             {
-                _logger.LogWarning(
-                    "PUT Function id mismatch. RouteId={RouteId}, BodyId={BodyId}",
-                    id,
-                    request.Id
-                );
+                _logger.LogWarning( "PUT Function id mismatch. RouteId={RouteId}, BodyId={BodyId}", id, request.Id );
 
                 return BadRequest("Route id and body id do not match.");
             }
@@ -160,10 +173,7 @@ namespace WarehouseManagement.BackendServer.Controllers
             var function = await _context.Functions.FindAsync(id);
             if (function == null)
             {
-                _logger.LogInformation(
-                    "PUT Function not found. Id={Id}",
-                    id
-                );
+                _logger.LogInformation( "PUT Function not found. Id={Id}", id );
                 return NotFound();
             }
 
@@ -178,33 +188,39 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             if (result > 0)
             {
-                _logger.LogInformation(
-                    "PUT Function success. Id={Id}",
-                    id
-                );
+                _logger.LogInformation( "PUT Function success. Id={Id}", id );
                 return NoContent();
             }
 
-            _logger.LogError(
-                "PUT Function failed to save changes. Id={Id}",
-                id
-            );
+            _logger.LogError( "PUT Function failed to save changes. Id={Id}", id );
 
             return BadRequest();
         }
 
-
-        [HttpDelete]
+        /// <summary>
+        /// Delete a function by id
+        /// </summary>
+        /// <param name="id">Function id</param>
+        /// <returns>Results of the delete process</returns>
+        [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteFunction(string id)
         {
+            _logger.LogInformation("Begin DeleteFunction API. Id={id}", id);
+
             var function = await _context.Functions.FindAsync(id);
             if (function == null)
+            {
+                _logger.LogWarning("Delete function failed, can't not find the function. Id={id}", id);
                 return NotFound();
+            }
+
 
             _context.Functions.Remove(function);
             var result = await _context.SaveChangesAsync();
             if (result > 0)
             {
+                _logger.LogInformation("Delete function success. Id={id}", id);
+
                 var functionViewModel = new FunctionViewModel()
                 {
                     Id = function.Id,
@@ -215,6 +231,9 @@ namespace WarehouseManagement.BackendServer.Controllers
                 };
                 return Ok(functionViewModel);
             }
+
+            _logger.LogError("DELETE Function failed to delete function. Id={id}", id);
+
             return BadRequest();
         }
     }
