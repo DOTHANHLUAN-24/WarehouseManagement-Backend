@@ -26,5 +26,7 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         [Required]
         [MaxLength(50)]
         public string LastName { get; set; } = string.Empty;
+
+        public bool IsActive { get; set; } = true;
     }
 }

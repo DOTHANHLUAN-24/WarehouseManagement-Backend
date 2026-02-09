@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.BackendServer.Data;
 using WarehouseManagement.BackendServer.Data.Entities;
 using WarehouseManagement.ViewModels.Contents.Categories;
+using WarehouseManagement.ViewModels.Contents.Products;
 using WarehouseManagement.ViewModels.Systems;
 
 namespace WarehouseManagement.BackendServer.Controllers
@@ -130,6 +131,37 @@ namespace WarehouseManagement.BackendServer.Controllers
         }
 
         /// <summary>
+        /// Get all product by category id
+        /// </summary>
+        /// <param name="id">Category id</param>
+        /// <returns>List of products dependency category</returns>
+        [HttpGet("{id}/products")]
+        public async Task<IActionResult> GetAllProduct(int id)
+        {
+            var category = await _context.Categories.FindAsync(id);
+            if (category == null)
+            {
+                _logger.LogWarning("Get all product api: Category not found. Id={Id}", id);
+
+                return NotFound();
+            }
+
+            var listProductInCategory = await _context.Products
+                .Where(x => x.CategoryId == id)
+                .Select(product => new ProductViewModel
+                {
+                    Id = product.Id,
+                    Name = product.Name,
+                    Price = product.Price,
+                    CategoryId = id,
+                    Quantity = product.Quantity,
+                    IsDeleted = product.IsDeleted,
+                }).ToListAsync();
+
+            return Ok(listProductInCategory);
+        }
+
+        /// <summary>
         /// Update a category by id
         /// </summary>
         /// <param name="id">Category id</param>
@@ -176,38 +208,53 @@ namespace WarehouseManagement.BackendServer.Controllers
         }
 
         /// <summary>
-        /// Delete a category by id
+        /// Permanently deletes a category from the system.
+        /// This action cannot be undone.
         /// </summary>
-        /// <param name="id">Category id</param>
-        /// <returns>Results of the delete process</returns>
+        /// <param name="id">Category identifier</param>
+        /// <returns>
+        /// The deleted category information if the operation succeeds;
+        /// otherwise, an appropriate error response.
+        /// </returns>
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteCategory(int id)
+        public async Task<IActionResult> PermanentDeleteCategory(int id)
         {
-            _logger.LogInformation("Begin DeleteCategory API. Id={id}", id);
+            _logger.LogInformation("Begin PermanentDeleteCategory API. Id={id}", id);
 
             var category = await _context.Categories.FindAsync(id);
-            if(category == null)
+            if (category == null)
             {
-                _logger.LogWarning("Delete category failed, can't not find the category. Id={id}", id);
+                _logger.LogWarning("Permanent delete category failed. Category not found. Id={id}", id);
 
                 return NotFound();
             }
 
+            if (!category.IsDeleted)
+            {
+                _logger.LogWarning(
+                    "Permanent delete category rejected. Category is not soft-deleted yet. Id={id}",
+                    id);
+
+                return BadRequest("Category must be soft-deleted before permanent deletion.");
+            }
+
+
             _context.Categories.Remove(category);
 
             var result = await _context.SaveChangesAsync();
-            if(result > 0)
+            if (result > 0)
             {
-                _logger.LogInformation("Delete category success. Id={id}", id);
+                _logger.LogInformation("Permanent delete category succeeded. Id={id}", id);
 
                 var categoryViewModel = CreateCategoryViewModel(category);
                 return Ok(categoryViewModel);
             }
 
-            _logger.LogError("DELETE Category failed to delete category. Id={id}", id);
+            _logger.LogError("Permanent delete category failed. Database did not persist changes. Id={id}", id);
 
             return BadRequest();
         }
+
 
         /// <summary>
         /// Create a new Category as Category View Model

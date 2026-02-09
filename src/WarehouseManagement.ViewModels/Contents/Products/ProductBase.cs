@@ -11,5 +11,7 @@
         public int CategoryId { get; set; }
 
         public int Quantity { get; set; }
+
+        public bool IsDeleted { get; set; } = false;
     }
 }
