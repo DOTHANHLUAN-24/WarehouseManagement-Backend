@@ -54,29 +54,21 @@ namespace WarehouseManagement.BackendServer.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(string id)
         {
-            _logger.LogInformation("Begin GetFunctionById. Id={Id}", id);
+            _logger.LogInformation("Begin GetFunctionById. Id={id}", id);
 
             var function = await _context.Functions.FindAsync(id);
             if (function == null)
             {
-                _logger.LogWarning("Get Function not found. Id={Id}", id);
+                _logger.LogWarning("Get Function not found. Id={id}", id);
 
                 return NotFound();
             }
 
-            var functionVM = new FunctionViewModel
-            {
-                Id = function.Id,
-                Name = function.Name,
-                Url = function.Url,
-                SortOrder = function.SortOrder,
-                ParentId = function.ParentId!,
-                Icon = function.Icon
-            };
+            var functionViewModel = CreateFunctionViewModel(function);
 
             _logger.LogInformation( "Get Function by id success. Id={Id}", id );
 
-            return Ok(functionVM);
+            return Ok(functionViewModel);
         }
 
         /// <summary>
@@ -90,20 +82,14 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             var functions = _context.Functions;
             var functionViewModels = await functions
-                .Select(f => new FunctionViewModel
-                {
-                    Id = f.Id,
-                    Name = f.Name,
-                    Url = f.Url,
-                    SortOrder = f.SortOrder,
-                    ParentId = f.ParentId!,
-                    Icon = f.Icon
-                }).ToListAsync();
+                .Select(f => CreateFunctionViewModel(f)).ToListAsync();
 
-            _logger.LogInformation("GetFunctions API success to get all function in system.");
+            _logger.LogInformation("GetFunctions API success to get all functions in system.");
 
             return Ok(functionViewModels);
         }
+
+       
 
         /// <summary>
         /// Get paged functions filtered by id or name.
@@ -131,15 +117,8 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             var items = await query.Skip((pageIndex - 1) * pageSize)
                 .Take(pageSize)
-                .Select(f => new FunctionViewModel()
-                {
-                    Id = f.Id,
-                    Name = f.Name,
-                    Url = f.Url,
-                    SortOrder = f.SortOrder,
-                    ParentId = f.ParentId!,
-                    Icon = f.Icon
-                }).ToListAsync();
+                .Select(f => CreateFunctionViewModel(f))
+                .ToListAsync();
 
             var pagination = new Pagination<FunctionViewModel>
             {
@@ -147,7 +126,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                 TotalRecords = totalRecord
             };
 
-            _logger.LogInformation("GetFunctionsPaging API success to find all function container keyword: {filter}.", filter);
+            _logger.LogInformation("GetFunctionsPaging API success to find all functions container keyword: {filter}.", filter);
 
             return Ok(pagination);
         }
@@ -165,7 +144,7 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             if (id != request.Id)
             {
-                _logger.LogWarning( "PUT Function id mismatch. RouteId={RouteId}, BodyId={BodyId}", id, request.Id );
+                _logger.LogWarning("PUT Function id mismatch. RouteId={RouteId}, BodyId={BodyId}", id, request.Id);
 
                 return BadRequest("Route id and body id do not match.");
             }
@@ -173,7 +152,7 @@ namespace WarehouseManagement.BackendServer.Controllers
             var function = await _context.Functions.FindAsync(id);
             if (function == null)
             {
-                _logger.LogInformation( "PUT Function not found. Id={Id}", id );
+                _logger.LogInformation("PUT Function not found. Id={Id}", id);
                 return NotFound();
             }
 
@@ -189,6 +168,7 @@ namespace WarehouseManagement.BackendServer.Controllers
             if (result > 0)
             {
                 _logger.LogInformation( "PUT Function success. Id={Id}", id );
+
                 return NoContent();
             }
 
@@ -211,6 +191,7 @@ namespace WarehouseManagement.BackendServer.Controllers
             if (function == null)
             {
                 _logger.LogWarning("Delete function failed, can't not find the function. Id={id}", id);
+                
                 return NotFound();
             }
 
@@ -221,20 +202,31 @@ namespace WarehouseManagement.BackendServer.Controllers
             {
                 _logger.LogInformation("Delete function success. Id={id}", id);
 
-                var functionViewModel = new FunctionViewModel()
-                {
-                    Id = function.Id,
-                    Name = function.Name,
-                    Url = function.Url,
-                    ParentId = function.ParentId!,
-                    SortOrder = function.SortOrder
-                };
+                var functionViewModel = CreateFunctionViewModel(function);
                 return Ok(functionViewModel);
             }
 
             _logger.LogError("DELETE Function failed to delete function. Id={id}", id);
 
             return BadRequest();
+        }
+
+        /// <summary>
+        /// Create a new Function View Model
+        /// </summary>
+        /// <param name="f">Function entity</param>
+        /// <returns>Function View Model</returns>
+        private static FunctionViewModel CreateFunctionViewModel(Function f)
+        {
+            return new FunctionViewModel
+            {
+                Id = f.Id,
+                Name = f.Name,
+                Url = f.Url,
+                SortOrder = f.SortOrder,
+                ParentId = f.ParentId!,
+                Icon = f.Icon
+            };
         }
     }
 }
