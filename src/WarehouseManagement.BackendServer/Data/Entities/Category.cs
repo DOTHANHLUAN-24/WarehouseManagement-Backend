@@ -27,7 +27,6 @@ namespace WarehouseManagement.BackendServer.Data.Entities
 
         public int? ParentId { get; set; }
 
-
         public DateTime CreateDate { get; set; }
 
         public DateTime? LastModifiedDate { get; set; }
