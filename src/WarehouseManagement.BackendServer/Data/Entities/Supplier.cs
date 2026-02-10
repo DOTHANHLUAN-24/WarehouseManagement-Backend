@@ -1,10 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using WarehouseManagement.BackendServer.Data.Interfaces;
 
 namespace WarehouseManagement.BackendServer.Data.Entities
 {
     [Table("Suppliers")]
-    public class Supplier
+    public class Supplier : ISoftDelete
     {
         [Key]
         public int SupplierId { get; set; }
@@ -16,6 +17,8 @@ namespace WarehouseManagement.BackendServer.Data.Entities
 
         [Required]
         public string Email { get; set; } = string.Empty;
+
+        public bool IsDeleted { get; set; } = false;
 
         public ICollection<Purchase> Purchases { get; set; } = new List<Purchase>();
     }

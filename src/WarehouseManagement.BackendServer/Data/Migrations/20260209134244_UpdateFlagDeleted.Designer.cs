@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WarehouseManagement.BackendServer.Data;
 
@@ -11,9 +12,11 @@ using WarehouseManagement.BackendServer.Data;
 namespace WarehouseManagement.BackendServer.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260209134244_UpdateFlagDeleted")]
+    partial class UpdateFlagDeleted
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -169,41 +172,6 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.AuditLog", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Entity")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid?>("EntityId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("NewValue")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("OldValue")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("AuditLogs");
-                });
-
             modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.Category", b =>
                 {
                     b.Property<int>("Id")
@@ -255,69 +223,32 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("CreateDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("FullName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime?>("LastModifiedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("PhoneNumber")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Customers");
-                });
-
-            modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.CustomerAddress", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("AddressLine")
+                    b.Property<string>("Address")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<string>("City")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<int>("CustomerId")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsDefault")
-                        .HasColumnType("bit");
+                    b.Property<DateTime>("CreateDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
+                    b.Property<DateTime?>("LastModifiedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("CustomerId");
-
-                    b.ToTable("CustomerAddresses");
+                    b.ToTable("Customers");
                 });
 
             modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.Function", b =>
@@ -402,7 +333,7 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
                     b.Property<int>("OrderId")
                         .HasColumnType("int");
 
-                    b.Property<int>("ProductVariantId")
+                    b.Property<int>("ProductId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("CreateDate")
@@ -411,9 +342,6 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
                     b.Property<DateTime?>("LastModifiedDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<int?>("ProductId")
-                        .HasColumnType("int");
-
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
 
@@ -421,11 +349,9 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
-                    b.HasKey("OrderId", "ProductVariantId");
+                    b.HasKey("OrderId", "ProductId");
 
                     b.HasIndex("ProductId");
-
-                    b.HasIndex("ProductVariantId");
 
                     b.ToTable("OrderItems");
                 });
@@ -503,22 +429,14 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("CategoryId")
-                        .IsRequired()
+                    b.Property<int>("CategoryId")
                         .HasColumnType("int");
-
-                    b.Property<string>("Code")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTime>("CreateDate")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -529,6 +447,13 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -556,9 +481,6 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
                     b.Property<bool>("IsApproved")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
                     b.Property<DateTime?>("LastModifiedDate")
                         .HasColumnType("datetime2");
 
@@ -566,9 +488,6 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
                         .HasColumnType("int");
 
                     b.Property<int>("ProductId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("ProductVariantId")
                         .HasColumnType("int");
 
                     b.Property<int?>("Rating")
@@ -585,95 +504,9 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.HasIndex("ProductVariantId");
-
                     b.HasIndex("UserId");
 
                     b.ToTable("ProductComments");
-                });
-
-            modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.ProductImage", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreateDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ImageUrl")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<bool>("IsDefault")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("LastModifiedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("ProductId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProductId");
-
-                    b.ToTable("ProductImages");
-                });
-
-            modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.ProductVariant", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreateDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("LastModifiedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<decimal>("Price")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int>("ProductId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("SKU")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<int>("StockQuantity")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProductId");
-
-                    b.ToTable("ProductVariants");
                 });
 
             modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.Purchase", b =>
@@ -712,30 +545,28 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
                     b.Property<int>("PurchaseId")
                         .HasColumnType("int");
 
-                    b.Property<int>("ProductVariantId")
+                    b.Property<int>("ProductId")
                         .HasColumnType("int");
+
+                    b.Property<decimal>("CostPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("CreateDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("LastModifiedDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<int?>("ProductId")
-                        .HasColumnType("int");
 
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
 
-                    b.Property<decimal>("UnitCost")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.HasKey("PurchaseId", "ProductVariantId");
+                    b.HasKey("PurchaseId", "ProductId");
 
                     b.HasIndex("ProductId");
-
-                    b.HasIndex("ProductVariantId");
 
                     b.ToTable("PurchaseItems");
                 });
@@ -787,33 +618,6 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
                     b.HasIndex("WarehouseId");
 
                     b.ToTable("Shipments");
-                });
-
-            modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.StockSnapshot", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("ProductId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("int");
-
-                    b.Property<DateOnly>("SnapshotDate")
-                        .HasColumnType("date");
-
-                    b.Property<int>("WarehouseId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProductId");
-
-                    b.HasIndex("WarehouseId");
-
-                    b.ToTable("StockSnapshots");
                 });
 
             modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.StockTransaction", b =>
@@ -998,9 +802,6 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
                     b.Property<bool>("IsStackable")
                         .HasColumnType("bit");
 
@@ -1113,28 +914,6 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.Customer", b =>
-                {
-                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.CustomerAddress", b =>
-                {
-                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.Customer", "Customer")
-                        .WithMany("Addresses")
-                        .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Customer");
-                });
-
             modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.Function", b =>
                 {
                     b.HasOne("WarehouseManagement.BackendServer.Data.Entities.Function", "Parent")
@@ -1170,19 +949,15 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.Product", null)
+                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.Product", "Product")
                         .WithMany("OrderItems")
-                        .HasForeignKey("ProductId");
-
-                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.ProductVariant", "ProductVariant")
-                        .WithMany("OrderItems")
-                        .HasForeignKey("ProductVariantId")
+                        .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Order");
 
-                    b.Navigation("ProductVariant");
+                    b.Navigation("Product");
                 });
 
             modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.Payment", b =>
@@ -1201,7 +976,8 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
                     b.HasOne("WarehouseManagement.BackendServer.Data.Entities.Category", "Category")
                         .WithMany("Products")
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Category");
                 });
@@ -1219,10 +995,6 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.ProductVariant", "ProductVariant")
-                        .WithMany()
-                        .HasForeignKey("ProductVariantId");
-
                     b.HasOne("WarehouseManagement.BackendServer.Data.Entities.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
@@ -1233,31 +1005,7 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
 
                     b.Navigation("Product");
 
-                    b.Navigation("ProductVariant");
-
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.ProductImage", b =>
-                {
-                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.Product", "Product")
-                        .WithMany("ProductImages")
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Product");
-                });
-
-            modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.ProductVariant", b =>
-                {
-                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.Product", "Product")
-                        .WithMany("ProductVariants")
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Product");
                 });
 
             modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.Purchase", b =>
@@ -1273,13 +1021,9 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
 
             modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.PurchaseItem", b =>
                 {
-                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.Product", null)
+                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.Product", "Product")
                         .WithMany("PurchaseItems")
-                        .HasForeignKey("ProductId");
-
-                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.ProductVariant", "ProductVariant")
-                        .WithMany("PurchaseItems")
-                        .HasForeignKey("ProductVariantId")
+                        .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1289,7 +1033,7 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("ProductVariant");
+                    b.Navigation("Product");
 
                     b.Navigation("Purchase");
                 });
@@ -1309,25 +1053,6 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Order");
-
-                    b.Navigation("Warehouse");
-                });
-
-            modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.StockSnapshot", b =>
-                {
-                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.Product", "Product")
-                        .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.Warehouse", "Warehouse")
-                        .WithMany()
-                        .HasForeignKey("WarehouseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Product");
 
                     b.Navigation("Warehouse");
                 });
@@ -1358,8 +1083,6 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
 
             modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.Customer", b =>
                 {
-                    b.Navigation("Addresses");
-
                     b.Navigation("Orders");
                 });
 
@@ -1381,23 +1104,12 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
                 {
                     b.Navigation("OrderItems");
 
-                    b.Navigation("ProductImages");
-
-                    b.Navigation("ProductVariants");
-
                     b.Navigation("PurchaseItems");
                 });
 
             modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.ProductComment", b =>
                 {
                     b.Navigation("Replies");
-                });
-
-            modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.ProductVariant", b =>
-                {
-                    b.Navigation("OrderItems");
-
-                    b.Navigation("PurchaseItems");
                 });
 
             modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.Purchase", b =>

@@ -1,4 +1,4 @@
-﻿using WarehouseManagement.ViewModels.Systems.Role;
+﻿using WarehouseManagement.ViewModels.Systems.Roles;
 
 namespace WarehouseManagement.ViewModels.UnitTest.Systems.Roles
 {
