@@ -5,18 +5,24 @@ using WarehouseManagement.BackendServer.Data.Interfaces;
 namespace WarehouseManagement.BackendServer.Data.Entities
 {
     [Table("ProductComments")]
-    public class ProductComment : IDateTracking
+    public class ProductComment : IDateTracking, ISoftDelete
     {
         [Key]
         public int Id { get; set; }
 
         [Required]
         public int ProductId { get; set; }
+        public Product Product { get; set; } = null!;
+
+        public int? ProductVariantId { get; set; }
+        public ProductVariant? ProductVariant { get; set; }
 
         [Required]
         [MaxLength(50)]
         [Column(TypeName = "varchar(50)")]
+
         public string UserId { get; set; } = string.Empty;
+        public User User { get; set; } = null!;
 
         [Required]
         [MaxLength(1000)]
@@ -27,17 +33,18 @@ namespace WarehouseManagement.BackendServer.Data.Entities
 
         public int? ParentId { get; set; }
 
+        [ForeignKey(nameof(ParentId))]
+        public ProductComment? Parent { get; set; }
+
         public bool IsApproved { get; set; } = true;
 
-        public Product Product { get; set; } = null!;
-        public User User { get; set; } = null!;
+        public bool IsDeleted { get; set; } = false;
+
         public DateTime CreateDate { get; set; }
 
         public DateTime? LastModifiedDate { get; set; }
 
-        [ForeignKey(nameof(ParentId))]
-        public ProductComment? Parent { get; set; }
-
-        public ICollection<ProductComment> Replies { get; set; } = new List<ProductComment>();
+        public ICollection<ProductComment> Replies { get; set; }
+            = new List<ProductComment>();
     }
 }

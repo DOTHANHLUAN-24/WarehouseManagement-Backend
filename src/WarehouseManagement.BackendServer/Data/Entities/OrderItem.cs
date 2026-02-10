@@ -8,13 +8,18 @@ namespace WarehouseManagement.BackendServer.Data.Entities
     [Table("OrderItems")]
     public class OrderItem : IDateTracking
     {
+        [Required]
         public int OrderId { get; set; }
+
         public Order Order { get; set; } = null!;
 
-        public int ProductId { get; set; }
-        public Product Product { get; set; } = null!;
+        [Required]
+        public int ProductVariantId { get; set; }
+        
+        public ProductVariant ProductVariant { get; set; } = null!;
 
         [Required]
+        [Range(1, int.MaxValue)]
         public int Quantity { get; set; }
 
         [Required]
@@ -22,7 +27,7 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         public decimal UnitPrice { get; set; }
 
         public DateTime CreateDate { get; set; }
-
+        
         public DateTime? LastModifiedDate { get; set; }
     }
 }

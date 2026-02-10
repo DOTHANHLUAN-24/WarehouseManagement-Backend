@@ -8,24 +8,26 @@ namespace WarehouseManagement.BackendServer.Data.Entities
     [Table("PurchaseItems")]
     public class PurchaseItem : IDateTracking
     {
-        [Key]
-        public int Id { get; set; }
 
         public int PurchaseId { get; set; }
 
         public Purchase Purchase { get; set; } = null!;
 
-        public int ProductId { get; set; }
-        
-        public Product Product { get; set; } = null!;
+        [Required]
+        public int ProductVariantId { get; set; }
 
+        public ProductVariant ProductVariant { get; set; } = null!;
+
+        [Required]
         public int Quantity { get; set; }
 
+        [Required]
         [Precision(18, 2)]
-        public decimal CostPrice { get; set; }
+        public decimal UnitCost { get; set; }
 
         public DateTime CreateDate { get; set; }
 
         public DateTime? LastModifiedDate { get; set; }
     }
+
 }

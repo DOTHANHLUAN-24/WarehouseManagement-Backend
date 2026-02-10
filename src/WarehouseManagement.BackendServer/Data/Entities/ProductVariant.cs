@@ -1,28 +1,34 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
+using WarehouseManagement.BackendServer.Data.Enums;
 using WarehouseManagement.BackendServer.Data.Interfaces;
 
 namespace WarehouseManagement.BackendServer.Data.Entities
 {
-    [Table("Products")]
-    public class Product : IDateTracking, ISoftDelete
+    [Table("ProductVariants")]
+    public class ProductVariant : IDateTracking
     {
         [Key]
         public int Id { get; set; }
 
         [Required]
-        public string Name { get; set; } = string.Empty;
+        public int ProductId { get; set; }
 
-        public string? Description { get; set; }
+        public Product Product { get; set; } = null!;
 
         [Required]
-        public int? CategoryId { get; set; }
-
-        public Category? Category { get; set; } = null!;
-
         [MaxLength(100)]
-        public string? Code { get; set; }  // IMEI
+        public string Name { get; set; } = string.Empty;
+
+        [MaxLength(50)]
+        public string? SKU { get; set; }
+
+        [Required]
+        [Precision(18, 2)]
+        public decimal Price { get; set; }
+
+        public int StockQuantity { get; set; }
 
         public bool IsActive { get; set; } = true;
 
@@ -30,11 +36,8 @@ namespace WarehouseManagement.BackendServer.Data.Entities
 
         public DateTime? LastModifiedDate { get; set; }
 
-        public bool IsDeleted { get; set; } = false;
-
-        public ICollection<ProductImage> ProductImages { get; set; } = new List<ProductImage>();
-
-        public ICollection<ProductVariant> ProductVariants { get; set; } = new List<ProductVariant>();
+        [Required]
+        public ProductVariantStatus Status { get; set; } = ProductVariantStatus.Active;
 
         public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 

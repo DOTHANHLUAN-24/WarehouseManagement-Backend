@@ -152,9 +152,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                 {
                     Id = product.Id,
                     Name = product.Name,
-                    Price = product.Price,
                     CategoryId = id,
-                    Quantity = product.Quantity,
                     IsDeleted = product.IsDeleted,
                 }).ToListAsync();
 
