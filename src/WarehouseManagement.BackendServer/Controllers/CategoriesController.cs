@@ -211,7 +211,7 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// Permanently deletes a category from the system.
         /// This action cannot be undone.
         /// </summary>
-        /// <param name="id">Category identifier</param>
+        /// <param name="id">Category id</param>
         /// <returns>
         /// The deleted category information if the operation succeeds;
         /// otherwise, an appropriate error response.
@@ -231,9 +231,7 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             if (!category.IsDeleted)
             {
-                _logger.LogWarning(
-                    "Permanent delete category rejected. Category is not soft-deleted yet. Id={id}",
-                    id);
+                _logger.LogWarning("Permanent delete category rejected. Category is not soft-deleted yet. Id={id}", id);
 
                 return BadRequest("Category must be soft-deleted before permanent deletion.");
             }
@@ -255,6 +253,67 @@ namespace WarehouseManagement.BackendServer.Controllers
             return BadRequest();
         }
 
+        /// <summary>
+        /// Move category to trash (soft delete).
+        /// </summary>
+        /// <param name="id">Category id</param>
+        /// <returns>Result of soft delete</returns>
+        [HttpDelete("{id}/trash")]
+        public async Task<IActionResult> SoftDeleteCategory(int id)
+        {
+            _logger.LogInformation("Begin SoftDeleteCategory. Id={id}", id);
+
+            var category = await _context.Categories.FindAsync(id);
+            if (category == null)
+            {
+                _logger.LogWarning("Soft delete failed. Category not found. Id={id}", id);
+
+                return NotFound();
+            }
+
+            if (category.IsDeleted)
+            {
+                _logger.LogInformation("Category already soft deleted. Id={id}", id);
+
+                return BadRequest("Category already in trash.");
+            }
+
+            category.IsDeleted = true;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Soft delete category success. Id={id}", id);
+
+            return Ok();
+        }
+
+        /// <summary>
+        /// Restore category in the trash
+        /// </summary>
+        /// <param name="id">Category id</param>
+        /// <returns>Results of process</returns>
+        [HttpPut("{id}/restore")]
+        public async Task<IActionResult> RestoreCategory(int id)
+        {
+            _logger.LogInformation("Begin RestoreCategory. Id={id}", id);
+
+            var category = await _context.Categories
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (category == null)
+                return NotFound();
+
+            if (!category.IsDeleted)
+                return BadRequest("Category is not in trash.");
+
+            category.IsDeleted = false;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Restore category success. Id={id}", id);
+            return Ok();
+        }
 
         /// <summary>
         /// Create a new Category as Category View Model
@@ -270,7 +329,8 @@ namespace WarehouseManagement.BackendServer.Controllers
                 ParentId = category.ParentId,
                 SortOrder = category.SortOrder,
                 SeoAlias = category.SeoAlias,
-                SeoDescription = category.SeoDescription
+                SeoDescription = category.SeoDescription,
+                IsDeleted = category.IsDeleted
             };
         }
     }
