@@ -60,14 +60,6 @@ namespace WarehouseManagement.BackendServer.Data
             builder.Entity<ProductVariant>()
                 .HasIndex(x => x.ProductId);
 
-            // ========== Relationships ==========
-            builder.Entity<Product>()
-                .HasOne(p => p.Category)
-                .WithMany(c => c.Products)
-                .HasForeignKey(p => p.CategoryId)
-                .OnDelete(DeleteBehavior.SetNull) // Category bị xóa → Product.CategoryId = NULL
-                .IsRequired(false);
-
             // ========== Permission ==========
             builder.Entity<Permission>()
                 .HasIndex(x => new { x.FunctionId, x.Action })

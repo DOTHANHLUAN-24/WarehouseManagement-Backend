@@ -15,9 +15,6 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         [Required]
         public int CustomerId { get; set; }
 
-        [Required]
-        public Customer Customer { get; set; } = null!;
-
         public DateTime OrderDate { get; set; }
         
         public DateTime? DeliveryDate { get; set; }

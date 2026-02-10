@@ -16,18 +16,8 @@ namespace WarehouseManagement.ViewModels.Contents.Products
                 .Must(d => string.IsNullOrWhiteSpace(d) || d.Trim().Length > 0).WithMessage("Description must not be empty")
                 .MaximumLength(500).WithMessage("Description can not exceed 500 characters");
 
-            RuleFor(x => x.Price)
-                .NotNull().WithMessage("Product price is required")
-                .GreaterThan(0).WithMessage("Product price must be greater than 0")
-                .PrecisionScale(18, 2, false)
-                .WithMessage("Product price must have up to 18 digits and 2 decimal places");
-
             RuleFor(x => x.CategoryId)
                 .GreaterThan(0).WithMessage("Category id must be greater than 0");
-
-            RuleFor(x => x.Quantity)
-                .NotNull().WithMessage("Quantity product is required")
-                .GreaterThan(0).WithMessage("Product price must be greater than 0");
         }
     }
 }
