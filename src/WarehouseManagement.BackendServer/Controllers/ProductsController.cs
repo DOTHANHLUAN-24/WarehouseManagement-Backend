@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.BackendServer.Data;
 using WarehouseManagement.BackendServer.Data.Entities;
 using WarehouseManagement.BackendServer.Data.Enums;
-using WarehouseManagement.ViewModels.Contents.Categories;
 using WarehouseManagement.ViewModels.Contents.Products;
 using WarehouseManagement.ViewModels.Systems;
 
@@ -223,55 +222,6 @@ namespace WarehouseManagement.BackendServer.Controllers
                 return BadRequest();
         }
 
-        [HttpPost("{productId}/images")]
-        [Consumes("multipart/form-data")]
-        public async Task<IActionResult> UploadImages(
-            int productId,
-            [FromForm] List<IFormFile> images)
-        {
-            if (!await _context.Products.AnyAsync(x => x.Id == productId))
-                return NotFound();
-
-            var folder = Path.Combine("wwwroot", "images", "products");
-            Directory.CreateDirectory(folder);
-
-            var sortOrder = await _context.ProductImages
-                .Where(x => x.ProductId == productId)
-                .CountAsync();
-
-            var productImages = new List<ProductImage>();
-
-
-            foreach (var file in images)
-            {
-                bool isDefault = false;
-                var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
-                var path = Path.Combine(folder, fileName);
-
-                using var stream = new FileStream(path, FileMode.Create);
-                await file.CopyToAsync(stream);
-
-                if (sortOrder == 0)
-                {
-                    isDefault = true;
-                }
-
-                productImages.Add(new ProductImage
-                {
-                    ProductId = productId,
-                    ImageUrl = $"/images/products/{fileName}",
-                    SortOrder = sortOrder++,
-                    IsDefault = isDefault,
-                    CreateDate = DateTime.UtcNow
-                });
-            }
-
-            _context.ProductImages.AddRange(productImages);
-            await _context.SaveChangesAsync();
-
-            return Ok(productImages);
-        }
-
         #endregion
 
         #region Update
@@ -298,55 +248,194 @@ namespace WarehouseManagement.BackendServer.Controllers
 
         #region Price & stock
 
-            [HttpPut("variants/{id}/price")]
-            public async Task<IActionResult> UpdatePrice(int id, [FromQuery] decimal price)
-            {
-                var variant = await (
-                     from pv in _context.ProductVariants
-                     join p in _context.Products on pv.ProductId equals p.Id
-                     where pv.Id == id
-                           && pv.IsActive
-                           && !p.IsDeleted
-                     select pv
-                 ).FirstOrDefaultAsync();
+        [HttpPut("variants/{id}/price")]
+        public async Task<IActionResult> UpdatePrice(int id, [FromQuery] decimal price)
+        {
+            var variant = await (
+                 from pv in _context.ProductVariants
+                 join p in _context.Products on pv.ProductId equals p.Id
+                 where pv.Id == id
+                       && pv.IsActive
+                       && !p.IsDeleted
+                 select pv
+             ).FirstOrDefaultAsync();
 
 
-                if (variant == null)
-                    return NotFound();
+            if (variant == null)
+                return NotFound();
 
-                variant.Price = price;
-                await _context.SaveChangesAsync();
+            variant.Price = price;
+            await _context.SaveChangesAsync();
 
-                return NoContent();
-            }
-
-
-            [HttpPut("variants/{id}/stock")]
-            public async Task<IActionResult> UpdateStock(int id, [FromQuery] int stock)
-            {
-                var variant = await (
-                    from pv in _context.ProductVariants
-                    join p in _context.Products on pv.ProductId equals p.Id
-                    where pv.Id == id
-                          && pv.IsActive
-                          && !p.IsDeleted
-                    select pv
-                ).FirstOrDefaultAsync();
+            return NoContent();
+        }
 
 
-                if (variant == null)
-                    return NotFound();
+        [HttpPut("variants/{id}/stock")]
+        public async Task<IActionResult> UpdateStock(int id, [FromQuery] int stock)
+        {
+            var variant = await (
+                from pv in _context.ProductVariants
+                join p in _context.Products on pv.ProductId equals p.Id
+                where pv.Id == id
+                      && pv.IsActive
+                      && !p.IsDeleted
+                select pv
+            ).FirstOrDefaultAsync();
 
-                variant.StockQuantity = stock;
-                await _context.SaveChangesAsync();
 
-                return NoContent();
-            }
+            if (variant == null)
+                return NotFound();
+
+            variant.StockQuantity = stock;
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
 
 
         #endregion
 
+        #region Image
+
+        [HttpGet("{id}/images")]
+        public async Task<IActionResult> GetImages(int id)
+        {
+            var images = await _context.ProductImages
+                .Where(x => x.ProductId == id)
+                .ToListAsync();
+
+            if (images == null)
+                return NotFound();
+
+            return Ok(images);
+        }
+
+        [HttpPost("{id}/images")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadImages(int id, [FromForm] List<IFormFile> images)
+        {
+            if (!await _context.Products.AnyAsync(x => x.Id == id))
+                return NotFound();
+
+            var folder = Path.Combine("wwwroot", "images", "products");
+            Directory.CreateDirectory(folder);
+
+            var sortOrder = await _context.ProductImages
+                .Where(x => x.ProductId == id)
+                .CountAsync();
+
+            var productImages = new List<ProductImage>();
+
+            foreach (var file in images)
+            {
+                bool isDefault = false;
+                var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+                var path = Path.Combine(folder, fileName);
+
+                using var stream = new FileStream(path, FileMode.Create);
+                await file.CopyToAsync(stream);
+
+                if (sortOrder == 0)
+                {
+                    isDefault = true;
+                }
+
+                productImages.Add(new ProductImage
+                {
+                    ProductId = id,
+                    ImageUrl = $"/images/products/{fileName}",
+                    SortOrder = sortOrder++,
+                    IsDefault = isDefault,
+                    CreateDate = DateTime.UtcNow
+                });
+            }
+
+            _context.ProductImages.AddRange(productImages);
+            await _context.SaveChangesAsync();
+
+            return Ok(productImages);
+        }
+
+        [HttpPut("{id}/thumbnail/{imageId}")]
+        public async Task<IActionResult> UpdateThumbInProduct(int id, int imageId)
+        {
+            var product = await _context.Products
+                .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+            if (product == null)
+                return NotFound("Product can not find in the system.");
+
+            var listImage = await _context.ProductImages
+                .Where(x => x.ProductId == id && !x.IsDeleted).ToListAsync();
+
+            if (!listImage.Any())
+                return NotFound("Product does not have any images.");
+
+            var imgOfChoose = listImage.FirstOrDefault(x => x.Id == imageId);
+
+            if (imgOfChoose == null)
+                return NotFound("Image does not belong to this product.");
+
+            foreach (var image in listImage)
+                image.IsDefault = false;
+
+            imgOfChoose.IsDefault = true;
+
+            var result = await _context.SaveChangesAsync();
+            if (result > 0)
+                return Ok(result);
+            else
+                return BadRequest();
+        }
+
+
+        [HttpDelete("images/{imageId}")]
+        public async Task<IActionResult> DeleteProductImage(int imageId)
+        {
+            var image = await _context.ProductImages.FindAsync(imageId);
+            if (image == null)
+                return NotFound();
+
+            if (!string.IsNullOrEmpty(image.ImageUrl))
+            {
+                var filePath = Path.Combine(
+                    Directory.GetCurrentDirectory(),
+                    "wwwroot",
+                    image.ImageUrl.TrimStart('/')
+                );
+
+                if (System.IO.File.Exists(filePath))
+                    System.IO.File.Delete(filePath);
+            }
+
+            image.IsDeleted = true;
+            image.LastModifiedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                image.Id,
+                image.IsDeleted
+            });
+        }
+
+        #endregion
+
         #region Soft delete / trash
+
+        [HttpGet("trash")]
+        public async Task<IActionResult> GetProductsInTrash()
+        {
+            var products = await _context.Products
+                .Where(x => x.IsDeleted).ToArrayAsync();
+
+            return Ok(new
+            {
+                total = products.Count(),
+                items = products
+            });
+        }
 
         [HttpDelete("{id}/soft-delete")]
         public async Task<IActionResult> SoftDeleteProduct(int id)
@@ -422,10 +511,6 @@ namespace WarehouseManagement.BackendServer.Controllers
                 return BadRequest();
         }
 
-        #endregion
-
-        #region Delete Item
-
         [HttpDelete("{id}")]
         public async Task<IActionResult> PermanentDeleteProduct(int id)
         {
@@ -466,37 +551,6 @@ namespace WarehouseManagement.BackendServer.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
-        }
-
-        [HttpDelete("images/{imageId}")]
-        public async Task<IActionResult> DeleteProductImage(int imageId)
-        {
-            var image = await _context.ProductImages.FindAsync(imageId);
-            if (image == null)
-                return NotFound();
-
-            if (!string.IsNullOrEmpty(image.ImageUrl))
-            {
-                var filePath = Path.Combine(
-                    Directory.GetCurrentDirectory(),
-                    "wwwroot",
-                    image.ImageUrl.TrimStart('/')
-                );
-
-                if (System.IO.File.Exists(filePath))
-                    System.IO.File.Delete(filePath);
-            }
-
-            image.IsDeleted = true;
-            image.LastModifiedDate = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
-
-            return Ok(new
-            {
-                image.Id,
-                image.IsDeleted
-            });
         }
 
         #endregion
