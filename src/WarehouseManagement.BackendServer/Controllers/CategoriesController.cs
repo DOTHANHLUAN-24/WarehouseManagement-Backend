@@ -255,7 +255,7 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// </summary>
         /// <param name="id">Category id</param>
         /// <returns>Result of soft delete</returns>
-        [HttpPut("{id}/soft-delete")]
+        [HttpDelete("{id}/soft-delete")]
         public async Task<IActionResult> SoftDeleteCategory(int id)
         {
             _logger.LogInformation("Begin SoftDeleteCategory. Id={id}", id);

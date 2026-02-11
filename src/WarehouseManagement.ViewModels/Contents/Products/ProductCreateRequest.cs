@@ -9,7 +9,5 @@ namespace WarehouseManagement.ViewModels.Contents.Products
         public int InitialStock { get; set; }
         
         public string? SKU { get; set; } // IMEI
-
-        //public IFormFile? ImageFile { get; set; }
     }
 }
