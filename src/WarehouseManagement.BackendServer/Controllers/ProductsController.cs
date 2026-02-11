@@ -131,6 +131,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                 where 
                     !p.IsDeleted
                    && !pi.IsDeleted
+                   && pi.IsDefault
                 select new ProductViewModel
                 {
                     Id = p.Id,
@@ -213,10 +214,11 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             product.IsDeleted = false;
 
-            var productListImage = await _context.ProductImages
-                 .Where(x => x.ProductId == id).ToListAsync();
+            var productImages = await _context.ProductImages
+                .Where(x => x.ProductId == id)
+                .ToListAsync();
 
-            foreach (var productImage in productListImage)
+            foreach (var productImage in productImages)
             {
                 productImage.IsDeleted = false;
             }

@@ -77,13 +77,6 @@ namespace WarehouseManagement.BackendServer.Data
                 .WithMany(x => x.Replies)
                 .HasForeignKey(x => x.ParentId)
                 .OnDelete(DeleteBehavior.Restrict);
-
-            // ========== Global Query Filters (ONLY IsDeleted) ==========
-            builder.Entity<Category>().HasQueryFilter(x => !x.IsDeleted);
-            builder.Entity<ProductImage>().HasQueryFilter(x => !x.IsDeleted);
-            builder.Entity<ProductComment>().HasQueryFilter(x => !x.IsDeleted);
-            builder.Entity<CustomerAddress>().HasQueryFilter(x => !x.IsDeleted);
-            builder.Entity<Voucher>().HasQueryFilter(x => !x.IsDeleted);
         }
 
 
