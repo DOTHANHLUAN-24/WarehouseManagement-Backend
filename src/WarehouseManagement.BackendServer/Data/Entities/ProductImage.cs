@@ -17,8 +17,6 @@ namespace WarehouseManagement.BackendServer.Data.Entities
 
         public bool IsDefault { get; set; }
 
-        public Product Product { get; set; } = null!;
-
         public int SortOrder { get; set; }
 
         public DateTime CreateDate { get; set; }
@@ -27,5 +25,4 @@ namespace WarehouseManagement.BackendServer.Data.Entities
 
         public bool IsDeleted { get; set; } = false;
     }
-
 }

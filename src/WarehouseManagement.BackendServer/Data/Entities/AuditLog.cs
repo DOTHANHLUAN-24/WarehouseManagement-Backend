@@ -19,6 +19,7 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         public Guid? EntityId { get; set; }
 
         public string? OldValue { get; set; }
+
         public string? NewValue { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

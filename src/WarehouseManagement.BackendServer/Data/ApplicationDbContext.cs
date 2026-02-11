@@ -60,14 +60,6 @@ namespace WarehouseManagement.BackendServer.Data
             builder.Entity<ProductVariant>()
                 .HasIndex(x => x.ProductId);
 
-            // ========== Relationships ==========
-            builder.Entity<Product>()
-                .HasOne(p => p.Category)
-                .WithMany(c => c.Products)
-                .HasForeignKey(p => p.CategoryId)
-                .OnDelete(DeleteBehavior.SetNull) // Category bị xóa → Product.CategoryId = NULL
-                .IsRequired(false);
-
             // ========== Permission ==========
             builder.Entity<Permission>()
                 .HasIndex(x => new { x.FunctionId, x.Action })
@@ -85,13 +77,6 @@ namespace WarehouseManagement.BackendServer.Data
                 .WithMany(x => x.Replies)
                 .HasForeignKey(x => x.ParentId)
                 .OnDelete(DeleteBehavior.Restrict);
-
-            // ========== Global Query Filters (ONLY IsDeleted) ==========
-            builder.Entity<Category>().HasQueryFilter(x => !x.IsDeleted);
-            builder.Entity<ProductImage>().HasQueryFilter(x => !x.IsDeleted);
-            builder.Entity<ProductComment>().HasQueryFilter(x => !x.IsDeleted);
-            builder.Entity<CustomerAddress>().HasQueryFilter(x => !x.IsDeleted);
-            builder.Entity<Voucher>().HasQueryFilter(x => !x.IsDeleted);
         }
 
 

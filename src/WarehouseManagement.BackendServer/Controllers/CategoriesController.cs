@@ -153,7 +153,6 @@ namespace WarehouseManagement.BackendServer.Controllers
                     Id = product.Id,
                     Name = product.Name,
                     CategoryId = id,
-                    IsDeleted = product.IsDeleted,
                 }).ToListAsync();
 
             return Ok(listProductInCategory);
@@ -256,7 +255,7 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// </summary>
         /// <param name="id">Category id</param>
         /// <returns>Result of soft delete</returns>
-        [HttpDelete("{id}/trash")]
+        [HttpDelete("{id}/soft-delete")]
         public async Task<IActionResult> SoftDeleteCategory(int id)
         {
             _logger.LogInformation("Begin SoftDeleteCategory. Id={id}", id);

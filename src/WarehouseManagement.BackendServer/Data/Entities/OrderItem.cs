@@ -15,8 +15,6 @@ namespace WarehouseManagement.BackendServer.Data.Entities
 
         [Required]
         public int ProductVariantId { get; set; }
-        
-        public ProductVariant ProductVariant { get; set; } = null!;
 
         [Required]
         [Range(1, int.MaxValue)]
