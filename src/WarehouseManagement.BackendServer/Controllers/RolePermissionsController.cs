@@ -73,9 +73,13 @@ namespace WarehouseManagement.BackendServer.Controllers
                 });
 
             await _context.RolePermissions.AddRangeAsync(newRolePermissions);
-            await _context.SaveChangesAsync();
+            
+            var result =  await _context.SaveChangesAsync();
 
-            return Ok();
+            if (result > 0)
+                return Ok();
+            else
+                return BadRequest();
         }
 
     }

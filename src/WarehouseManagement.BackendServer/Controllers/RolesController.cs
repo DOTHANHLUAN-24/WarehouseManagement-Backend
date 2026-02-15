@@ -92,7 +92,7 @@ namespace WarehouseManagement.BackendServer.Controllers
            
             if (!string.IsNullOrEmpty(filter))
             {
-                query = query.Where(x => x.Id.Contains(filter.ToLower()) || x.Name!.Contains(filter.ToLower()));
+                query = query.Where(x => x.Id.ToLower().Contains(filter.ToLower()) || x.Name!.ToLower().Contains(filter.ToLower()));
             }
 
             var totalRecords = await query.CountAsync();

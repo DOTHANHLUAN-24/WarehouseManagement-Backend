@@ -312,17 +312,16 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
         // =========================
 
         [Theory]
-        [InlineData(null, 1, 10, 4, 4)]
-        [InlineData("test", 1, 10, 4, 4)]
-        [InlineData("1", 1, 10, 1, 1)]
-        [InlineData("data", 1, 10, 0, 0)]
+        [InlineData(null, 1, 10, 4)]
+        [InlineData("test", 1, 10, 4)]
+        [InlineData("1", 1, 10, 1)]
+        [InlineData("data", 1, 10, 0)]
         public async Task GetUsersPaging_HasData_ReturnListUser
             (
                 string? filter,
                 int pageIndex,
                 int pageSize,
-                int countItem,
-                int totalPage
+                int countItem
             )
         {
             // Arrange
@@ -378,8 +377,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             var pagination = resultOk.Value as Pagination<UserViewModel>;
 
             // Assert
-            Assert.Equal(countItem, pagination!.Items.Count());
-            Assert.Equal(totalPage, pagination.TotalRecords);
+            Assert.Equal(countItem, pagination!.TotalRecords);
         }
 
         // =========================

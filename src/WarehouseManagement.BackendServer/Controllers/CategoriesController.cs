@@ -109,7 +109,7 @@ namespace WarehouseManagement.BackendServer.Controllers
             {
                 _logger.LogInformation("GetCategoriesPaging with filter applied. Filter={Filter}", filter);
 
-                query = query.Where(x => x.Name.ToLower().Contains(filter));
+                query = query.Where(x => x.Name.ToLower().Contains(filter.ToLower()));
             }
 
             var totalRecords = await query.CountAsync();
@@ -136,7 +136,7 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// <param name="id">Category id</param>
         /// <returns>List of products dependency category</returns>
         [HttpGet("{id}/products")]
-        public async Task<IActionResult> GetAllProduct(int id)
+        public async Task<IActionResult> GetAllProductByCategoryId(int id)
         {
             var category = await _context.Categories.FindAsync(id);
             if (category == null)
@@ -146,15 +146,36 @@ namespace WarehouseManagement.BackendServer.Controllers
                 return NotFound();
             }
 
-            var listProductInCategory = await _context.Products
-                .Where(x => x.CategoryId == id)
-                .Select(product => new ProductViewModel
-                {
-                    Id = product.Id,
-                    Name = product.Name,
-                    CategoryId = id,
-                }).ToListAsync();
+            var listProductInCategory = new List<ProductViewModel>();
 
+            if (category.ParentId == null)
+            {
+                listProductInCategory = await _context.Products
+                    .Where(x => x.CategoryId == id)
+                    .Select(product => new ProductViewModel
+                    {
+                        Id = product.Id,
+                        Name = product.Name,
+                        CategoryId = id,
+                    }).ToListAsync();
+            }
+            else
+            {
+                listProductInCategory = await
+                (
+                    from p in _context.Products
+                    join c in _context.Categories
+                        on p.CategoryId equals c.Id
+                    where c.Id == id || c.ParentId == id
+                    select new ProductViewModel
+                    {
+                        Id = p.Id,
+                        Name = p.Name,
+                        CategoryId = c.Id
+                    }
+                ).ToListAsync();
+
+            }
             return Ok(listProductInCategory);
         }
 
