@@ -109,7 +109,7 @@ namespace WarehouseManagement.BackendServer.Controllers
             {
                 _logger.LogInformation("GetCategoriesPaging with filter applied. Filter={Filter}", filter);
 
-                query = query.Where(x => x.Name.ToLower().Contains(filter));
+                query = query.Where(x => x.Name.ToLower().Contains(filter.ToLower()));
             }
 
             var totalRecords = await query.CountAsync();
@@ -136,7 +136,7 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// <param name="id">Category id</param>
         /// <returns>List of products dependency category</returns>
         [HttpGet("{id}/products")]
-        public async Task<IActionResult> GetAllProduct(int id)
+        public async Task<IActionResult> GetAllProductByCategoryId(int id)
         {
             var category = await _context.Categories.FindAsync(id);
             if (category == null)
@@ -146,15 +146,55 @@ namespace WarehouseManagement.BackendServer.Controllers
                 return NotFound();
             }
 
-            var listProductInCategory = await _context.Products
-                .Where(x => x.CategoryId == id)
-                .Select(product => new ProductViewModel
-                {
-                    Id = product.Id,
-                    Name = product.Name,
-                    CategoryId = id,
-                }).ToListAsync();
+            var listProductInCategory = new List<ProductViewModel>();
 
+            if (category.ParentId == null)
+            {
+                var allCategories = await _context.Categories
+                    .Select(c => new { c.Id, c.ParentId })
+                    .ToListAsync();
+
+                var categoryIds = new List<int> { id };
+
+                void GetChildren(int parentId)
+                {
+                    var children = allCategories
+                        .Where(c => c.ParentId == parentId)
+                        .Select(c => c.Id);
+
+                    foreach (var childId in children)
+                    {
+                        if (!categoryIds.Contains(childId))
+                        {
+                            categoryIds.Add(childId);
+                            GetChildren(childId);
+                        }
+                    }
+                }
+
+                GetChildren(id);
+
+                listProductInCategory = await _context.Products
+                    .Where(p => categoryIds.Contains(p.CategoryId))
+                    .Select(p => new ProductViewModel
+                    {
+                        Id = p.Id,
+                        Name = p.Name,
+                        CategoryId = p.CategoryId
+                    })
+                    .ToListAsync();
+            }
+            else
+            {
+                listProductInCategory = await _context.Products
+                    .Where(x => x.CategoryId == id)
+                    .Select(product => new ProductViewModel
+                    {
+                        Id = product.Id,
+                        Name = product.Name,
+                        CategoryId = id,
+                    }).ToListAsync();
+            }
             return Ok(listProductInCategory);
         }
 

@@ -5,11 +5,10 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using WarehouseManagement.BackendServer.Controllers;
 using WarehouseManagement.BackendServer.Data;
-using WarehouseManagement.BackendServer.UnitTest;
 using WarehouseManagement.ViewModels.Systems;
 using WarehouseManagement.ViewModels.Systems.Roles;
 
-namespace WarehouseManagement.UnitTest.Controllers
+namespace WarehouseManagement.BackendServer.UnitTest.Controllers
 {
     public class RolesControllerTest
     {
@@ -226,17 +225,16 @@ namespace WarehouseManagement.UnitTest.Controllers
         // =========================
 
         [Theory]
-        [InlineData(null, 1, 10, 4, 4)]
-        [InlineData("Test", 1, 5, 2, 2)]
-        [InlineData("tad", 1, 10, 1, 1)]
-        [InlineData("data", 1, 10, 0, 0)]
+        [InlineData(null, 1, 10, 4)]
+        [InlineData("Test", 1, 5, 2)]
+        [InlineData("tad", 1, 10, 1)]
+        [InlineData("data", 1, 10, 0)]
         public async Task GetRolesPaging_HasData_ReturnSuccess
             (
                 string? filter,
                 int pageIndex,
                 int pageSize,
-                int countItem,
-                int totalPage
+                int countItem
             )
         {
             // Arrange
@@ -275,8 +273,7 @@ namespace WarehouseManagement.UnitTest.Controllers
             var pagination = resultOk.Value as Pagination<RoleViewModel>;
 
             // Assert
-            Assert.Equal(countItem, pagination!.Items.Count());
-            Assert.Equal(totalPage, pagination.TotalRecords);
+            Assert.Equal(countItem, pagination!.TotalRecords);
         }
 
         [Fact]

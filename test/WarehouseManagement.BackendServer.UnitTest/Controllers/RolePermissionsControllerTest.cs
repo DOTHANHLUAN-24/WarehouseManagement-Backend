@@ -68,7 +68,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
-            var listPermission = okResult as IEnumerable<PermissionInRoleViewModel>;
+            var listPermission = Assert.IsAssignableFrom<IEnumerable<PermissionInRoleViewModel>>(okResult.Value);
 
             Assert.Single(listPermission!);
         }
@@ -84,9 +84,55 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
-            var listPermission = okResult as IEnumerable<PermissionInRoleViewModel>;
+            var listPermission = Assert.IsAssignableFrom<IEnumerable<PermissionInRoleViewModel>>(okResult.Value);
 
-            Assert.Null(listPermission!);
+            Assert.Empty(listPermission!);
+        }
+
+        // =========================
+        // Put permission by role
+        // =========================
+
+        [Fact]
+        public async Task PutPermissionByRoleId_ValidInput_Success()
+        {
+            // Arrange
+            _context.Permissions.AddRange(
+                new Permission
+                ("test 1", "VIEW")
+                );
+
+            await _context.SaveChangesAsync();
+
+            var controller = new RolePermissionsController(_context);
+
+            // Act
+            var result = await controller.PutPermissionByRoleId("test role 1", new UpdatePermissionRequest
+            {
+                Permissions = new List<PermissionViewModel>
+                {
+                    new PermissionViewModel
+                    {
+                        FunctionId = "test function 1",
+                        Action = "VIEW"
+                    },
+                    new PermissionViewModel
+                    {
+                        FunctionId = "test function 2",
+                        Action = "VIEW"
+                    },
+                    new PermissionViewModel
+                    {
+                        FunctionId = "test function 3",
+                        Action = "VIEW"
+                    },
+                }
+            });
+
+            var okResult = Assert.IsType<OkResult>(result);
+
+            // Assert
+            Assert.NotNull(result);
         }
     }
 }
