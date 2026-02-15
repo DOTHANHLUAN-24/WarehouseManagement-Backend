@@ -16,7 +16,7 @@ namespace WarehouseManagement.BackendServer.Data.Entities
 
         public string? Description { get; set; }
 
-        public int? CategoryId { get; set; }
+        public int CategoryId { get; set; }
 
         [MaxLength(100)]
         public string? Code { get; set; }  // IMEI

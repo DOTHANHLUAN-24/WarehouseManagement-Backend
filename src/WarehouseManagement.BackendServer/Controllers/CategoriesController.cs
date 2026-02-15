@@ -150,6 +150,42 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             if (category.ParentId == null)
             {
+                var allCategories = await _context.Categories
+                    .Select(c => new { c.Id, c.ParentId })
+                    .ToListAsync();
+
+                var categoryIds = new List<int> { id };
+
+                void GetChildren(int parentId)
+                {
+                    var children = allCategories
+                        .Where(c => c.ParentId == parentId)
+                        .Select(c => c.Id);
+
+                    foreach (var childId in children)
+                    {
+                        if (!categoryIds.Contains(childId))
+                        {
+                            categoryIds.Add(childId);
+                            GetChildren(childId);
+                        }
+                    }
+                }
+
+                GetChildren(id);
+
+                listProductInCategory = await _context.Products
+                    .Where(p => categoryIds.Contains(p.CategoryId))
+                    .Select(p => new ProductViewModel
+                    {
+                        Id = p.Id,
+                        Name = p.Name,
+                        CategoryId = p.CategoryId
+                    })
+                    .ToListAsync();
+            }
+            else
+            {
                 listProductInCategory = await _context.Products
                     .Where(x => x.CategoryId == id)
                     .Select(product => new ProductViewModel
@@ -158,23 +194,6 @@ namespace WarehouseManagement.BackendServer.Controllers
                         Name = product.Name,
                         CategoryId = id,
                     }).ToListAsync();
-            }
-            else
-            {
-                listProductInCategory = await
-                (
-                    from p in _context.Products
-                    join c in _context.Categories
-                        on p.CategoryId equals c.Id
-                    where c.Id == id || c.ParentId == id
-                    select new ProductViewModel
-                    {
-                        Id = p.Id,
-                        Name = p.Name,
-                        CategoryId = c.Id
-                    }
-                ).ToListAsync();
-
             }
             return Ok(listProductInCategory);
         }
