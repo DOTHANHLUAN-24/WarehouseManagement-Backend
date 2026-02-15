@@ -441,7 +441,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                 SeoAlias = "category-name-1",
                 SeoDescription = "Test category seo desc",
                 SortOrder = 1,
-                ParentId = null,
+                ParentId = 1,
             });
 
             // Assert
