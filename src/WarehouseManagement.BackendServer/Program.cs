@@ -14,8 +14,23 @@ using WarehouseManagement.ViewModels.Systems.Roles;
 
 var builder = WebApplication.CreateBuilder(args);
 
+//
 // =======================
-// Configure Serilog
+// CORS (PHẢI TRƯỚC BUILD)
+// =======================
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
+//
+// =======================
+// SERILOG
 // =======================
 Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
@@ -24,9 +39,12 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 
 builder.Host.UseSerilog();
-Log.Logger.Information("Application is building.........");
+Log.Information("Application is building...");
 
-
+//
+// =======================
+// SERVICES
+// =======================
 builder.Services.AddControllers();
 
 builder.Services.AddFluentValidationAutoValidation();
@@ -44,7 +62,7 @@ builder.Services.AddSwaggerGen(options =>
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.Http,
         Scheme = JwtBearerDefaults.AuthenticationScheme,
-        Description = "Enter your JWT Access Token",
+        Description = "Enter JWT token",
         Reference = new OpenApiReference
         {
             Id = JwtBearerDefaults.AuthenticationScheme,
@@ -55,14 +73,12 @@ builder.Services.AddSwaggerGen(options =>
     options.AddSecurityDefinition("Bearer", jwtSecurityScheme);
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
-        {jwtSecurityScheme, Array.Empty<string>() }
+        { jwtSecurityScheme, Array.Empty<string>() }
     });
 });
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection")
-    )
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
 
 builder.Services
@@ -76,8 +92,6 @@ builder.Services
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
-
-// DbInitializer
 builder.Services.AddScoped<DbInitializer>();
 
 builder.Services.AddAuthentication(options =>
@@ -85,7 +99,8 @@ builder.Services.AddAuthentication(options =>
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddJwtBearer(options =>
+})
+.AddJwtBearer(options =>
 {
     options.RequireHttpsMetadata = false;
     options.SaveToken = true;
@@ -93,7 +108,9 @@ builder.Services.AddAuthentication(options =>
     {
         ValidIssuer = builder.Configuration["JwtConfig:Issuer"],
         ValidAudience = builder.Configuration["JwtConfig:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtConfig:Key"]!)),
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(builder.Configuration["JwtConfig:Key"]!)
+        ),
         ValidateIssuer = true,
         ValidateAudience = true,
         ValidateLifetime = true,
@@ -104,10 +121,15 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<JwtService>();
 
+//
+// =======================
+// BUILD APP
+// =======================
 var app = builder.Build();
 
+//
 // =======================
-// Seed database
+// SEED DATABASE
 // =======================
 using (var scope = app.Services.CreateScope())
 {
@@ -121,31 +143,27 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        // Log bằng Serilog
-        Log.Fatal(ex, "An error occurred while seeding the database.");
-
-        // Log bằng ILogger (fallback)
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while seeding the database.");
-
-        throw; // dừng app nếu seed fail
+        Log.Fatal(ex, "Seed error");
+        throw;
     }
 }
 
-
-// Configure the HTTP request pipeline.
+//
+// =======================
+// MIDDLEWARE
+// =======================
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Warehouse Management API v1");
-    });
+    app.UseSwaggerUI();
 }
+
+app.UseCors("AllowFrontend");
 
 app.UseStaticFiles();
 app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
