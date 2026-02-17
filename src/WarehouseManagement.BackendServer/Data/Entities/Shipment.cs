@@ -14,12 +14,8 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         [Required]
         public int OrderId { get; set; }
 
-        public Order Order { get; set; } = null!;
-
         [Required]
         public int WarehouseId { get; set; }
-
-        public Warehouse Warehouse { get; set; } = null!;
 
         public DateTime ShipmentDate { get; set; }
 

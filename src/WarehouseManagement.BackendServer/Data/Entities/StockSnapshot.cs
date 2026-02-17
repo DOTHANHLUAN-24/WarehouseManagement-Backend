@@ -17,9 +17,6 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         public int Quantity { get; set; }
 
         [Required]
-        public DateOnly SnapshotDate { get; set; }
-
-        public Product Product { get; set; } = null!;
-        public Warehouse Warehouse { get; set; } = null!;
+        public DateTime SnapshotDate { get; set; }
     }
 }

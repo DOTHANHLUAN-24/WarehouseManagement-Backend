@@ -100,7 +100,6 @@ namespace WarehouseManagement.BackendServer.Data
         public DbSet<StockTransaction> StockTransactions { get; set; } = null!;
         public DbSet<StockSnapshot> StockSnapshots { get; set; } = null!;
         public DbSet<Supplier> Suppliers { get; set; } = null!;
-        public DbSet<Voucher> Vouchers { get; set; } = null!;
         public DbSet<Warehouse> Warehouses { get; set; } = null!;
 
     }

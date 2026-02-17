@@ -11,12 +11,8 @@ namespace WarehouseManagement.BackendServer.Data.Entities
 
         public int PurchaseId { get; set; }
 
-        public Purchase Purchase { get; set; } = null!;
-
         [Required]
         public int ProductVariantId { get; set; }
-
-        public ProductVariant ProductVariant { get; set; } = null!;
 
         [Required]
         public int Quantity { get; set; }

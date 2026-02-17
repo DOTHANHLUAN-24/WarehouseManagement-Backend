@@ -16,8 +16,6 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         [Column(TypeName = "varchar(50)")]
         public string UserId { get; set; } = string.Empty;
 
-        public User User { get; set; } = null!;
-
         [Required]
         [MaxLength(100)]
         public string FullName { get; set; } = string.Empty;

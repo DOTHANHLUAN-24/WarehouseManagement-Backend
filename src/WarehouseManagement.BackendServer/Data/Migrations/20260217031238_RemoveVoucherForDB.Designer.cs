@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WarehouseManagement.BackendServer.Data;
 
@@ -11,9 +12,11 @@ using WarehouseManagement.BackendServer.Data;
 namespace WarehouseManagement.BackendServer.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260217031238_RemoveVoucherForDB")]
+    partial class RemoveVoucherForDB
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -281,6 +284,8 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("UserId");
+
                     b.ToTable("Customers");
                 });
 
@@ -376,12 +381,6 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
                     b.Property<DateTime>("OrderDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<int?>("PaymentId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("ShipmentId")
-                        .HasColumnType("int");
-
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -406,9 +405,6 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
 
                     b.Property<DateTime>("CreateDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<int>("Id")
-                        .HasColumnType("int");
 
                     b.Property<DateTime?>("LastModifiedDate")
                         .HasColumnType("datetime2");
@@ -464,6 +460,9 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("OrderId")
+                        .IsUnique();
 
                     b.ToTable("Payments");
                 });
@@ -775,6 +774,9 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("OrderId")
+                        .IsUnique();
+
                     b.HasIndex("WarehouseId");
 
                     b.ToTable("Shipments");
@@ -792,13 +794,17 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("SnapshotDate")
-                        .HasColumnType("datetime2");
+                    b.Property<DateOnly>("SnapshotDate")
+                        .HasColumnType("date");
 
                     b.Property<int>("WarehouseId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("WarehouseId");
 
                     b.ToTable("StockSnapshots");
                 });
@@ -840,16 +846,20 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("WarehouseId");
+
                     b.ToTable("StockTransactions");
                 });
 
             modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.Supplier", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<int>("SupplierId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SupplierId"));
 
                     b.Property<string>("ContactPerson")
                         .IsRequired()
@@ -866,7 +876,7 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("Id");
+                    b.HasKey("SupplierId");
 
                     b.ToTable("Suppliers");
                 });
@@ -1029,13 +1039,26 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.Customer", b =>
+                {
+                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.CustomerAddress", b =>
                 {
-                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.Customer", null)
+                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.Customer", "Customer")
                         .WithMany("Addresses")
                         .HasForeignKey("CustomerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Customer");
                 });
 
             modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.Function", b =>
@@ -1059,7 +1082,7 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
 
             modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.OrderItem", b =>
                 {
-                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.Order", null)
+                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.Order", "Order")
                         .WithMany("OrderItems")
                         .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1072,6 +1095,17 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
                     b.HasOne("WarehouseManagement.BackendServer.Data.Entities.ProductVariant", null)
                         .WithMany("OrderItems")
                         .HasForeignKey("ProductVariantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+                });
+
+            modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.Payment", b =>
+                {
+                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.Order", null)
+                        .WithOne("Payment")
+                        .HasForeignKey("WarehouseManagement.BackendServer.Data.Entities.Payment", "OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -1123,11 +1157,13 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
 
             modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.Purchase", b =>
                 {
-                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.Supplier", null)
+                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.Supplier", "Supplier")
                         .WithMany("Purchases")
                         .HasForeignKey("SupplierId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Supplier");
                 });
 
             modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.PurchaseItem", b =>
@@ -1136,26 +1172,78 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
                         .WithMany("PurchaseItems")
                         .HasForeignKey("ProductId");
 
-                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.ProductVariant", null)
+                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.ProductVariant", "ProductVariant")
                         .WithMany("PurchaseItems")
                         .HasForeignKey("ProductVariantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.Purchase", null)
+                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.Purchase", "Purchase")
                         .WithMany("PurchaseItems")
                         .HasForeignKey("PurchaseId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("ProductVariant");
+
+                    b.Navigation("Purchase");
                 });
 
             modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.Shipment", b =>
                 {
-                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.Warehouse", null)
+                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.Order", "Order")
+                        .WithOne("Shipment")
+                        .HasForeignKey("WarehouseManagement.BackendServer.Data.Entities.Shipment", "OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.Warehouse", "Warehouse")
                         .WithMany("Shipments")
                         .HasForeignKey("WarehouseId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Order");
+
+                    b.Navigation("Warehouse");
+                });
+
+            modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.StockSnapshot", b =>
+                {
+                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("Warehouse");
+                });
+
+            modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.StockTransaction", b =>
+                {
+                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("WarehouseManagement.BackendServer.Data.Entities.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("Warehouse");
                 });
 
             modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.Category", b =>
@@ -1178,6 +1266,10 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
             modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.Order", b =>
                 {
                     b.Navigation("OrderItems");
+
+                    b.Navigation("Payment");
+
+                    b.Navigation("Shipment");
                 });
 
             modelBuilder.Entity("WarehouseManagement.BackendServer.Data.Entities.Product", b =>

@@ -8,7 +8,7 @@ namespace WarehouseManagement.BackendServer.Data.Entities
     public class Supplier : ISoftDelete
     {
         [Key]
-        public int SupplierId { get; set; }
+        public int Id { get; set; }
 
         [Required]
         public string SupplierName { get; set; } = string.Empty;
