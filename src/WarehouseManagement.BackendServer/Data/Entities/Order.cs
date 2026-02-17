@@ -32,10 +32,6 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         
         public Payment? Payment { get; set; }
 
-        public int? VoucherId { get; set; }
-
-        public Voucher? Voucher { get; set; }
-
         public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
     }
 }
