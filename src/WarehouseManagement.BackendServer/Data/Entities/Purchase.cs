@@ -13,8 +13,6 @@ namespace WarehouseManagement.BackendServer.Data.Entities
 
         [Required]
         public int SupplierId { get; set; }
-        
-        public Supplier Supplier { get; set; } = null!;
 
         public DateTime? PurchaseDate { get; set; }
 

@@ -28,9 +28,9 @@ namespace WarehouseManagement.BackendServer.Data.Entities
 
         public DateTime? LastModifiedDate { get; set; }
 
-        public Shipment? Shipment { get; set; }
+        public int? ShipmentId { get; set; }
         
-        public Payment? Payment { get; set; }
+        public int? PaymentId { get; set; }
 
         public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
     }

@@ -22,8 +22,6 @@ namespace WarehouseManagement.BackendServer.Data.Entities
 
         public bool IsDefault { get; set; }
 
-        public Customer Customer { get; set; } = null!;
-
         public bool IsDeleted { get; set; } = false;
     }
 }
