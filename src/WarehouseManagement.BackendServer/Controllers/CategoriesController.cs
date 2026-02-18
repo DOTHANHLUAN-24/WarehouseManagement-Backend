@@ -227,7 +227,7 @@ namespace WarehouseManagement.BackendServer.Controllers
             category.SortOrder = request.SortOrder;
             category.SeoAlias = request.SeoAlias;
             category.SeoDescription = request.SeoDescription;
-
+            category.LastModifiedDate = DateTime.Now;
 
             _context.Categories.Update(category);
             var result = await _context.SaveChangesAsync();
