@@ -50,13 +50,13 @@ namespace WarehouseManagement.BackendServer.Controllers
             var role = await _roleManager.FindByIdAsync(id);
             if (role == null)
                 return NotFound();
-            
+
             var roleVM = new RoleViewModel()
             {
                 Id = role.Id,
                 Name = role.Name!
             };
-            
+
             return Ok(roleVM);
         }
 
@@ -85,11 +85,16 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// <param name="pageSize">Size of page</param>
         /// <returns>Roles list filtered by keyword</returns>
         [HttpGet("filter")]
-        public async Task<IActionResult> GetRolesPaging(string? filter, int pageIndex, int pageSize)
+        public async Task<IActionResult> GetRolesPaging(string? filter, int pageIndex = 1, int pageSize = 10)
         {
+            if (pageIndex <= 0)
+                pageIndex = 1;
+
+            if (pageSize <= 0)
+                pageSize = 10;
 
             var query = _roleManager.Roles;
-           
+
             if (!string.IsNullOrEmpty(filter))
             {
                 query = query.Where(x => x.Id.Contains(filter) || x.Name!.Contains(filter));
@@ -120,7 +125,7 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// <param name="roleViewModel">Role model</param>
         /// <returns>Results of the update process</returns>
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutRole(string id, [FromBody] RoleUpdateRequest  request)
+        public async Task<IActionResult> PutRole(string id, [FromBody] RoleUpdateRequest request)
         {
             if (id != request.Id)
                 return BadRequest();
@@ -128,16 +133,16 @@ namespace WarehouseManagement.BackendServer.Controllers
             var role = await _roleManager.FindByIdAsync(id);
             if (role == null)
                 return NotFound();
-            
+
             role.Name = request.Name;
             role.NormalizedName = request.Name.ToUpper();
-            
+
             var result = await _roleManager.UpdateAsync(role);
             if (result.Succeeded)
             {
                 return NoContent();
             }
-            
+
             return BadRequest(result.Errors);
         }
 
@@ -152,7 +157,7 @@ namespace WarehouseManagement.BackendServer.Controllers
             var role = await _roleManager.FindByIdAsync(id);
             if (role == null)
                 return NotFound();
-            
+
             var result = await _roleManager.DeleteAsync(role);
             if (result.Succeeded)
             {
@@ -163,7 +168,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                 };
                 return Ok(roleViewModel);
             }
-            
+
             return BadRequest(result.Errors);
         }
     }

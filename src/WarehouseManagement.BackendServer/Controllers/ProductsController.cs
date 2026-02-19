@@ -136,9 +136,23 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// <param name="pageSize">Size of page</param>
         /// <returns>Products list filtered by keyword</returns>
         [HttpGet("filter")]
-        public async Task<IActionResult> GetProductsPaging(string? filter, int pageIndex, int pageSize)
+        public async Task<IActionResult> GetProductsPaging(string? filter, int pageIndex = 1, int pageSize = 10)
         {
             _logger.LogInformation("Begin GetProductsPaging API. Filter = {filter}", filter);
+
+            if (pageIndex <= 0)
+            {
+                _logger.LogWarning("Invalid PageIndex. Reset to 1. PageIndex={PageIndex}", pageIndex);
+
+                pageIndex = 1;
+            }
+
+            if (pageSize <= 0)
+            {
+                _logger.LogWarning("Invalid PageSize. Reset to 10. PageSize={PageSize}", pageSize);
+
+                pageSize = 10;
+            }
 
             var query =
                 from p in _context.Products
