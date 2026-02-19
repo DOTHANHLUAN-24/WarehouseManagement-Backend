@@ -109,8 +109,8 @@ namespace WarehouseManagement.BackendServer.Controllers
             {
                 _logger.LogInformation( "GetFunctionsPaging with filter applied. Filter={Filter}", filter);
 
-                query = query.Where(x => x.Id.ToLower().Contains(filter)
-                || x.Name.ToLower().Contains(filter));
+                query = query.Where(x => x.Id.Contains(filter)
+                || x.Name.Contains(filter));
             }
 
             var totalRecord = await query.CountAsync();

@@ -163,8 +163,8 @@ namespace WarehouseManagement.BackendServer.Controllers
             {
                 _logger.LogInformation("GetProductsPaging with filter applied. Filter={Filter}", filter);
 
-                query = query.Where(x => x.Name.ToLower().Contains(filter.ToLower())
-                || x.Description.ToLower().Contains(filter.ToLower()));
+                query = query.Where(x => x.Name.Contains(filter)
+                || x.Description.Contains(filter));
             }
 
 
