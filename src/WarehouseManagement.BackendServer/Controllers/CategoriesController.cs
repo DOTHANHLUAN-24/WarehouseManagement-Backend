@@ -109,7 +109,7 @@ namespace WarehouseManagement.BackendServer.Controllers
             {
                 _logger.LogInformation("GetCategoriesPaging with filter applied. Filter={Filter}", filter);
 
-                query = query.Where(x => x.Name.ToLower().Contains(filter.ToLower()));
+                query = query.Where(x => x.Name.Contains(filter));
             }
 
             var totalRecords = await query.CountAsync();
