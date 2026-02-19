@@ -120,6 +120,132 @@ namespace WarehouseManagement.BackendServer.Controllers
             return BadRequest();
         }
 
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteCustomer(int id)
+        {
+            var customer = await _context.Customers.FindAsync(id);
+            if (customer == null)
+                return NotFound();
+
+            if (customer.Status == CustomerStatus.Banned)
+                return BadRequest("Banned customer cannot be deleted");
+
+            if (customer.Status == CustomerStatus.Inactive)
+                return BadRequest("Customer already deleted");
+
+            customer.Status = CustomerStatus.Inactive;
+            customer.LastModifiedDate = DateTime.Now;
+
+            var result = await _context.SaveChangesAsync();
+            if (result > 0) return NoContent();
+            return BadRequest();
+        }
+
+        [HttpPut("{id}/restore")]
+        public async Task<IActionResult> RestoreCustomer(int id)
+        {
+            var customer = await _context.Customers.FindAsync(id);
+            if (customer == null)
+                return NotFound();
+
+            if (customer.Status == CustomerStatus.Banned)
+                return BadRequest("Banned customer cannot be restored");
+
+            if (customer.Status == CustomerStatus.Active)
+                return BadRequest("Customer already active");
+
+            customer.Status = CustomerStatus.Active;
+            customer.LastModifiedDate = DateTime.Now;
+
+            var result = await _context.SaveChangesAsync();
+            if (result > 0) return NoContent();
+            return BadRequest();
+        }
+
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchCustomers(string? keyword, CustomerStatus? status, DateTime? fromDate, DateTime? toDate, int pageIndex = 1, int pageSize = 10)
+        {
+            if (pageIndex <= 0) pageIndex = 1;
+            if (pageSize <= 0) pageSize = 10;
+
+            var query = _context.Customers
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(keyword))
+                query = query.Where(x =>
+                    EF.Functions.Like(x.FullName, $"%{keyword}%"));
+
+            if (status is not null)
+                query = query.Where(x => x.Status == status);
+
+            if (fromDate is not null)
+                query = query.Where(x => x.CreateDate >= fromDate.Value.Date);
+
+            if (toDate is not null)
+            {
+                var endDate = toDate.Value.Date.AddDays(1).AddTicks(-1);
+                query = query.Where(x => x.CreateDate <= endDate);
+            }
+
+            var totalRecords = await query.CountAsync();
+
+            var items = await query
+                .OrderByDescending(x => x.CreateDate)
+                .Skip((pageIndex - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var data = items
+                .Select(CreateCustomerViewModel)
+                .ToList();
+
+            return Ok(new Pagination<CustomerViewModel>
+            {
+                Items = data,
+                TotalRecords = totalRecords
+            });
+        }
+
+        [HttpGet("status/{status}")]
+        public async Task<IActionResult> GetByStatus(
+            CustomerStatus status,
+            int pageIndex = 1,
+            int pageSize = 10)
+        {
+            if (pageIndex <= 0) pageIndex = 1;
+            if (pageSize <= 0) pageSize = 10;
+
+            var query = _context.Customers
+                .AsNoTracking()
+                .Where(x => x.Status == status);
+
+            var totalRecords = await query.CountAsync();
+
+            var items = await query
+                .OrderByDescending(x => x.CreateDate)
+                .Skip((pageIndex - 1) * pageSize)
+                .Take(pageSize)
+                .Select(x => CreateCustomerViewModel(x))
+                .ToListAsync();
+
+            return Ok(new Pagination<CustomerViewModel>
+            {
+                Items = items,
+                TotalRecords = totalRecords
+            });
+        }
+
+        [HttpGet("check-phone")]
+        public async Task<IActionResult> CheckPhoneExists(string phone)
+        {
+            var exists = await _context.Customers
+                .AsNoTracking()
+                .AnyAsync(x => x.PhoneNumber == phone);
+
+            return Ok(new { exists });
+        }
+
         private static CustomerViewModel CreateCustomerViewModel(Customer customer)
         {
             return new CustomerViewModel
