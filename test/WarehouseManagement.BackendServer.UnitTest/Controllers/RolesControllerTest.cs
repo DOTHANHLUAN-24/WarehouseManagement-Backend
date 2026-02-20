@@ -13,6 +13,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
     public class RolesControllerTest
     {
         private readonly InMemoryContextFactory _factory = new();
+        private readonly Mock<ILogger<RolesController>> _mockLogger = new Mock<ILogger<RolesController>>();
 
         // =========================
         // Helpers
@@ -61,7 +62,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
         public void ShouldCreateInstance_NotNull_ReturnSuccess()
         {
             var mockRoleManager = CreateMockRoleManager();
-            var controller = new RolesController(mockRoleManager.Object);
+            var controller = new RolesController(mockRoleManager.Object, _mockLogger.Object);
 
             Assert.NotNull(controller);
         }
@@ -82,7 +83,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                 .Setup(x => x.CreateAsync(It.IsAny<IdentityRole>()))
                 .ReturnsAsync(IdentityResult.Success);
 
-            var controller = new RolesController(mockRoleManager.Object);
+            var controller = new RolesController(mockRoleManager.Object, _mockLogger.Object);
 
             // Act
             var result = await controller.PostRole(new RoleCreateRequest
@@ -104,7 +105,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                 .Setup(x => x.CreateAsync(It.IsAny<IdentityRole>()))
                 .ReturnsAsync(IdentityResult.Failed());
 
-            var controller = new RolesController(mockRoleManager.Object);
+            var controller = new RolesController(mockRoleManager.Object, _mockLogger.Object);
 
             // Act
             var result = await controller.PostRole(new RoleCreateRequest
@@ -135,7 +136,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             await context.SaveChangesAsync();
 
             var roleManager = CreateRealRoleManager(context);
-            var controller = new RolesController(roleManager);
+            var controller = new RolesController(roleManager, _mockLogger.Object);
 
             // Act
             var result = await controller.GetRoles();
@@ -154,7 +155,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             var context = _factory.Create();
 
             var roleManager = CreateRealRoleManager(context);
-            var controller = new RolesController(roleManager);
+            var controller = new RolesController(roleManager, _mockLogger.Object);
 
             // Act
             var result = await controller.GetRoles();
@@ -184,7 +185,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             await context.SaveChangesAsync();
 
             var roleManager = CreateRealRoleManager(context);
-            var controller = new RolesController(roleManager);
+            var controller = new RolesController(roleManager, _mockLogger.Object);
 
             // Act
             var result = await controller.GetById("Test1");
@@ -211,7 +212,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             await context.SaveChangesAsync();
 
             var roleManager = CreateRealRoleManager(context);
-            var controller = new RolesController(roleManager);
+            var controller = new RolesController(roleManager, _mockLogger.Object);
 
             // Act
             var result = await controller.GetById("count");
@@ -265,7 +266,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             await context.SaveChangesAsync();
 
             var roleManager = CreateRealRoleManager(context);
-            var controller = new RolesController(roleManager);
+            var controller = new RolesController(roleManager, _mockLogger.Object);
 
             // Act
             var result = await controller.GetRolesPaging(filter, pageIndex, pageSize);
@@ -283,7 +284,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             var context = _factory.Create();
 
             var roleManager = CreateRealRoleManager(context);
-            var controller = new RolesController(roleManager);
+            var controller = new RolesController(roleManager, _mockLogger.Object);
 
             // Act
             var result = await controller.GetRolesPaging(null, 1, 10);
@@ -314,7 +315,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             await context.SaveChangesAsync();
 
             var roleManager = CreateRealRoleManager(context);
-            var controller = new RolesController(roleManager);
+            var controller = new RolesController(roleManager, _mockLogger.Object);
 
             // Act
             var result = await controller.PutRole("test", new RoleUpdateRequest
@@ -335,7 +336,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             var context = _factory.Create();
 
             var roleManager = CreateRealRoleManager(context);
-            var controller = new RolesController(roleManager);
+            var controller = new RolesController(roleManager, _mockLogger.Object);
 
             // Act
             var result = await controller.PutRole("test", new RoleUpdateRequest
@@ -378,7 +379,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             await context.SaveChangesAsync();
 
             var roleManager = CreateRealRoleManager(context);
-            var controller = new RolesController(roleManager);
+            var controller = new RolesController(roleManager, _mockLogger.Object);
 
             // Act
             var result = await controller.DeleteRole("Test 1");
@@ -394,7 +395,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             var context = _factory.Create();
 
             var roleManager = CreateRealRoleManager(context);
-            var controller = new RolesController(roleManager);
+            var controller = new RolesController(roleManager, _mockLogger.Object);
 
             // Act
             var result = await controller.DeleteRole("Test 1");

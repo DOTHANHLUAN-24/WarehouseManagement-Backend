@@ -101,8 +101,14 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// <param name="pageSize">Size of page</param>
         /// <returns>Users list filtered by keyword</returns>
         [HttpGet("filter")]
-        public async Task<IActionResult> GetUsersPaging(string? filter, int pageIndex, int pageSize)
+        public async Task<IActionResult> GetUsersPaging(string? filter, int pageIndex = 1, int pageSize = 10)
         {
+            if (pageIndex <= 0)
+                pageIndex = 1;
+
+            if (pageSize <= 0)
+                pageSize = 10;
+
             var query = _userManager.Users;
             
             if (!string.IsNullOrEmpty(filter))
