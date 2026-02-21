@@ -247,6 +247,94 @@ namespace WarehouseManagement.BackendServer.Controllers
             return Ok(productList);
         }
 
+        [HttpGet("{id}/product-variant")]
+        public async Task<IActionResult> GetAllProductVariants(int id)
+        {
+            var product = await _context.Products.FindAsync(id);
+            if (product == null)
+                return NotFound();
+
+            var productVariantsInDB = await _context.ProductVariants.Where(x => x.ProductId == id).ToListAsync();
+            product.ProductVariants = productVariantsInDB;
+
+            var result = new List<ProductVariantViewModel>();
+            
+            if(product.ProductVariants.Count != 0)
+            {
+                foreach(var productVariant in product.ProductVariants)
+                {
+                    result.Add(new ProductVariantViewModel
+                    {
+                        ProductVariantId = productVariant.Id,
+                        Name = product.Name,
+                        Description = product.Description,
+                        CategoryId = product.CategoryId,
+                        Code = product.Code,
+                        IsActive = product.IsActive,
+                        SKU = productVariant.SKU,
+                        Price = productVariant.Price,
+                        StockQuantity = productVariant.StockQuantity,
+                        IsActiveInVariant = productVariant.IsActive
+                    });
+                }
+            }
+
+            return Ok(result);
+        }
+
+
+        [HttpGet("get-detail/{id}")]
+        public async Task<IActionResult> GetProductDetail(int id)
+        {
+            _logger.LogInformation("Begin GetProductDetail API");
+
+            var product = await (
+                from p in _context.Products.AsNoTracking()
+                join pv in _context.ProductVariants.AsNoTracking()
+                    on p.Id equals pv.ProductId
+                join pc in _context.ProductComments.AsNoTracking()
+                    on p.Id equals pc.ProductId
+                where p.Id == id
+                      && !p.IsDeleted
+                      && pv.IsActive
+                      && !pc.IsDeleted
+                select new ProductDetailViewModel
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Description = p.Description,
+                    CategoryId = p.CategoryId,
+                    Code = p.Code,
+                    IsActive = p.IsActive,
+
+                    Price = pv.Price,
+                    Quantity = pv.StockQuantity,
+
+                    ImageUrl = _context.ProductImages
+                        .Where(i => i.ProductId == p.Id)
+                        .OrderBy(i => i.Id)
+                        .Select(i => i.ImageUrl)
+                        .FirstOrDefault()!,
+
+                    UserId = string.Empty, // Todo: Get user id
+                    Content = pc.Content,
+                    Rating = pc.Rating,
+                    ParentId = pc.ParentId,
+                    IsApproved = pc.IsApproved
+                }
+            ).FirstOrDefaultAsync();
+
+            if (product == null)
+            {
+                _logger.LogInformation("Not found information of product");
+
+                return NotFound();
+            }
+
+            return Ok(product);
+        }
+
+
         #endregion
 
         #region Create entity in product
@@ -314,6 +402,44 @@ namespace WarehouseManagement.BackendServer.Controllers
 
                 return BadRequest();
             }
+        }
+
+        [HttpPost("{id}/comments")]
+        public async Task<IActionResult> PostCommentInProduct(int id, [FromForm] ProductCommentCreateRequest request)
+        {
+            _logger.LogInformation("Begin PostCommentInProduct API");
+
+            var product = await _context.Products.FindAsync(id);
+            if (product == null)
+            {
+                _logger.LogInformation("Begin PostCommentInProduct API");
+
+                return NotFound();
+            }
+
+            var commentInProduct = new ProductComment
+            {
+                ProductId = id,
+                ProductVariantId = request.ProductVariantId,
+                UserId = string.Empty,
+                Content = request.Content,
+                Rating = request.Rating,
+                ParentId = request.ParentId,
+            };
+
+            _context.ProductComments.Add(commentInProduct);
+
+            var result = await _context.SaveChangesAsync();
+            if (result > 0)
+            {
+                _logger.LogInformation("Success to post comment in product. Product id = {id}", id);
+
+                return Ok(commentInProduct);
+            }
+
+            _logger.LogWarning("Fail to post comment in product. Product id = {id}", id);
+
+            return BadRequest();
         }
 
         #endregion
