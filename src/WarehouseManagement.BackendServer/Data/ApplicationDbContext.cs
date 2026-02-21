@@ -72,11 +72,11 @@ namespace WarehouseManagement.BackendServer.Data
                 .HasForeignKey(x => x.ParentId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            builder.Entity<ProductComment>()
-                .HasOne(x => x.Parent)
-                .WithMany(x => x.Replies)
-                .HasForeignKey(x => x.ParentId)
-                .OnDelete(DeleteBehavior.Restrict);
+            //builder.Entity<ProductComment>()
+            //    .HasOne(x => x.Parent)
+            //    .WithMany(x => x.Replies)
+            //    .HasForeignKey(x => x.ParentId)
+            //    .OnDelete(DeleteBehavior.Restrict);
         }
 
 

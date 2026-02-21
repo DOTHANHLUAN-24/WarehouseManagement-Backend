@@ -20,7 +20,6 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         [Column(TypeName = "varchar(50)")]
 
         public string UserId { get; set; } = string.Empty;
-        public User User { get; set; } = null!;
 
         [Required]
         [MaxLength(1000)]
@@ -30,9 +29,6 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         public int? Rating { get; set; }
 
         public int? ParentId { get; set; }
-
-        [ForeignKey(nameof(ParentId))]
-        public ProductComment? Parent { get; set; }
 
         public bool IsApproved { get; set; } = true;
 

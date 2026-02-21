@@ -15,6 +15,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
     public class UsersControllerTest
     {
         private readonly InMemoryContextFactory _factory = new();
+        private readonly Mock<ILogger<UsersController>> _mockLogger = new Mock<ILogger<UsersController>>();
 
         // =========================
         // Helpers
@@ -83,7 +84,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
         public void ShouldCreateInstance_NotNull_ReturnSuccess()
         {
             var mockUserManager = CreateMockUserManager();
-            var controller = new UsersController(mockUserManager.Object);
+            var controller = new UsersController(mockUserManager.Object, _mockLogger.Object);
 
             Assert.NotNull(controller);
         }
@@ -109,7 +110,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                 .Setup(x => x.AddToRoleAsync(It.IsAny<User>(), It.IsAny<string>()))
                 .ReturnsAsync(IdentityResult.Success);
 
-            var controller = new UsersController(mockUserManager.Object);
+            var controller = new UsersController(mockUserManager.Object, _mockLogger.Object);
 
             var request = new UserCreateRequest
             {
@@ -138,7 +139,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
               .Setup(x => x.CreateAsync(It.IsAny<User>(), It.IsAny<string>()))
               .ReturnsAsync(IdentityResult.Failed());
 
-            var controller = new UsersController(mockUserManager.Object);
+            var controller = new UsersController(mockUserManager.Object, _mockLogger.Object);
 
             // Act
             var result = await controller.PostUser(new UserCreateRequest
@@ -189,7 +190,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             await context.SaveChangesAsync();
 
             var userManager = CreateRealUserManager(context);
-            var controller = new UsersController(userManager);
+            var controller = new UsersController(userManager, _mockLogger.Object);
 
             // Act
             var result = await controller.GetUsers();
@@ -208,7 +209,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             var context = _factory.Create();
 
             var userManager = CreateRealUserManager(context);
-            var controller = new UsersController(userManager);
+            var controller = new UsersController(userManager, _mockLogger.Object);
 
             // Act
             var result = await controller.GetUsers();
@@ -254,7 +255,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             await context.SaveChangesAsync();
 
             var userManager = CreateRealUserManager(context);
-            var controller = new UsersController(userManager);
+            var controller = new UsersController(userManager, _mockLogger.Object);
 
             // Act
             var result = await controller.GetById("1");
@@ -298,7 +299,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             await context.SaveChangesAsync();
 
             var userManager = CreateRealUserManager(context);
-            var controller = new UsersController(userManager);
+            var controller = new UsersController(userManager, _mockLogger.Object);
 
             // Act
             var result = await controller.GetById("count");
@@ -369,7 +370,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             await context.SaveChangesAsync();
 
             var userManager = CreateRealUserManager(context);
-            var controller = new UsersController(userManager);
+            var controller = new UsersController(userManager, _mockLogger.Object);
 
             // Act
             var result = await controller.GetUsersPaging(filter, pageIndex, pageSize);
@@ -405,7 +406,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             await context.SaveChangesAsync();
 
             var userManager = CreateRealUserManager(context);
-            var controller = new UsersController(userManager);
+            var controller = new UsersController(userManager, _mockLogger.Object);
 
             // Act
             var result = await controller.PutUser("1", new UserUpdateRequest
@@ -426,7 +427,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             var context = _factory.Create();
 
             var userManager = CreateRealUserManager(context);
-            var controller = new UsersController(userManager);
+            var controller = new UsersController(userManager, _mockLogger.Object);
 
             // Act
             var result = await controller.PutUser("1", new UserUpdateRequest
@@ -491,7 +492,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             await context.SaveChangesAsync();
 
             var userManager = CreateRealUserManager(context);
-            var controller = new UsersController(userManager);
+            var controller = new UsersController(userManager, _mockLogger.Object);
 
             // Act
             var result = await controller.DeleteUser("1");
@@ -507,7 +508,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             var context = _factory.Create();
 
             var userManager = CreateRealUserManager(context);
-            var controller = new UsersController(userManager);
+            var controller = new UsersController(userManager, _mockLogger.Object);
 
             // Act
             var result = await controller.DeleteUser("1");
