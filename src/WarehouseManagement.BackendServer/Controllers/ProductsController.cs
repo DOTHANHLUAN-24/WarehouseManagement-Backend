@@ -247,21 +247,34 @@ namespace WarehouseManagement.BackendServer.Controllers
             return Ok(productList);
         }
 
+        /// <summary>
+        /// Get all product variant with product id
+        /// </summary>
+        /// <param name="id">Product id</param>
+        /// <returns>List of product variants</returns>
         [HttpGet("{id}/product-variant")]
-        public async Task<IActionResult> GetAllProductVariants(int id)
+        public async Task<IActionResult> GetAllProductVariantsInProduct(int id)
         {
+            _logger.LogInformation("Begin GetAllProductVariants API");
+
             var product = await _context.Products.FindAsync(id);
             if (product == null)
+            {
+                _logger.LogWarning("Not found the product with id = {id}", id);
+
                 return NotFound();
+            }
 
             var productVariantsInDB = await _context.ProductVariants.Where(x => x.ProductId == id).ToListAsync();
             product.ProductVariants = productVariantsInDB;
 
             var result = new List<ProductVariantViewModel>();
-            
-            if(product.ProductVariants.Count != 0)
+
+            if (product.ProductVariants.Count != 0)
             {
-                foreach(var productVariant in product.ProductVariants)
+                _logger.LogInformation("Get list of product variant with product id");
+
+                foreach (var productVariant in product.ProductVariants)
                 {
                     result.Add(new ProductVariantViewModel
                     {
@@ -279,10 +292,16 @@ namespace WarehouseManagement.BackendServer.Controllers
                 }
             }
 
+            _logger.LogInformation("Success to get product variant API. Id = {id}", id);
+
             return Ok(result);
         }
 
-
+        /// <summary>
+        /// Get detail of product with product id
+        /// </summary>
+        /// <param name="id">Product id</param>
+        /// <returns>Information of product</returns>
         [HttpGet("get-detail/{id}")]
         public async Task<IActionResult> GetProductDetail(int id)
         {
@@ -334,6 +353,30 @@ namespace WarehouseManagement.BackendServer.Controllers
             return Ok(product);
         }
 
+        /// <summary>
+        /// Get all comment in product with product id
+        /// </summary>
+        /// <param name="id">Product id</param>
+        /// <returns>List comment of product</returns>
+        [HttpGet("{id}/comment")]
+        public async Task<IActionResult> GetAllCommentInProduct(int id)
+        {
+            _logger.LogInformation("Begin GetAllCommentInProduct API");
+
+            var product = await _context.Products.FindAsync(id);
+            if (product == null)
+            {
+                _logger.LogWarning("Not found product with id = {id}", id);
+
+                return NotFound();
+            }
+
+            var comments = await _context.ProductComments.Where(x => x.ProductId == id).ToListAsync();
+
+            _logger.LogInformation("Success GetAllCommentInProduct API. Id = {id}", id);
+
+            return Ok(comments);
+        }
 
         #endregion
 
@@ -404,6 +447,12 @@ namespace WarehouseManagement.BackendServer.Controllers
             }
         }
 
+        /// <summary>
+        /// Post comment into product with product id
+        /// </summary>
+        /// <param name="id">Product id</param>
+        /// <param name="request">Comment model</param>
+        /// <returns>Result of process</returns>
         [HttpPost("{id}/comments")]
         public async Task<IActionResult> PostCommentInProduct(int id, [FromForm] ProductCommentCreateRequest request)
         {
@@ -475,6 +524,56 @@ namespace WarehouseManagement.BackendServer.Controllers
                 product.Id,
                 product.IsActive
             });
+        }
+
+        /// <summary>
+        /// Update comment in product with product id and comment id
+        /// </summary>
+        /// <param name="id">Product id</param>
+        /// <param name="commentId">Comment id</param>
+        /// <param name="request">Comment model</param>
+        /// <returns>Result of process</returns>
+        [HttpPut("{id}/comment/{commentId}")]
+        public async Task<IActionResult> UpdateCommentInProduct(int id, int commentId, [FromForm] ProductCommentUpdateRequest request)
+        {
+            _logger.LogInformation("Begin UpdateCommentInProduct API");
+
+            string currentUserId = string.Empty; // Todo: Get current user id
+
+            var product = await _context.Products.FindAsync(id);
+            if (product == null)
+            {
+                _logger.LogInformation("Not fount the product with id = {id}", id);
+
+                return NotFound();
+            }
+
+            var comment = await _context.ProductComments
+                .Where(x => x.ProductId == id && x.Id == commentId)
+                .SingleOrDefaultAsync();
+            if(comment == null)
+            {
+                _logger.LogInformation("Not found comment with id = {commentId}", commentId);
+
+                return NotFound();
+            }
+
+            if(comment.UserId == currentUserId)
+            {
+                comment.Content = request.Content;
+
+                comment.IsDeleted = request.IsDeleted;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(comment);
+            }
+            else
+            {
+                _logger.LogWarning("This comment is not yours.");
+
+                return BadRequest();
+            }
         }
 
         #endregion
