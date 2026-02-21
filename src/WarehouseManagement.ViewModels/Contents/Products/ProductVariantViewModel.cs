@@ -11,7 +11,7 @@ namespace WarehouseManagement.ViewModels.Contents.Products
         public decimal Price { get; set; }
 
         public int StockQuantity { get; set; }
-        public bool IsActiveInVariant { get; set; } = true;
 
+        public bool IsActiveInVariant { get; set; } = true;
     }
 }

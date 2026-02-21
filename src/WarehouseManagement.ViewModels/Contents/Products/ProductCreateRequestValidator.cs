@@ -12,7 +12,7 @@ namespace WarehouseManagement.ViewModels.Contents.Products
                 .NotEmpty().WithMessage("Price in product is required");
 
             RuleFor(x => x.InitialStock)
-                .NotEmpty().WithMessage("Initial Stock");
+                .GreaterThan(0).WithMessage("Initial Stock must be greater than 0.");
         }
     }
 }
