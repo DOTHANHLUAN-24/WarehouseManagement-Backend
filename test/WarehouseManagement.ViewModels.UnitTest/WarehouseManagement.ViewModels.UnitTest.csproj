@@ -22,7 +22,6 @@
 
   <ItemGroup>
     <Folder Include="Contents\" />
-    <Folder Include="Systems\Functions\" />
   </ItemGroup>
 
   <ItemGroup>
