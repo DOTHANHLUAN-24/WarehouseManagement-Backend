@@ -6,7 +6,7 @@
 
         public string Name { get; set; } = string.Empty;
 
-        public string parentId { get; set; } = string.Empty;
+        public string ParentId { get; set; } = string.Empty;
 
         public bool HasCreate { get; set; }
 
