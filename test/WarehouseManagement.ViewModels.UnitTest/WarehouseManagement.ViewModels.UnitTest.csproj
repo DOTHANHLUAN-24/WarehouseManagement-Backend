@@ -21,10 +21,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Contents\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\..\src\WarehouseManagement.ViewModels\WarehouseManagement.ViewModels.csproj" />
   </ItemGroup>
 
