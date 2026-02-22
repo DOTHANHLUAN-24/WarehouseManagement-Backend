@@ -21,11 +21,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Contents\" />
-    <Folder Include="Systems\Functions\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\..\src\WarehouseManagement.ViewModels\WarehouseManagement.ViewModels.csproj" />
   </ItemGroup>
 
