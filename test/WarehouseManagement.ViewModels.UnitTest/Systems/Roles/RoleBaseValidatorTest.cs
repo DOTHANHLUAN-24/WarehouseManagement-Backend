@@ -62,5 +62,14 @@ namespace WarehouseManagement.ViewModels.UnitTest.Systems.Roles
             var result = _validator.Validate(_request);
             Assert.True(result.IsValid);
         }
+
+        [Fact]
+        public void Should_Return_Error_When_Id_Too_Long()
+        {
+            _request.Id = new string('a', 51);
+
+            var result = _validator.Validate(_request);
+            Assert.False(result.IsValid);
+        }
     }
 }
