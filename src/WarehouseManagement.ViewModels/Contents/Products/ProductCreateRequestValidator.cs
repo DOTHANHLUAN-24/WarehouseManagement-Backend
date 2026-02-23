@@ -9,9 +9,11 @@ namespace WarehouseManagement.ViewModels.Contents.Products
             Include(new ProductBaseValidator<ProductCreateRequest>());
 
             RuleFor(x => x.Price)
-                .NotEmpty().WithMessage("Price in product is required");
+                .NotNull().WithMessage("Price in product is required")
+                .GreaterThan(0).WithMessage("Price must be greater than 0.");
 
             RuleFor(x => x.InitialStock)
+                .NotNull().WithMessage("Initial Stock in product is required")
                 .GreaterThan(0).WithMessage("Initial Stock must be greater than 0.");
         }
     }

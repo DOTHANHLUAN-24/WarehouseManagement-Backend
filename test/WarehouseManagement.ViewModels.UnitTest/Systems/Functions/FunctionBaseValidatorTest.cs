@@ -1,4 +1,5 @@
-﻿using WarehouseManagement.ViewModels.Systems.Functions;
+﻿using FluentValidation.TestHelper;
+using WarehouseManagement.ViewModels.Systems.Functions;
 
 namespace WarehouseManagement.ViewModels.UnitTest.Systems.Functions
 {
@@ -65,6 +66,42 @@ namespace WarehouseManagement.ViewModels.UnitTest.Systems.Functions
 
             var result = _validator.Validate(_request);
             Assert.True(result.IsValid);
+        }
+
+        [Fact]
+        public void Should_Return_Error_When_Id_Too_Long()
+        {
+            _request.Id = new string('a', 51);
+
+            var result = _validator.Validate(_request);
+            Assert.False(result.IsValid);
+        }
+
+        [Fact]
+        public void Should_Return_Error_When_Name_Too_Long()
+        {
+            _request.Name = new string('a', 201);
+
+            var result = _validator.Validate(_request);
+            Assert.False(result.IsValid);
+        }
+
+        [Fact]
+        public void Should_Return_Error_When_Url_Too_Long()
+        {
+            _request.Url = new string('a', 201);
+
+            var result = _validator.Validate(_request);
+            Assert.False(result.IsValid);
+        }
+
+        [Fact]
+        public void Should_Return_Error_When_Parent_Id_Too_Long()
+        {
+            _request.ParentId = new string('a', 51);
+
+            var result = _validator.Validate(_request);
+            Assert.False(result.IsValid);
         }
     }
 }

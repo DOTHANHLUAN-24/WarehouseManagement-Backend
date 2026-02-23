@@ -12,15 +12,15 @@ namespace WarehouseManagement.ViewModels.Systems.User
 
             RuleFor(x => x.CurrentPassword)
                 .NotEmpty().WithMessage("Current password is required")
-                .MinimumLength(8).WithMessage("Current password has to at least 8 character")
-                .Matches(@"^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$")
-                .WithMessage("Current password is not match complexity rules.");
+                .MinimumLength(8).WithMessage("Current password has to be at least 8 characters")
+                .Matches(@"^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[#?!@$%^&*\-]).+$")
+                .WithMessage("Current password must contain upper, lower, number and special character.");
 
             RuleFor(x => x.NewPassword)
                 .NotEmpty().WithMessage("New password is required")
-                .MinimumLength(8).WithMessage("New password has to at least 8 character")
-                .Matches(@"^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$")
-                .WithMessage("New password is not match complexity rules.");
+                .MinimumLength(8).WithMessage("New password has to be at least 8 characters")
+                .Matches(@"^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[#?!@$%^&*\-]).+$")
+                .WithMessage("New password must contain upper, lower, number and special character.");
         }
     }
 }

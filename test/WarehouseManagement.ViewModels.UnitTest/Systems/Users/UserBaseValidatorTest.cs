@@ -1,4 +1,5 @@
-﻿using WarehouseManagement.ViewModels.Systems.User;
+﻿using System.Runtime.CompilerServices;
+using WarehouseManagement.ViewModels.Systems.User;
 
 namespace WarehouseManagement.ViewModels.UnitTest.Systems.Users
 {
@@ -87,7 +88,7 @@ namespace WarehouseManagement.ViewModels.UnitTest.Systems.Users
             _request.Email = data;
 
             var result = _validator.Validate(_request);
-            Assert.False(result.IsValid);   
+            Assert.False(result.IsValid);
         }
 
         [Theory]
@@ -99,7 +100,7 @@ namespace WarehouseManagement.ViewModels.UnitTest.Systems.Users
         [InlineData("+84513ad")]
         [InlineData("+84513378#!")]
         [InlineData("+84513ad+")]
-        public void Should_Error_When_In_Correct_Format_For_Phone_Number(string data)
+        public void Should_Error_When_Incorrect_Format_For_Phone_Number(string data)
         {
             _request.PhoneNumber = data;
 
@@ -107,11 +108,42 @@ namespace WarehouseManagement.ViewModels.UnitTest.Systems.Users
             Assert.False(result.IsValid);
         }
 
-        [Fact]
-        public void Should_Valid_When_Valid_Input()
+        [Theory]
+        [InlineData("a@gmail.ocm", "+84046542597","tets", "ajkdh", "dijklad")]
+        [InlineData("akald@gmail.ocm", "0046542197","dlaa", "ajkdh", "dijklad")]
+        public void Should_Valid_When_Valid_Input(
+            string email,
+            string phoneNumber,
+            string firstName,
+            string lastName,
+            string userName)
         {
+            _request.Email = email;
+            _request.PhoneNumber = phoneNumber;
+            _request.FirstName = firstName;
+            _request.LastName = lastName;
+            _request.UserName = userName;
+
             var result = _validator.Validate(_request);
             Assert.True(result.IsValid);
+        }
+
+        [Fact]
+        public void Should_Return_Error_When_First_Name_Too_Long()
+        {
+            _request.FirstName = new string('a', 51);
+
+            var result = _validator.Validate(_request);
+            Assert.False(result.IsValid);
+        }
+        
+        [Fact]
+        public void Should_Return_Error_When_Last_Name_Too_Long()
+        {
+            _request.FirstName = new string('a', 51);
+
+            var result = _validator.Validate(_request);
+            Assert.False(result.IsValid);
         }
     }
 }
