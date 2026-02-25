@@ -809,5 +809,116 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
         }
 
         #endregion
+
+        #region Create entity in product
+
+        // =========================
+        // Post product
+        // =========================
+
+        [Fact]
+        public async Task PostProduct_ValidInput_ReturnSuccess()
+        {
+            // Arrange
+            _context.Categories.Add(
+                new Category
+                {
+                    Name = "Màn hình",
+                    ParentId = null,
+                    SeoAlias = "man-hinh",
+                    SeoDescription = "Màn hình LCD",
+                    SortOrder = 1
+                }
+            );
+
+            await _context.SaveChangesAsync();
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.PostProduct(
+                new ProductCreateRequest
+                {
+                    Name = "product 1",
+                    Description = "description of product 1",
+                    CategoryId = 1,
+                    Code = "code of product 1",
+                    Price = 10000,
+                    InitialStock = 45646,
+                    SKU = "sku of product 1"
+                }
+            );
+
+            // Assert
+            Assert.IsType<CreatedAtActionResult>(result);
+        }
+
+        // =========================
+        // Post comment in product
+        // =========================
+
+        [Fact]
+        public async Task PostCommentInProduct_HasDataAndValidInput_ReturnSuccess()
+        {
+            // Arrange
+            _context.Products.AddRange
+            (
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2
+                },
+                new Product
+                {
+                    Name = "Màn hình LCD Samsung S25 Ultra",
+                    Description = "Màn hình LCD thay thế cho Samsung S25 Ultra.",
+                    Code = "LCD-S25U",
+                    CategoryId = 2
+                }
+            );
+
+            await _context.SaveChangesAsync();
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.PostCommentInProduct(1,
+                new ProductCommentCreateRequest
+                {
+                    UserId = string.Empty,
+                    Content = "Sản phẩm tốt, chất lượng ổn định.",
+                    Rating = 5,
+                    ParentId = null,
+                }
+            );
+
+            // Assert
+            Assert.IsType<OkObjectResult>(result);
+        }
+
+        [Fact]
+        public async Task PostCommentInProduct_HasNoDataAndValidInput_ReturnSuccess()
+        {
+            // Arrange
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.PostCommentInProduct(1,
+                new ProductCommentCreateRequest
+                {
+                    UserId = string.Empty,
+                    Content = "Sản phẩm tốt, chất lượng ổn định.",
+                    Rating = 5,
+                    ParentId = null,
+                }
+            );
+
+            // Assert
+            Assert.IsType<NotFoundResult>(result);
+        }
+
+        #endregion
     }
 }
