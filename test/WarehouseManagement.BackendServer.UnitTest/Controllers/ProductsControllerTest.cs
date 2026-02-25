@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Microsoft.VisualBasic;
 using Moq;
 using WarehouseManagement.BackendServer.Controllers;
 using WarehouseManagement.BackendServer.Data;
@@ -436,8 +435,9 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
 
             await _context.SaveChangesAsync();
 
-            // Act
             var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
             var result = await controller.GetProducts();
             var okResult = Assert.IsType<OkObjectResult>(result);
             var listProduct = Assert.IsAssignableFrom<IEnumerable<ProductViewModel>>(okResult.Value);
@@ -450,14 +450,473 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
         [Fact]
         public async Task GetProducts_HasNoData_ReturnListProduct()
         {
-            // Act
+            // Arrange
             var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
             var result = await controller.GetProducts();
             var okResult = Assert.IsType<OkObjectResult>(result);
             var listProduct = Assert.IsAssignableFrom<IEnumerable<ProductViewModel>>(okResult.Value);
 
             // Assert
             Assert.Empty(listProduct);
+        }
+
+        // =========================
+        // Get all product variants in product
+        // =========================
+
+        [Fact]
+        public async Task GetAllProductVariantsInProduct_HasData_ReturnListProduct()
+        {
+            // Arrange
+            _context.Products.AddRange
+           (
+               new Product
+               {
+                   Name = "Màn hình LCD IPhone 11",
+                   Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                   Code = "LCD-IP11",
+                   CategoryId = 2
+               },
+               new Product
+               {
+                   Name = "Màn hình LCD Samsung S25 Ultra",
+                   Description = "Màn hình LCD thay thế cho Samsung S25 Ultra.",
+                   Code = "LCD-S25U",
+                   CategoryId = 2
+               }
+           );
+
+            _context.ProductImages.AddRange
+            (
+                new ProductImage
+                {
+                    ProductId = 1,
+                    ImageUrl = "test",
+                    IsDefault = true,
+                    SortOrder = 1
+                },
+                new ProductImage
+                {
+                    ProductId = 2,
+                    ImageUrl = "test",
+                    IsDefault = true,
+                    SortOrder = 1
+                }
+            );
+
+            _context.ProductVariants.AddRange
+            (
+                new ProductVariant
+                {
+                    ProductId = 1,
+                    Name = "Hàng mới",
+                    SKU = "54d5644d6a",
+                    Price = 76000,
+                    StockQuantity = 4654,
+                },
+                new ProductVariant
+                {
+                    ProductId = 1,
+                    Name = "Hàng mới 2",
+                    SKU = "5a4a56d454",
+                    Price = 50000,
+                    StockQuantity = 1133,
+                }
+            );
+
+            await _context.SaveChangesAsync();
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.GetAllProductVariantsInProduct(1);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var listProduct = Assert.IsAssignableFrom<IEnumerable<ProductVariantViewModel>>(okResult.Value);
+
+            // Assert
+            Assert.Equal(2, listProduct.Count());
+        }
+
+        [Fact]
+        public async Task GetAllProductVariantsInProduct_HasNoDataInProductVariant_ReturnEmptyListProduct()
+        {
+            // Arrange
+            _context.Products.AddRange
+           (
+               new Product
+               {
+                   Name = "Màn hình LCD IPhone 11",
+                   Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                   Code = "LCD-IP11",
+                   CategoryId = 2
+               },
+               new Product
+               {
+                   Name = "Màn hình LCD Samsung S25 Ultra",
+                   Description = "Màn hình LCD thay thế cho Samsung S25 Ultra.",
+                   Code = "LCD-S25U",
+                   CategoryId = 2
+               }
+           );
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.GetAllProductVariantsInProduct(1);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var listProduct = Assert.IsAssignableFrom<IEnumerable<ProductVariantViewModel>>(okResult.Value);
+
+            // Assert
+            Assert.Empty(listProduct);
+        }
+
+        [Fact]
+        public async Task GetAllProductVariantsInProduct_HasNoData_ReturnNotFound()
+        {
+            // Arrange
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.GetAllProductVariantsInProduct(1);
+
+            // Assert
+            Assert.IsType<NotFoundResult>(result);
+        }
+
+        // =========================
+        // Get product detail
+        // =========================
+
+        [Fact]
+        public async Task GetProductDetail_HasData_ReturnProductDetail()
+        {
+            // Arrange
+            _context.Products.AddRange
+             (
+                 new Product
+                 {
+                     Name = "Màn hình LCD IPhone 11",
+                     Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                     Code = "LCD-IP11",
+                     CategoryId = 2
+                 },
+                 new Product
+                 {
+                     Name = "Màn hình LCD Samsung S25 Ultra",
+                     Description = "Màn hình LCD thay thế cho Samsung S25 Ultra.",
+                     Code = "LCD-S25U",
+                     CategoryId = 2
+                 }
+             );
+
+            _context.ProductVariants.AddRange
+            (
+                new ProductVariant
+                {
+                    ProductId = 1,
+                    Name = "Hàng mới",
+                    SKU = "54d5644d6a",
+                    Price = 76000,
+                    StockQuantity = 4654,
+                },
+                new ProductVariant
+                {
+                    ProductId = 1,
+                    Name = "Hàng mới 2",
+                    SKU = "5a4a56d454",
+                    Price = 50000,
+                    StockQuantity = 1133,
+                }
+            );
+
+            _context.ProductComments.AddRange(
+                new ProductComment
+                {
+                    ProductId = 1,
+                    ProductVariantId = 1,
+                    UserId = string.Empty,
+                    Content = "Sản phẩm tốt, chất lượng ổn định.",
+                    Rating = 5,
+                    ParentId = null,
+                },
+                new ProductComment
+                {
+                    ProductId = 1,
+                    ProductVariantId = 1,
+                    UserId = string.Empty,
+                    Content = "Sản phẩm hiện tại vẫn còn nhiều thiếu sót",
+                    Rating = 5,
+                    ParentId = null,
+                }
+            );
+
+            _context.ProductImages.AddRange
+            (
+                new ProductImage
+                {
+                    ProductId = 1,
+                    ImageUrl = "test",
+                    IsDefault = true,
+                    SortOrder = 1
+                },
+                new ProductImage
+                {
+                    ProductId = 1,
+                    ImageUrl = "test 2",
+                    IsDefault = false,
+                    SortOrder = 2
+                }
+            );
+
+            await _context.SaveChangesAsync();
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.GetProductDetail(1);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var productDetail = okResult.Value as ProductDetailViewModel;
+
+            // Assert
+            Assert.NotNull(productDetail);
+        }
+
+        [Fact]
+        public async Task GetProductDetail_HasNoData_ReturnNotFound()
+        {
+            // Arrange
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.GetProductDetail(1);
+
+            // Assert
+            Assert.IsType<NotFoundResult>(result);
+        }
+
+        // =========================
+        // Get all comment in product
+        // =========================
+
+        [Fact]
+        public async Task GetAllCommentInProduct_HasData_ReturnListComment()
+        {
+            // Arrange
+            _context.Products.AddRange
+            (
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2
+                },
+                new Product
+                {
+                    Name = "Màn hình LCD Samsung S25 Ultra",
+                    Description = "Màn hình LCD thay thế cho Samsung S25 Ultra.",
+                    Code = "LCD-S25U",
+                    CategoryId = 2
+                }
+            );
+
+            _context.ProductComments.AddRange(
+                new ProductComment
+                {
+                    ProductId = 1,
+                    ProductVariantId = 1,
+                    UserId = string.Empty,
+                    Content = "Sản phẩm tốt, chất lượng ổn định.",
+                    Rating = 5,
+                    ParentId = null,
+                },
+                new ProductComment
+                {
+                    ProductId = 1,
+                    ProductVariantId = 1,
+                    UserId = string.Empty,
+                    Content = "Sản phẩm hiện tại vẫn còn nhiều thiếu sót",
+                    Rating = 5,
+                    ParentId = null,
+                }
+            );
+
+            await _context.SaveChangesAsync();
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.GetAllCommentInProduct(1);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var listComment = Assert.IsAssignableFrom<IEnumerable<ProductComment>>(okResult.Value);
+
+            // Assert
+            Assert.Equal(2, listComment!.Count());
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        public async Task GetAllCommentInProduct_HasNoDataInProductComment_ReturnEmptyListComment(int productId)
+        {
+            // Arrange
+            _context.Products.AddRange
+            (
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2
+                },
+                new Product
+                {
+                    Name = "Màn hình LCD Samsung S25 Ultra",
+                    Description = "Màn hình LCD thay thế cho Samsung S25 Ultra.",
+                    Code = "LCD-S25U",
+                    CategoryId = 2
+                }
+            );
+
+            await _context.SaveChangesAsync();
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.GetAllCommentInProduct(productId);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var listComment = Assert.IsAssignableFrom<IEnumerable<ProductComment>>(okResult.Value);
+
+            // Assert
+            Assert.Empty(listComment);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        public async Task GetAllCommentInProduct_HasNoDataInProduct_ReturnNotFound(int productId)
+        {
+            // Arrange
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.GetAllCommentInProduct(productId);
+
+            // Assert
+            Assert.IsType<NotFoundResult>(result);
+        }
+
+        #endregion
+
+        #region Create entity in product
+
+        // =========================
+        // Post product
+        // =========================
+
+        [Fact]
+        public async Task PostProduct_ValidInput_ReturnSuccess()
+        {
+            // Arrange
+            _context.Categories.Add(
+                new Category
+                {
+                    Name = "Màn hình",
+                    ParentId = null,
+                    SeoAlias = "man-hinh",
+                    SeoDescription = "Màn hình LCD",
+                    SortOrder = 1
+                }
+            );
+
+            await _context.SaveChangesAsync();
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.PostProduct(
+                new ProductCreateRequest
+                {
+                    Name = "product 1",
+                    Description = "description of product 1",
+                    CategoryId = 1,
+                    Code = "code of product 1",
+                    Price = 10000,
+                    InitialStock = 45646,
+                    SKU = "sku of product 1"
+                }
+            );
+
+            // Assert
+            Assert.IsType<CreatedAtActionResult>(result);
+        }
+
+        // =========================
+        // Post comment in product
+        // =========================
+
+        [Fact]
+        public async Task PostCommentInProduct_HasDataAndValidInput_ReturnSuccess()
+        {
+            // Arrange
+            _context.Products.AddRange
+            (
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2
+                },
+                new Product
+                {
+                    Name = "Màn hình LCD Samsung S25 Ultra",
+                    Description = "Màn hình LCD thay thế cho Samsung S25 Ultra.",
+                    Code = "LCD-S25U",
+                    CategoryId = 2
+                }
+            );
+
+            await _context.SaveChangesAsync();
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.PostCommentInProduct(1,
+                new ProductCommentCreateRequest
+                {
+                    UserId = string.Empty,
+                    Content = "Sản phẩm tốt, chất lượng ổn định.",
+                    Rating = 5,
+                    ParentId = null,
+                }
+            );
+
+            // Assert
+            Assert.IsType<OkObjectResult>(result);
+        }
+
+        [Fact]
+        public async Task PostCommentInProduct_HasNoDataAndValidInput_ReturnSuccess()
+        {
+            // Arrange
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.PostCommentInProduct(1,
+                new ProductCommentCreateRequest
+                {
+                    UserId = string.Empty,
+                    Content = "Sản phẩm tốt, chất lượng ổn định.",
+                    Rating = 5,
+                    ParentId = null,
+                }
+            );
+
+            // Assert
+            Assert.IsType<NotFoundResult>(result);
         }
 
         #endregion
