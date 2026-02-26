@@ -1665,5 +1665,9 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
         }
 
         #endregion
+
+        #region Soft delete / trash / restore / permanent delete
+
+        #endregion
     }
 }

@@ -905,7 +905,7 @@ namespace WarehouseManagement.BackendServer.Controllers
 
         #endregion
 
-        #region Soft delete / trash
+        #region Soft delete / trash / restore / permanent delete
 
         /// <summary>
         /// Get all products that are currently in the trash (soft-deleted).
