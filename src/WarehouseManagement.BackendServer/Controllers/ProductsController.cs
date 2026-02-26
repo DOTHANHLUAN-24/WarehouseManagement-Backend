@@ -519,11 +519,13 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             _logger.LogInformation("ChangeStatusProduct success. Id = {id}", product.Id);
 
-            return Ok(new
-            {
-                product.Id,
-                product.IsActive
-            });
+            return Ok(
+                new ProductStatusViewModel
+                {
+                    Id = product.Id,
+                    IsActive = product.IsActive
+                }
+            );
         }
 
         /// <summary>
