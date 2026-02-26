@@ -58,15 +58,18 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     SeoAlias = "man-hinh-lcd",
                     SeoDescription = "Màn hình LCD (Liquid Crystal Display) là màn hình hiển thị sử dụng tinh thể lỏng để tạo hình ảnh, hoạt động nhờ đèn nền (backlight) chiếu sáng từ phía sau.",
                     SortOrder = 2
-                });
+                }
+            );
 
-            _context.Products.Add(new Product
-            {
-                Name = "Màn hình LCD IPhone 11",
-                Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
-                Code = "LCD-IP11",
-                CategoryId = 2
-            });
+            _context.Products.Add(
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2
+                }
+            );
 
             _context.ProductVariants.Add(
                 new ProductVariant
@@ -76,7 +79,8 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     SKU = "54d5644d6a",
                     Price = 76000,
                     StockQuantity = 4654,
-                });
+                }
+            );
 
             _context.ProductImages.Add(new ProductImage
             {
@@ -136,15 +140,18 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     SeoAlias = "man-hinh-lcd",
                     SeoDescription = "Màn hình LCD (Liquid Crystal Display) là màn hình hiển thị sử dụng tinh thể lỏng để tạo hình ảnh, hoạt động nhờ đèn nền (backlight) chiếu sáng từ phía sau.",
                     SortOrder = 2
-                });
+                }
+            );
 
-            _context.Products.Add(new Product
-            {
-                Name = "Màn hình LCD IPhone 11",
-                Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
-                Code = "LCD-IP11",
-                CategoryId = 2
-            });
+            _context.Products.Add(
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2
+                }
+            );
 
             _context.ProductVariants.Add(
                 new ProductVariant
@@ -154,15 +161,18 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     SKU = "54d5644d6a",
                     Price = 76000,
                     StockQuantity = 4654,
-                });
+                }
+            );
 
-            _context.ProductImages.Add(new ProductImage
-            {
-                ProductId = 1,
-                ImageUrl = "test",
-                IsDefault = true,
-                SortOrder = 1
-            });
+            _context.ProductImages.Add(
+                new ProductImage
+                {
+                    ProductId = 1,
+                    ImageUrl = "test",
+                    IsDefault = true,
+                    SortOrder = 1
+                }
+            );
 
             await _context.SaveChangesAsync();
 
@@ -219,7 +229,8 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     SeoAlias = "man-hinh-lcd",
                     SeoDescription = "Màn hình LCD (Liquid Crystal Display) là màn hình hiển thị sử dụng tinh thể lỏng để tạo hình ảnh, hoạt động nhờ đèn nền (backlight) chiếu sáng từ phía sau.",
                     SortOrder = 2
-                });
+                }
+            );
 
             _context.Products.AddRange(
                 new Product
@@ -235,10 +246,11 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     Description = "Màn hình LCD dành cho Samsung Galaxy A14, công nghệ TFT, chất lượng tiêu chuẩn.",
                     Code = "LCD-SSA14",
                     CategoryId = 2
-                });
+                }
+            );
 
             _context.ProductVariants.AddRange
-                (
+            (
                 new ProductVariant
                 {
                     ProductId = 1,
@@ -255,9 +267,10 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     Price = 50000,
                     StockQuantity = 1133,
                 }
-                );
+            );
 
-            _context.ProductImages.AddRange(
+            _context.ProductImages.AddRange
+            (
                 new ProductImage
                 {
                     ProductId = 1,
@@ -271,7 +284,8 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     ImageUrl = "test 2",
                     IsDefault = true,
                     SortOrder = 1
-                });
+                }
+            );
 
             await _context.SaveChangesAsync();
 
@@ -311,11 +325,12 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
         [InlineData(null, 1, 10, 2)]
         [InlineData("test", 1, 10, 0)]
         [InlineData("Màn hình", 1, 10, 2)]
-        public async Task GetProductsPaging_HasData_ReturnListProduct(
-            string? filter,
-            int pageIndex,
-            int pageSize,
-            int totalItems
+        public async Task GetProductsPaging_HasData_ReturnListProduct
+            (
+                string? filter,
+                int pageIndex,
+                int pageSize,
+                int totalItems
             )
         {
             // Arrange
@@ -594,22 +609,22 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
         {
             // Arrange
             _context.Products.AddRange
-             (
-                 new Product
-                 {
-                     Name = "Màn hình LCD IPhone 11",
-                     Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
-                     Code = "LCD-IP11",
-                     CategoryId = 2
-                 },
-                 new Product
-                 {
-                     Name = "Màn hình LCD Samsung S25 Ultra",
-                     Description = "Màn hình LCD thay thế cho Samsung S25 Ultra.",
-                     Code = "LCD-S25U",
-                     CategoryId = 2
-                 }
-             );
+            (
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2
+                },
+                new Product
+                {
+                    Name = "Màn hình LCD Samsung S25 Ultra",
+                    Description = "Màn hình LCD thay thế cho Samsung S25 Ultra.",
+                    Code = "LCD-S25U",
+                    CategoryId = 2
+                }
+            );
 
             _context.ProductVariants.AddRange
             (
@@ -1113,6 +1128,128 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             {
                 Content = "Comment mới",
             });
+
+            // Assert
+            Assert.IsType<NotFoundResult>(result);
+        }
+
+        #endregion
+
+        #region Price & stock
+
+        // =========================
+        // Update price
+        // =========================
+
+        [Theory]
+        [InlineData(46521, 1454)]
+        [InlineData(4651, 145654)]
+        public async Task UpdatePrice_HasDataAndValidInput_ReturnSuccess(decimal beforePrice, decimal afterPrice)
+        {
+            // Arrange
+            _context.Products.Add
+            (
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2
+                }
+            );
+
+            _context.ProductVariants.Add
+            (
+                new ProductVariant
+                {
+                    ProductId = 1,
+                    Name = "Hàng mới",
+                    SKU = "54d5644d6a",
+                    Price = beforePrice,
+                    StockQuantity = 4654,
+                }
+            );
+
+            await _context.SaveChangesAsync();
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.UpdatePrice(1, afterPrice);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var product = Assert.IsType<ProductVariantViewModel>(okResult.Value);
+
+            // Assert
+            Assert.Equal(afterPrice, product.Price);
+        }
+
+        [Fact]
+        public async Task UpdatePrice_HasNoDataInProduct_ReturnNotFound()
+        {
+            // Arrange
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.UpdatePrice(1, 564123);
+
+            // Assert
+            Assert.IsType<NotFoundResult>(result);
+        }
+
+        // =========================
+        // Update price
+        // =========================
+
+        [Theory]
+        [InlineData(46521, 1454)]
+        [InlineData(4651, 145654)]
+        public async Task UpdateStock_HasData_ReturnSuccess(int beforeStock, int afterStock)
+        {
+            // Arrange
+            _context.Products.Add
+            (
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2
+                }
+            );
+
+            _context.ProductVariants.Add
+            (
+                new ProductVariant
+                {
+                    ProductId = 1,
+                    Name = "Hàng mới",
+                    SKU = "54d5644d6a",
+                    Price = 455123,
+                    StockQuantity = beforeStock,
+                }
+            );
+
+            await _context.SaveChangesAsync();
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.UpdateStock(1, afterStock);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var product = Assert.IsType<ProductVariantViewModel>(okResult.Value);
+
+            // Assert
+            Assert.Equal(afterStock, product.StockQuantity);
+        }
+
+        [Fact]
+        public async Task UpdateStock_HasNoDataInProduct_ReturnNotFound()
+        {
+            // Arrange
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.UpdateStock(1, 564123);
 
             // Assert
             Assert.IsType<NotFoundResult>(result);

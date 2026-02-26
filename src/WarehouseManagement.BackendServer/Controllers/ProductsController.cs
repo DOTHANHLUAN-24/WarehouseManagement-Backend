@@ -615,7 +615,16 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             _logger.LogInformation("UpdatePrice by id and new price success. Id = {id}", id);
 
-            return NoContent();
+            return Ok(
+                new ProductVariantViewModel
+                {
+                    Name = variant.Name,
+                    ProductVariantId = variant.Id,
+                    Price = variant.Price,
+                    StockQuantity = variant.StockQuantity,
+                    IsActiveInVariant = variant.IsActive
+                }
+            );
         }
 
         /// <summary>
@@ -651,7 +660,16 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             _logger.LogInformation("UpdateStock by id and new stock success. Id = {id}", id);
 
-            return NoContent();
+            return Ok(
+                new ProductVariantViewModel
+                {
+                    Name = variant.Name,
+                    ProductVariantId = variant.Id,
+                    Price = variant.Price,
+                    StockQuantity = variant.StockQuantity,
+                    IsActiveInVariant = variant.IsActive
+                }
+            );
         }
 
 
