@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
 using WarehouseManagement.BackendServer.Controllers;
@@ -58,15 +59,18 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     SeoAlias = "man-hinh-lcd",
                     SeoDescription = "Màn hình LCD (Liquid Crystal Display) là màn hình hiển thị sử dụng tinh thể lỏng để tạo hình ảnh, hoạt động nhờ đèn nền (backlight) chiếu sáng từ phía sau.",
                     SortOrder = 2
-                });
+                }
+            );
 
-            _context.Products.Add(new Product
-            {
-                Name = "Màn hình LCD IPhone 11",
-                Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
-                Code = "LCD-IP11",
-                CategoryId = 2
-            });
+            _context.Products.Add(
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2
+                }
+            );
 
             _context.ProductVariants.Add(
                 new ProductVariant
@@ -76,7 +80,8 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     SKU = "54d5644d6a",
                     Price = 76000,
                     StockQuantity = 4654,
-                });
+                }
+            );
 
             _context.ProductImages.Add(new ProductImage
             {
@@ -136,15 +141,18 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     SeoAlias = "man-hinh-lcd",
                     SeoDescription = "Màn hình LCD (Liquid Crystal Display) là màn hình hiển thị sử dụng tinh thể lỏng để tạo hình ảnh, hoạt động nhờ đèn nền (backlight) chiếu sáng từ phía sau.",
                     SortOrder = 2
-                });
+                }
+            );
 
-            _context.Products.Add(new Product
-            {
-                Name = "Màn hình LCD IPhone 11",
-                Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
-                Code = "LCD-IP11",
-                CategoryId = 2
-            });
+            _context.Products.Add(
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2
+                }
+            );
 
             _context.ProductVariants.Add(
                 new ProductVariant
@@ -154,15 +162,18 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     SKU = "54d5644d6a",
                     Price = 76000,
                     StockQuantity = 4654,
-                });
+                }
+            );
 
-            _context.ProductImages.Add(new ProductImage
-            {
-                ProductId = 1,
-                ImageUrl = "test",
-                IsDefault = true,
-                SortOrder = 1
-            });
+            _context.ProductImages.Add(
+                new ProductImage
+                {
+                    ProductId = 1,
+                    ImageUrl = "test",
+                    IsDefault = true,
+                    SortOrder = 1
+                }
+            );
 
             await _context.SaveChangesAsync();
 
@@ -219,7 +230,8 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     SeoAlias = "man-hinh-lcd",
                     SeoDescription = "Màn hình LCD (Liquid Crystal Display) là màn hình hiển thị sử dụng tinh thể lỏng để tạo hình ảnh, hoạt động nhờ đèn nền (backlight) chiếu sáng từ phía sau.",
                     SortOrder = 2
-                });
+                }
+            );
 
             _context.Products.AddRange(
                 new Product
@@ -235,10 +247,11 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     Description = "Màn hình LCD dành cho Samsung Galaxy A14, công nghệ TFT, chất lượng tiêu chuẩn.",
                     Code = "LCD-SSA14",
                     CategoryId = 2
-                });
+                }
+            );
 
             _context.ProductVariants.AddRange
-                (
+            (
                 new ProductVariant
                 {
                     ProductId = 1,
@@ -255,9 +268,10 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     Price = 50000,
                     StockQuantity = 1133,
                 }
-                );
+            );
 
-            _context.ProductImages.AddRange(
+            _context.ProductImages.AddRange
+            (
                 new ProductImage
                 {
                     ProductId = 1,
@@ -271,7 +285,8 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     ImageUrl = "test 2",
                     IsDefault = true,
                     SortOrder = 1
-                });
+                }
+            );
 
             await _context.SaveChangesAsync();
 
@@ -311,11 +326,12 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
         [InlineData(null, 1, 10, 2)]
         [InlineData("test", 1, 10, 0)]
         [InlineData("Màn hình", 1, 10, 2)]
-        public async Task GetProductsPaging_HasData_ReturnListProduct(
-            string? filter,
-            int pageIndex,
-            int pageSize,
-            int totalItems
+        public async Task GetProductsPaging_HasData_ReturnListProduct
+            (
+                string? filter,
+                int pageIndex,
+                int pageSize,
+                int totalItems
             )
         {
             // Arrange
@@ -594,22 +610,22 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
         {
             // Arrange
             _context.Products.AddRange
-             (
-                 new Product
-                 {
-                     Name = "Màn hình LCD IPhone 11",
-                     Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
-                     Code = "LCD-IP11",
-                     CategoryId = 2
-                 },
-                 new Product
-                 {
-                     Name = "Màn hình LCD Samsung S25 Ultra",
-                     Description = "Màn hình LCD thay thế cho Samsung S25 Ultra.",
-                     Code = "LCD-S25U",
-                     CategoryId = 2
-                 }
-             );
+            (
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2
+                },
+                new Product
+                {
+                    Name = "Màn hình LCD Samsung S25 Ultra",
+                    Description = "Màn hình LCD thay thế cho Samsung S25 Ultra.",
+                    Code = "LCD-S25U",
+                    CategoryId = 2
+                }
+            );
 
             _context.ProductVariants.AddRange
             (
@@ -914,6 +930,735 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     ParentId = null,
                 }
             );
+
+            // Assert
+            Assert.IsType<NotFoundResult>(result);
+        }
+
+        #endregion
+
+        #region Update
+
+        // =========================
+        // Update status product
+        // =========================
+
+        [Theory]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        public async Task UpdateStatusProduct_HasData_ReturnObject(bool beforeChange, bool afterChange)
+        {
+            // Arrange
+            _context.Products.Add(
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2,
+                    IsActive = beforeChange
+                }
+            );
+
+            await _context.SaveChangesAsync();
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.ChangeStatusProduct(1);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var data = Assert.IsType<ProductStatusViewModel>(okResult.Value);
+
+            // Assert
+            Assert.Equal(afterChange, data.IsActive);
+        }
+
+        [Fact]
+        public async Task UpdateStatusProduct_HasNoData_ReturnNotFound()
+        {
+            // Arrange
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.ChangeStatusProduct(1);
+
+            // Assert
+            Assert.IsType<NotFoundResult>(result);
+        }
+
+        // =========================
+        // Update comment in product
+        // =========================
+
+        [Fact]
+        public async Task UpdateCommentInProduct_HasData_ReturnSuccess()
+        {
+            // Arrange
+            _context.Products.Add(
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2
+                }
+            );
+
+            _context.ProductComments.AddRange(
+                new ProductComment
+                {
+                    ProductId = 1,
+                    ProductVariantId = 1,
+                    UserId = string.Empty,
+                    Content = "Sản phẩm tốt, chất lượng ổn định.",
+                    Rating = 5,
+                    ParentId = null,
+                },
+                new ProductComment
+                {
+                    ProductId = 1,
+                    ProductVariantId = 1,
+                    UserId = string.Empty,
+                    Content = "Sản phẩm hiện tại vẫn còn nhiều thiếu sót",
+                    Rating = 5,
+                    ParentId = null,
+                }
+            );
+
+            await _context.SaveChangesAsync();
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.UpdateCommentInProduct(1, 1, new ProductCommentUpdateRequest
+            {
+                Content = "Comment mới",
+            });
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var comment = Assert.IsType<ProductComment>(okResult.Value);
+
+            // Assert
+            Assert.Equal("Comment mới", comment.Content);
+        }
+
+        [Fact]
+        public async Task UpdateCommentInProduct_CommentIsNotYour_ReturnBadRequest()
+        {
+            // Arrange
+            _context.Products.Add(
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2
+                }
+            );
+
+            _context.ProductComments.AddRange(
+                new ProductComment
+                {
+                    ProductId = 1,
+                    ProductVariantId = 1,
+                    UserId = "ajkldkl",
+                    Content = "Sản phẩm tốt, chất lượng ổn định.",
+                    Rating = 5,
+                    ParentId = null,
+                },
+                new ProductComment
+                {
+                    ProductId = 1,
+                    ProductVariantId = 1,
+                    UserId = "akljdklalda",
+                    Content = "Sản phẩm hiện tại vẫn còn nhiều thiếu sót",
+                    Rating = 5,
+                    ParentId = null,
+                }
+            );
+
+            await _context.SaveChangesAsync();
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.UpdateCommentInProduct(1, 1, new ProductCommentUpdateRequest
+            {
+                Content = "Comment mới",
+            });
+
+            // Assert
+            Assert.IsType<BadRequestResult>(result);
+        }
+
+        [Fact]
+        public async Task UpdateCommentInProduct_HasNotDataInProduct_ReturnBadRequest()
+        {
+            // Arrange
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.UpdateCommentInProduct(1, 1, new ProductCommentUpdateRequest
+            {
+                Content = "Comment mới",
+            });
+
+            // Assert
+            Assert.IsType<NotFoundResult>(result);
+        }
+
+        [Fact]
+        public async Task UpdateCommentInProduct_HasNotDataInProductComment_ReturnNotFound()
+        {
+            // Arrange
+            _context.Products.Add(
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2
+                }
+            );
+
+            await _context.SaveChangesAsync();
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.UpdateCommentInProduct(1, 1, new ProductCommentUpdateRequest
+            {
+                Content = "Comment mới",
+            });
+
+            // Assert
+            Assert.IsType<NotFoundResult>(result);
+        }
+
+        #endregion
+
+        #region Price & stock
+
+        // =========================
+        // Update price
+        // =========================
+
+        [Theory]
+        [InlineData(46521, 1454)]
+        [InlineData(4651, 145654)]
+        public async Task UpdatePrice_HasDataAndValidInput_ReturnSuccess(decimal beforePrice, decimal afterPrice)
+        {
+            // Arrange
+            _context.Products.Add
+            (
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2
+                }
+            );
+
+            _context.ProductVariants.Add
+            (
+                new ProductVariant
+                {
+                    ProductId = 1,
+                    Name = "Hàng mới",
+                    SKU = "54d5644d6a",
+                    Price = beforePrice,
+                    StockQuantity = 4654,
+                }
+            );
+
+            await _context.SaveChangesAsync();
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.UpdatePrice(1, afterPrice);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var product = Assert.IsType<ProductVariantViewModel>(okResult.Value);
+
+            // Assert
+            Assert.Equal(afterPrice, product.Price);
+        }
+
+        [Fact]
+        public async Task UpdatePrice_HasNoDataInProduct_ReturnNotFound()
+        {
+            // Arrange
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.UpdatePrice(1, 564123);
+
+            // Assert
+            Assert.IsType<NotFoundResult>(result);
+        }
+
+        // =========================
+        // Update price
+        // =========================
+
+        [Theory]
+        [InlineData(46521, 1454)]
+        [InlineData(4651, 145654)]
+        public async Task UpdateStock_HasData_ReturnSuccess(int beforeStock, int afterStock)
+        {
+            // Arrange
+            _context.Products.Add
+            (
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2
+                }
+            );
+
+            _context.ProductVariants.Add
+            (
+                new ProductVariant
+                {
+                    ProductId = 1,
+                    Name = "Hàng mới",
+                    SKU = "54d5644d6a",
+                    Price = 455123,
+                    StockQuantity = beforeStock,
+                }
+            );
+
+            await _context.SaveChangesAsync();
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.UpdateStock(1, afterStock);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var product = Assert.IsType<ProductVariantViewModel>(okResult.Value);
+
+            // Assert
+            Assert.Equal(afterStock, product.StockQuantity);
+        }
+
+        [Fact]
+        public async Task UpdateStock_HasNoDataInProduct_ReturnNotFound()
+        {
+            // Arrange
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.UpdateStock(1, 564123);
+
+            // Assert
+            Assert.IsType<NotFoundResult>(result);
+        }
+
+        #endregion
+
+        #region Image
+
+        // =========================
+        // Get images
+        // =========================
+
+        [Fact]
+        public async Task GetImages_HasData_ReturnListProductImages()
+        {
+            // Arrange
+            _context.Products.Add
+            (
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2
+                }
+            );
+
+            _context.ProductImages.AddRange
+            (
+                new ProductImage
+                {
+                    ProductId = 1,
+                    ImageUrl = "test 1",
+                    IsDefault = true,
+                    SortOrder = 1
+                },
+                new ProductImage
+                {
+                    ProductId = 1,
+                    ImageUrl = "test 2",
+                    IsDefault = false,
+                    SortOrder = 2
+                },
+                new ProductImage
+                {
+                    ProductId = 1,
+                    ImageUrl = "test 2",
+                    IsDefault = false,
+                    SortOrder = 3
+                }
+            );
+
+            await _context.SaveChangesAsync();
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.GetImages(1);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var listImages = okResult.Value as IEnumerable<ProductImage>;
+
+            // Assert
+            Assert.Equal(3, listImages!.Count());
+        }
+
+        [Fact]
+        public async Task GetImages_HasNoDataInProductImages_ReturnListEmpty()
+        {
+            // Arrange
+            _context.Products.Add
+            (
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2
+                }
+            );
+
+            await _context.SaveChangesAsync();
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.GetImages(1);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var listImages = okResult.Value as IEnumerable<ProductImage>;
+
+            // Assert
+            Assert.Empty(listImages!);
+        }
+
+        [Fact]
+        public async Task GetImages_HasNoDataInProduct_ReturnNotFound()
+        {
+            // Arrange
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.GetImages(1);
+
+            // Assert
+            Assert.IsType<NotFoundResult>(result);
+        }
+
+        // =========================
+        // Upload images
+        // =========================
+
+        [Fact]
+        public async Task UploadImages_FirstImage_IsDefault()
+        {
+            // Arrange
+            _context.Products.Add
+            (
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2
+                }
+            );
+            await _context.SaveChangesAsync();
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            var files = new List<IFormFile>
+            {
+                CreateFakeFile()
+            };
+
+            // Act
+            var result = await controller.UploadImages(1, files);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var data = Assert.IsAssignableFrom<List<ProductImage>>(okResult.Value);
+
+            Assert.True(data.First().IsDefault);
+        }
+
+        [Fact]
+        public async Task UploadImages_ValidInput_ReturnListImages()
+        {
+            // Arrange
+            _context.Products.Add
+            (
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2
+                }
+            );
+
+            await _context.SaveChangesAsync();
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            var files = new List<IFormFile>
+            {
+                CreateFakeFile("anh1.png"),
+                CreateFakeFile("anh2.png"),
+                CreateFakeFile("anh3.png")
+            };
+
+            // Act
+            var result = await controller.UploadImages(1, files);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var data = Assert.IsAssignableFrom<List<ProductImage>>(okResult.Value);
+
+            // Assert
+            Assert.Equal(3, data.Count());
+        }
+
+        [Fact]
+        public async Task UploadImages_HasNoDataInProduct_ReturnNotFound()
+        {
+            // Arrange
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            var files = new List<IFormFile>
+            {
+                CreateFakeFile()
+            };
+
+            // Act
+            var result = await controller.UploadImages(1, files);
+
+            // Assert
+            Assert.IsType<NotFoundResult>(result);
+        }
+
+        [Fact]
+        public async Task UploadImages_HasNoDataInProductImages_ReturnNotFound()
+        {
+            // Arrange
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.UploadImages(1, null!);
+
+            // Assert
+            Assert.IsType<NotFoundResult>(result);
+        }
+
+        private IFormFile CreateFakeFile(string fileName = "test.png")
+        {
+            var content = "fake image content";
+            var fileNameOnly = fileName;
+            var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(content));
+
+            return new FormFile(stream, 0, stream.Length, "images", fileNameOnly)
+            {
+                Headers = new HeaderDictionary(),
+                ContentType = "image/png"
+            };
+        }
+
+        // =========================
+        // Update thumb in product
+        // =========================
+
+        [Fact]
+        public async Task UpdateThumbInProduct_HasData_ReturnSuccess()
+        {
+            // Arrange
+            _context.Products.Add
+            (
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2
+                }
+            );
+
+            _context.ProductImages.AddRange
+            (
+                new ProductImage
+                {
+                    ProductId = 1,
+                    ImageUrl = "test 1",
+                    IsDefault = true,
+                    SortOrder = 1
+                },
+                new ProductImage
+                {
+                    ProductId = 1,
+                    ImageUrl = "test 2",
+                    IsDefault = false,
+                    SortOrder = 2
+                },
+                new ProductImage
+                {
+                    ProductId = 1,
+                    ImageUrl = "test 2",
+                    IsDefault = false,
+                    SortOrder = 3
+                }
+            );
+
+            await _context.SaveChangesAsync();
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.UpdateThumbInProduct(1, 2);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var data = Assert.IsType<Product>(okResult.Value);
+
+            // Assert
+            Assert.Equal(2, data.ProductImages.FirstOrDefault(x => x.IsDefault)!.Id);
+        }
+
+        [Fact]
+        public async Task UpdateThumbInProduct_HasNoDataInProductImages_ReturnNotFound()
+        {
+            // Arrange
+            _context.Products.Add
+            (
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2
+                }
+            );
+
+            await _context.SaveChangesAsync();
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.UpdateThumbInProduct(1, 2);
+
+            // Assert
+            Assert.IsType<NotFoundObjectResult>(result);
+        }
+
+        [Fact]
+        public async Task UpdateThumbInProduct_HasNoDataInProduct_ReturnNotFound()
+        {
+            // Arrange
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.UpdateThumbInProduct(1, 2);
+
+            // Assert
+            Assert.IsType<NotFoundObjectResult>(result);
+        }
+
+        // =========================
+        // Delete product image
+        // =========================
+
+        [Fact]
+        public async Task DeleteProductImage_HasData_ReturnSuccess()
+        {
+            // Arrange
+            _context.Products.Add
+            (
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2
+                }
+            );
+
+            _context.ProductImages.AddRange
+            (
+                new ProductImage
+                {
+                    ProductId = 1,
+                    ImageUrl = "test 1",
+                    IsDefault = true,
+                    SortOrder = 1
+                },
+                new ProductImage
+                {
+                    ProductId = 1,
+                    ImageUrl = "test 2",
+                    IsDefault = false,
+                    SortOrder = 2
+                },
+                new ProductImage
+                {
+                    ProductId = 1,
+                    ImageUrl = "test 2",
+                    IsDefault = false,
+                    SortOrder = 3
+                }
+            );
+
+            await _context.SaveChangesAsync();
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.DeleteProductImage(1, 2);
+
+            // Assert
+            Assert.IsType<OkObjectResult>(result);
+        }
+
+        [Fact]
+        public async Task DeleteProductImage_HasNoDataInProductImages_ReturnNotFound()
+        {
+            // Arrange
+            _context.Products.Add
+            (
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2
+                }
+            );
+
+            await _context.SaveChangesAsync();
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.DeleteProductImage(1, 2);
+
+            // Assert
+            Assert.IsType<NotFoundResult>(result);
+        }
+
+        [Fact]
+        public async Task DeleteProductImage_HasNoDataInProduct_ReturnNotFound()
+        {
+            // Arrange
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.DeleteProductImage(1, 2);
 
             // Assert
             Assert.IsType<NotFoundResult>(result);

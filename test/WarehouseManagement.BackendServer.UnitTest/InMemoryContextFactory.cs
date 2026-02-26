@@ -15,5 +15,4 @@ namespace WarehouseManagement.BackendServer.UnitTest
             return new ApplicationDbContext(options);
         }
     }
-
 }

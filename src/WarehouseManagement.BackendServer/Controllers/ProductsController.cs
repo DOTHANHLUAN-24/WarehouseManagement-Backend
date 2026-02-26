@@ -519,11 +519,13 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             _logger.LogInformation("ChangeStatusProduct success. Id = {id}", product.Id);
 
-            return Ok(new
-            {
-                product.Id,
-                product.IsActive
-            });
+            return Ok(
+                new ProductStatusViewModel
+                {
+                    Id = product.Id,
+                    IsActive = product.IsActive
+                }
+            );
         }
 
         /// <summary>
@@ -551,14 +553,14 @@ namespace WarehouseManagement.BackendServer.Controllers
             var comment = await _context.ProductComments
                 .Where(x => x.ProductId == id && x.Id == commentId)
                 .SingleOrDefaultAsync();
-            if(comment == null)
+            if (comment == null)
             {
                 _logger.LogInformation("Not found comment with id = {commentId}", commentId);
 
                 return NotFound();
             }
 
-            if(comment.UserId == currentUserId)
+            if (comment.UserId == currentUserId)
             {
                 comment.Content = request.Content;
 
@@ -613,7 +615,16 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             _logger.LogInformation("UpdatePrice by id and new price success. Id = {id}", id);
 
-            return NoContent();
+            return Ok(
+                new ProductVariantViewModel
+                {
+                    Name = variant.Name,
+                    ProductVariantId = variant.Id,
+                    Price = variant.Price,
+                    StockQuantity = variant.StockQuantity,
+                    IsActiveInVariant = variant.IsActive
+                }
+            );
         }
 
         /// <summary>
@@ -649,7 +660,16 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             _logger.LogInformation("UpdateStock by id and new stock success. Id = {id}", id);
 
-            return NoContent();
+            return Ok(
+                new ProductVariantViewModel
+                {
+                    Name = variant.Name,
+                    ProductVariantId = variant.Id,
+                    Price = variant.Price,
+                    StockQuantity = variant.StockQuantity,
+                    IsActiveInVariant = variant.IsActive
+                }
+            );
         }
 
 
@@ -667,11 +687,13 @@ namespace WarehouseManagement.BackendServer.Controllers
         {
             _logger.LogInformation("Begin GetImages API");
 
+            var product = await _context.Products.FindAsync(id);
+
             var images = await _context.ProductImages
                 .Where(x => x.ProductId == id)
                 .ToListAsync();
 
-            if (images == null)
+            if (images.Count() == 0 && product == null)
             {
                 _logger.LogWarning("GetImages not found. Id = {id}", id);
 
@@ -796,7 +818,7 @@ namespace WarehouseManagement.BackendServer.Controllers
             {
                 _logger.LogInformation("UpdateThumbInProduct API success. Id = {id}", id);
 
-                return Ok(result);
+                return Ok(product);
             }
             else
             {
@@ -809,25 +831,37 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// <summary>
         /// Deleted the image of product
         /// </summary>
+        /// <param name="id">Product id</param>
         /// <param name="imageId">Image id</param>
         /// <returns>Result of deleted process</returns>
-        [HttpDelete("images/{imageId}")]
-        public async Task<IActionResult> DeleteProductImage(int imageId)
+        [HttpDelete("{id}/images/{imageId}")]
+        public async Task<IActionResult> DeleteProductImage(int id, int imageId)
         {
             _logger.LogInformation("Begin DeleteProductImage API");
 
-            var image = await _context.ProductImages.FindAsync(imageId);
-            if (image == null)
+            var productExists = await _context.Products
+                .AnyAsync(x => x.Id == id);
+            if (!productExists)
             {
-                _logger.LogInformation("Can not found the image. Id = {id}", imageId);
-
+                _logger.LogInformation("Can not find the product. Id = {id}", id);
+             
                 return NotFound();
             }
 
+            var image = await _context.ProductImages
+                .SingleOrDefaultAsync(x => x.ProductId == id && x.Id == imageId);
+            if (image == null)
+            {
+                _logger.LogInformation("Can not find the image. Id = {imageId}", imageId);
+
+                return NotFound();
+            }
+            
+            var wasDefault = image.IsDefault;
+
+            // Delete physical file if exists
             if (!string.IsNullOrEmpty(image.ImageUrl))
             {
-                _logger.LogInformation("Found the image with ImageURl");
-
                 var filePath = Path.Combine(
                     Directory.GetCurrentDirectory(),
                     "wwwroot",
@@ -836,14 +870,27 @@ namespace WarehouseManagement.BackendServer.Controllers
 
                 if (System.IO.File.Exists(filePath))
                 {
-                    _logger.LogInformation("Found the image in the url = {filePath}", filePath);
-
                     System.IO.File.Delete(filePath);
                 }
             }
 
+            // Soft delete 
             image.IsDeleted = true;
+            image.IsDefault = false;
             image.LastModifiedDate = DateTime.UtcNow;
+
+            if (wasDefault)
+            {
+                var newDefault = await _context.ProductImages
+                    .Where(x => x.ProductId == id && !x.IsDeleted && x.Id != imageId)
+                    .OrderBy(x => x.Id)
+                    .FirstOrDefaultAsync();
+
+                if (newDefault != null)
+                {
+                    newDefault.IsDefault = true;
+                }
+            }
 
             await _context.SaveChangesAsync();
 
