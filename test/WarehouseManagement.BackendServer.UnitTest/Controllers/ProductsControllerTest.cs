@@ -1668,6 +1668,310 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
 
         #region Soft delete / trash / restore / permanent delete
 
+        // =========================
+        // Get products in trash
+        // =========================
+
+        [Fact]
+        public async Task GetProductsInTrash_HasData_ReturnListProduct()
+        {
+            // Arrange
+            _context.Products.AddRange
+            (
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2,
+                    IsDeleted = true
+                },
+                new Product
+                {
+                    Name = "Màn hình LCD Samsung Galaxy A14",
+                    Description = "Màn hình LCD dành cho Samsung Galaxy A14, công nghệ TFT, chất lượng tiêu chuẩn.",
+                    Code = "LCD-SSA14",
+                    CategoryId = 2,
+                    IsDeleted = true
+                }
+            );
+
+            await _context.SaveChangesAsync();
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.GetProductsInTrash();
+            var okResult = Assert.IsType<OkObjectResult>(result);
+
+            var total = (int)okResult.Value!
+                .GetType()
+                .GetProperty("total")!
+                .GetValue(okResult.Value)!;
+
+            // Assert
+            Assert.Equal(2, total);
+        }
+
+        [Fact]
+        public async Task GetProductsInTrash_HasNoData_ReturnEmptyListProduct()
+        {
+            // Arrange
+            _context.Products.AddRange
+            (
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2
+                },
+                new Product
+                {
+                    Name = "Màn hình LCD Samsung Galaxy A14",
+                    Description = "Màn hình LCD dành cho Samsung Galaxy A14, công nghệ TFT, chất lượng tiêu chuẩn.",
+                    Code = "LCD-SSA14",
+                    CategoryId = 2
+                }
+            );
+
+            await _context.SaveChangesAsync();
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.GetProductsInTrash();
+            var okResult = Assert.IsType<OkObjectResult>(result);
+
+            var total = (int)okResult.Value!
+                .GetType()
+                .GetProperty("total")!
+                .GetValue(okResult.Value)!;
+
+            // Assert
+            Assert.Equal(0, total);
+        }
+
+        // =========================
+        // Soft delete product
+        // =========================
+
+        [Fact]
+        public async Task SoftDeleteProduct_HasData_ReturnSuccess()
+        {
+            // Arrange
+            _context.Products.AddRange
+            (
+                 new Product
+                 {
+                     Name = "Màn hình LCD IPhone 11",
+                     Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                     Code = "LCD-IP11",
+                     CategoryId = 2
+                 },
+                new Product
+                {
+                    Name = "Màn hình LCD Samsung Galaxy A14",
+                    Description = "Màn hình LCD dành cho Samsung Galaxy A14, công nghệ TFT, chất lượng tiêu chuẩn.",
+                    Code = "LCD-SSA14",
+                    CategoryId = 2
+                }
+            );
+
+            await _context.SaveChangesAsync();
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.SoftDeleteProduct(1);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var product = Assert.IsType<Product>(okResult.Value);
+
+            // Assert
+            Assert.Equal("LCD-IP11", product.Code);
+        }
+
+        [Fact]
+        public async Task SoftDeleteProduct_HasNoDataInProduct_ReturnNotFound()
+        {
+            // Arrange
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.SoftDeleteProduct(1);
+
+            // Assert
+            Assert.IsType<NotFoundResult>(result);
+        }
+
+        [Fact]
+        public async Task SoftDeleteProduct_HasAlreadyDataInTrash_ReturnNotFound()
+        {
+            // Arrange
+            _context.Products.Add
+            (
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2,
+                    IsDeleted = true
+                }
+            );
+
+            await _context.SaveChangesAsync();
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.SoftDeleteProduct(1);
+
+            // Assert
+            Assert.IsType<BadRequestObjectResult>(result);
+        }
+
+        // =========================
+        // Restore product
+        // =========================
+
+        [Fact]
+        public async Task RestoreProduct_HasDataInTrash_ReturnSuccess()
+        {
+            // Arrange
+            _context.Products.Add
+            (
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2,
+                    IsDeleted = true
+                }
+            );
+
+            await _context.SaveChangesAsync();
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.RestoreProduct(1);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var product = Assert.IsType<Product>(okResult.Value);
+
+            // Assert
+            Assert.Equal("LCD-IP11", product.Code);
+        }
+
+        [Fact]
+        public async Task RestoreProduct_HasDataNoInTrash_ReturnBadRequest()
+        {
+            // Arrange
+            _context.Products.Add
+            (
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2
+                }
+            );
+
+            await _context.SaveChangesAsync();
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.RestoreProduct(1);
+
+            // Assert
+            Assert.IsType<BadRequestResult>(result);
+        }
+
+        [Fact]
+        public async Task RestoreProduct_HasDataNoInProduct_ReturnNotFound()
+        {
+            // Arrange
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.RestoreProduct(1);
+
+            // Assert
+            Assert.IsType<NotFoundResult>(result);
+        }
+
+        // =========================
+        // Permanent delete product
+        // =========================
+
+        [Fact]
+        public async Task PermanentDeleteProduct_HasDataInTrash_ReturnNoContent()
+        {
+            // Arrange
+            _context.Products.Add
+            (
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2,
+                    IsDeleted = true
+                }
+            );
+
+            await _context.SaveChangesAsync();
+
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.PermanentDeleteProduct(1);
+
+            // Assert
+            Assert.IsType<NoContentResult>(result);
+        }
+
+        [Fact]
+        public async Task PermanentDeleteProduct_HasNoDataInTrash_ReturnBadRequest()
+        {
+            // Arrange
+            _context.Products.Add
+            (
+                new Product
+                {
+                    Name = "Màn hình LCD IPhone 11",
+                    Description = "Màn hình LCD thay thế cho iPhone 11, tấm nền IPS, đã bao gồm cảm ứng.",
+                    Code = "LCD-IP11",
+                    CategoryId = 2
+                }
+            );
+
+            await _context.SaveChangesAsync();
+            
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.PermanentDeleteProduct(1);
+            
+            // Assert
+            Assert.IsType<BadRequestObjectResult>(result);
+        }
+
+        [Fact]
+        public async Task PermanentDeleteProduct_HasNoDataInProduct_ReturnNotFound()
+        {
+            // Arrange
+            var controller = new ProductsController(_context, _mockLogger.Object);
+
+            // Act
+            var result = await controller.PermanentDeleteProduct(1);
+            
+            // Assert
+            Assert.IsType<NotFoundResult>(result);
+        }
         #endregion
     }
 }
