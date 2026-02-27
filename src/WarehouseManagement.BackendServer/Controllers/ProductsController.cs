@@ -917,9 +917,9 @@ namespace WarehouseManagement.BackendServer.Controllers
             _logger.LogInformation("Begin GetProductsInTrash API");
 
             var products = await _context.Products
-                .Where(x => x.IsDeleted).ToArrayAsync();
+                .Where(x => x.IsDeleted).ToListAsync();
 
-            _logger.LogInformation("Found {Count} products in trash.", products.Length);
+            _logger.LogInformation("Found {Count} products in trash.", products.Count());
 
             return Ok(new
             {
