@@ -193,7 +193,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             var controller = new UsersController(userManager, _mockLogger.Object);
 
             // Act
-            var result = await controller.GetUsers();
+            var result = await controller.GetAllUsers();
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
@@ -212,7 +212,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             var controller = new UsersController(userManager, _mockLogger.Object);
 
             // Act
-            var result = await controller.GetUsers();
+            var result = await controller.GetAllUsers();
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);

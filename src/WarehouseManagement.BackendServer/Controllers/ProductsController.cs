@@ -128,6 +128,8 @@ namespace WarehouseManagement.BackendServer.Controllers
             return Ok(products);
         }
 
+        [HttpGet()]
+
         /// <summary>
         /// Get paged products filtered by name.
         /// </summary>
@@ -216,8 +218,8 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// Get all products in the system
         /// </summary>
         /// <returns>List of products</returns>
-        [HttpGet]
-        public async Task<IActionResult> GetProducts()
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAllProducts()
         {
             _logger.LogInformation("Begin GetProducts API");
 

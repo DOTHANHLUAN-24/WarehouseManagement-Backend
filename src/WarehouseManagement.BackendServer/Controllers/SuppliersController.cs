@@ -56,8 +56,8 @@ namespace WarehouseManagement.BackendServer.Controllers
             return Ok(supplierViewModel);
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAllSuppliers()
         {
             var suppliers = await _context.Suppliers
                 .Where(s => !s.IsDeleted)

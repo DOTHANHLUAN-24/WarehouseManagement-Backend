@@ -139,7 +139,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             var controller = new RolesController(roleManager, _mockLogger.Object);
 
             // Act
-            var result = await controller.GetRoles();
+            var result = await controller.GetAllRoles();
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
@@ -158,7 +158,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             var controller = new RolesController(roleManager, _mockLogger.Object);
 
             // Act
-            var result = await controller.GetRoles();
+            var result = await controller.GetAllRoles();
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);

@@ -77,8 +77,8 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// Get all categories in the system
         /// </summary>
         /// <returns>List of categories</returns>
-        [HttpGet]
-        public async Task<IActionResult> GetCategories()
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAllCategories()
         {
             _logger.LogInformation("Begin GetCategories API");
 

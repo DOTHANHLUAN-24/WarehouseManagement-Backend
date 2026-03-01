@@ -454,7 +454,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             var controller = new ProductsController(_context, _mockLogger.Object);
 
             // Act
-            var result = await controller.GetProducts();
+            var result = await controller.GetAllProducts();
             var okResult = Assert.IsType<OkObjectResult>(result);
             var listProduct = Assert.IsAssignableFrom<IEnumerable<ProductViewModel>>(okResult.Value);
 
@@ -470,7 +470,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             var controller = new ProductsController(_context, _mockLogger.Object);
 
             // Act
-            var result = await controller.GetProducts();
+            var result = await controller.GetAllProducts();
             var okResult = Assert.IsType<OkObjectResult>(result);
             var listProduct = Assert.IsAssignableFrom<IEnumerable<ProductViewModel>>(okResult.Value);
 
