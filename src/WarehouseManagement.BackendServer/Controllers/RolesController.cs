@@ -82,8 +82,8 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// Get all roles in the system
         /// </summary>
         /// <returns>List of roles</returns>
-        [HttpGet]
-        public async Task<IActionResult> GetRoles()
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAllRoles()
         {
             _logger.LogInformation("Getting all roles");
 

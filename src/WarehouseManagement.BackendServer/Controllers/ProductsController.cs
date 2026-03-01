@@ -128,6 +128,8 @@ namespace WarehouseManagement.BackendServer.Controllers
             return Ok(products);
         }
 
+        [HttpGet()]
+
         /// <summary>
         /// Get paged products filtered by name.
         /// </summary>
@@ -216,8 +218,8 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// Get all products in the system
         /// </summary>
         /// <returns>List of products</returns>
-        [HttpGet]
-        public async Task<IActionResult> GetProducts()
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAllProducts()
         {
             _logger.LogInformation("Begin GetProducts API");
 
@@ -1111,11 +1113,15 @@ namespace WarehouseManagement.BackendServer.Controllers
             _context.ProductImages.RemoveRange(productImages);
             _context.Products.Remove(product);
 
-            await _context.SaveChangesAsync();
+            var result = await _context.SaveChangesAsync();
 
             _logger.LogInformation("PermanentDeleteProduct success. Id = {id}", id);
+            if (result > 0)
+                return NoContent();
 
-            return NoContent();
+            _logger.LogWarning("PermanentDeleteProduct failed to save changes. Id = {id}", id);
+
+            return BadRequest();
         }
 
         #endregion

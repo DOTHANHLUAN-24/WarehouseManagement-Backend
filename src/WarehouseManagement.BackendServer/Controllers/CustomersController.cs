@@ -62,8 +62,8 @@ namespace WarehouseManagement.BackendServer.Controllers
             return Ok(customerViewModel);
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetCustomers()
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAllCustomers()
         {
             _logger.LogInformation("Begin GetCustomers API");
 

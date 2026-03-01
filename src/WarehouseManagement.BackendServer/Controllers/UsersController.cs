@@ -92,8 +92,8 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// Get all users in the system
         /// </summary>
         /// <returns>List of users</returns>
-        [HttpGet]
-        public async Task<IActionResult> GetUsers()
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAllUsers()
         {
             _logger.LogInformation("Getting all users");
 

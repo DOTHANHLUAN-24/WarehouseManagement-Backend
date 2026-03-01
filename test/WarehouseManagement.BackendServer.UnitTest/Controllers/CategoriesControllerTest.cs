@@ -144,7 +144,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             var controller = new CategoriesController(_context, _mockLogger.Object);
 
             // Act
-            var result = await controller.GetCategories();
+            var result = await controller.GetAllCategories();
             var okResult = Assert.IsType<OkObjectResult>(result);
             var categories = Assert.IsAssignableFrom<IEnumerable<CategoryViewModel>>(okResult.Value);
 
@@ -159,7 +159,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             var controller = new CategoriesController(_context, _mockLogger.Object);
 
             // Act
-            var result = await controller.GetCategories();
+            var result = await controller.GetAllCategories();
             var okResult = Assert.IsType<OkObjectResult>(result);
             var categories = Assert.IsAssignableFrom<IEnumerable<CategoryViewModel>>(okResult.Value);
 
