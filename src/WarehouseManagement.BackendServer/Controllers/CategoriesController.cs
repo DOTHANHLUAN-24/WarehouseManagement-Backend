@@ -10,7 +10,11 @@ namespace WarehouseManagement.BackendServer.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class CategoriesController(ApplicationDbContext _context, ILogger<CategoriesController> _logger) : BaseController
+    public class CategoriesController
+        (
+            ApplicationDbContext _context, 
+            ILogger<CategoriesController> _logger
+        ) : BaseController
     {
         /// <summary>
         /// Create a new Category

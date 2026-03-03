@@ -10,7 +10,11 @@ namespace WarehouseManagement.BackendServer.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ProductsController(ApplicationDbContext _context, ILogger<ProductsController> _logger) : BaseController
+    public class ProductsController
+        (
+            ApplicationDbContext _context, 
+            ILogger<ProductsController> _logger
+        ) : BaseController
     {
 
         #region Get - Query

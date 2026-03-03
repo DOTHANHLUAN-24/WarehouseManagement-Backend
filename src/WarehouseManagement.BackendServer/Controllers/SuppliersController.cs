@@ -9,7 +9,11 @@ namespace WarehouseManagement.BackendServer.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class SuppliersController(ApplicationDbContext _context, ILogger<SuppliersController> _logger) : BaseController
+    public class SuppliersController
+        (
+            ApplicationDbContext _context, 
+            ILogger<SuppliersController> _logger
+        ) : BaseController
     {
         [HttpPost]
         public async Task<IActionResult> PostSupplier([FromBody] SupplierCreateRequest request)
@@ -94,14 +98,14 @@ namespace WarehouseManagement.BackendServer.Controllers
                 .Where(x => !x.IsDeleted)
                 .AsQueryable();
 
-            // filter by supplierName
+            // Filter by supplierName
             if (!string.IsNullOrWhiteSpace(supplierName))
             {
                 query = query.Where(x =>
                     x.SupplierName.Contains(supplierName));
             }
 
-            // filter by contactPerson
+            // Filter by contactPerson
             if (!string.IsNullOrWhiteSpace(contactPerson))
             {
                 query = query.Where(x =>
@@ -109,14 +113,14 @@ namespace WarehouseManagement.BackendServer.Controllers
                     x.ContactPerson.Contains(contactPerson));
             }
 
-            // filter by status
+            // Filter by status
             if (isActive.HasValue)
             {
                 query = query.Where(x =>
                     x.IsActive == isActive.Value);
             }
 
-            // global filter
+            // Global filter
             if (!string.IsNullOrWhiteSpace(filter))
             {
                 query = query.Where(x =>
@@ -208,8 +212,6 @@ namespace WarehouseManagement.BackendServer.Controllers
                 return BadRequest("Supplier is already in trash");
 
             supplier.IsDeleted = true;
-
-            _context.SaveChanges();
 
             var result = await _context.SaveChangesAsync();
             if (result > 0)

@@ -7,5 +7,7 @@
         public int Capacity { get; set; }
 
         public string Email { get; set; } = string.Empty;
+
+        public bool IsDeleted { get; set; } = false;
     }
 }

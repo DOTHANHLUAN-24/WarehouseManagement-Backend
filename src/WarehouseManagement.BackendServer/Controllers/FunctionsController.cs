@@ -9,7 +9,11 @@ namespace WarehouseManagement.BackendServer.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class FunctionsController(ApplicationDbContext _context, ILogger<FunctionsController> _logger) : BaseController
+    public class FunctionsController
+        (
+            ApplicationDbContext _context, 
+            ILogger<FunctionsController> _logger
+        ) : BaseController
     {
         /// <summary>
         /// Create a new function
