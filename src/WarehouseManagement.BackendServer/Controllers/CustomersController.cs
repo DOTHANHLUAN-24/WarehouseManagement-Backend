@@ -10,7 +10,11 @@ namespace WarehouseManagement.BackendServer.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class CustomersController(ApplicationDbContext _context, ILogger<CustomersController> _logger) : BaseController
+    public class CustomersController
+        (
+            ApplicationDbContext _context, 
+            ILogger<CustomersController> _logger
+        ) : BaseController
     {
         [HttpPost]
         public async Task<IActionResult> PostCustomer([FromBody] CustomerCreateRequest request)
