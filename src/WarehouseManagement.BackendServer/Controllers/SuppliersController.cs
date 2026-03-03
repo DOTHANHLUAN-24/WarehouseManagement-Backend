@@ -9,7 +9,7 @@ namespace WarehouseManagement.BackendServer.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class SuppliersController(ApplicationDbContext _context, ILogger<SuppliersController> _logger) : ControllerBase
+    public class SuppliersController(ApplicationDbContext _context, ILogger<SuppliersController> _logger) : BaseController
     {
         [HttpPost]
         public async Task<IActionResult> PostSupplier([FromBody] SupplierCreateRequest request)
