@@ -15,6 +15,13 @@ namespace WarehouseManagement.BackendServer.Controllers
             ILogger<SuppliersController> _logger
         ) : BaseController
     {
+        /// <summary>
+        /// Creates a new supplier based on the provided request data. 
+        /// The supplier is added to the database context and saved. 
+        /// If the creation is successful, it returns a 201 Created response with the created supplier's details. If the creation fails, it returns a 400 Bad Request response.
+        /// </summary>
+        /// <param name="request">Supplier model</param>
+        /// <returns>Result of create process</returns>
         [HttpPost]
         public async Task<IActionResult> PostSupplier([FromBody] SupplierCreateRequest request)
         {
@@ -52,6 +59,12 @@ namespace WarehouseManagement.BackendServer.Controllers
             }
         }
 
+        /// <summary>
+        /// Get supplier by id. If the supplier is found, it returns a 200 OK response with the supplier's details. 
+        /// If the supplier is not found, it returns a 404 Not Found response.
+        /// </summary>
+        /// <param name="id">Supplier id</param>
+        /// <returns>Result of get process</returns>
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -84,6 +97,11 @@ namespace WarehouseManagement.BackendServer.Controllers
             return Ok(supplierViewModel);
         }
 
+        /// <summary>
+        /// Get list of suppliers that are not deleted. 
+        /// It returns a 200 OK response with the list of suppliers.
+        /// </summary>
+        /// <returns>List of supplier</returns>
         [HttpGet("all")]
         public async Task<IActionResult> GetAllSuppliers()
         {
@@ -109,6 +127,16 @@ namespace WarehouseManagement.BackendServer.Controllers
             return Ok(suppliers);
         }
 
+        /// <summary>
+        /// Get list of suppliers with optional filters for supplier name, contact person, and active status.
+        /// </summary>
+        /// <param name="supplierName">Supplier name</param>
+        /// <param name="contactPerson">Contact person</param>
+        /// <param name="isActive">Is active</param>
+        /// <param name="filter">Filter</param>
+        /// <param name="pageIndex">Page index</param>
+        /// <param name="pageSize">Page size</param>
+        /// <returns>List supplier with paging</returns>
         [HttpGet]
         public async Task<IActionResult> GetSuppliers(
             [FromQuery] string? supplierName,
@@ -207,6 +235,13 @@ namespace WarehouseManagement.BackendServer.Controllers
             return Ok(result);
         }
 
+        /// <summary>
+        /// Update supplier by id. 
+        /// If the supplier is found and updated successfully, it returns a 204 No Content response.
+        /// </summary>
+        /// <param name="id">Supplier id</param>
+        /// <param name="request">Supplier model</param>
+        /// <returns>Result of update process</returns>
         [HttpPut("{id}")]
         public async Task<IActionResult> PutSupplier(int id, [FromBody] SupplierUpdateRequest request)
         {
@@ -248,6 +283,10 @@ namespace WarehouseManagement.BackendServer.Controllers
             }
         }
 
+        /// <summary>
+        /// Get list of suppliers that are marked as deleted (in trash).
+        /// </summary>
+        /// <returns>List supplier in the trash</returns>
         [HttpGet("trash")]
         public async Task<IActionResult> GetSupplierInTrash()
         {
@@ -273,6 +312,12 @@ namespace WarehouseManagement.BackendServer.Controllers
             return Ok(suppliersInTrash);
         }
 
+        /// <summary>
+        /// Soft delete supplier by id. 
+        /// If the supplier is found and marked as deleted successfully, it returns a 204 No Content response.
+        /// </summary>
+        /// <param name="id">Supplier id</param>
+        /// <returns>Result of soft process</returns>
         [HttpDelete("{id}/soft-delete")]
         public async Task<IActionResult> SoftDeleteSupplier(int id)
         {
@@ -312,6 +357,11 @@ namespace WarehouseManagement.BackendServer.Controllers
             }
         }
 
+        /// <summary>
+        /// Restore supplier by id from trash.
+        /// </summary>
+        /// <param name="id">Supplier id</param>
+        /// <returns>Result of restore process</returns>
         [HttpPut("{id}/restore")]
         public async Task<IActionResult> RestoreSupplier(int id)
         {
@@ -351,7 +401,12 @@ namespace WarehouseManagement.BackendServer.Controllers
             }
         }
 
-
+        /// <summary>
+        /// Permanently delete supplier by id. 
+        /// The supplier must be in trash (marked as deleted) before it can be permanently deleted.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns>Result of permanent delete process</returns>
         [HttpDelete("{id}/permanent-delete")]
         public async Task<IActionResult> PermanentDeleteSupplier(int id)
         {
