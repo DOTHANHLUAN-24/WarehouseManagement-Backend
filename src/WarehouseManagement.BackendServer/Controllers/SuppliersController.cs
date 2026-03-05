@@ -11,13 +11,15 @@ namespace WarehouseManagement.BackendServer.Controllers
     [ApiController]
     public class SuppliersController
         (
-            ApplicationDbContext _context, 
+            ApplicationDbContext _context,
             ILogger<SuppliersController> _logger
         ) : BaseController
     {
         [HttpPost]
         public async Task<IActionResult> PostSupplier([FromBody] SupplierCreateRequest request)
         {
+            _logger.LogInformation("Creating new supplier with name: {SupplierName}", request.SupplierName);
+
             var supplier = new Supplier
             {
                 SupplierName = request.SupplierName,
@@ -29,21 +31,41 @@ namespace WarehouseManagement.BackendServer.Controllers
                 IsDeleted = request.IsDeleted
             };
 
+            _logger.LogInformation("Adding supplier to database context");
+
             _context.Suppliers.Add(supplier);
+
+            _logger.LogInformation("Saving changes to database");
 
             var result = await _context.SaveChangesAsync();
             if (result > 0)
+            {
+                _logger.LogInformation("Supplier created successfully with ID: {SupplierId}", supplier.Id);
+
                 return CreatedAtAction(nameof(GetById), supplier);
+            }
             else
+            {
+                _logger.LogError("Failed to create supplier with name: {SupplierName}", request.SupplierName);
+
                 return BadRequest("Failed to create supplier");
+            }
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
+            _logger.LogInformation("Retrieving supplier with ID: {SupplierId}", id);
+
             var supplier = await _context.Suppliers.FindAsync(id);
             if (supplier == null)
+            {
+                _logger.LogWarning("Supplier with ID: {SupplierId} not found", id);
+
                 return NotFound();
+            }
+
+            _logger.LogInformation("Supplier with ID: {SupplierId} retrieved successfully", id);
 
             var supplierViewModel = new SupplierViewModel
             {
@@ -57,12 +79,16 @@ namespace WarehouseManagement.BackendServer.Controllers
                 IsDeleted = supplier.IsDeleted
             };
 
+            _logger.LogInformation("Returning supplier view model for supplier with ID: {SupplierId}", id);
+
             return Ok(supplierViewModel);
         }
 
         [HttpGet("all")]
         public async Task<IActionResult> GetAllSuppliers()
         {
+            _logger.LogInformation("Retrieving all suppliers that are not deleted");
+
             var suppliers = await _context.Suppliers
                 .Where(s => !s.IsDeleted)
                 .Select(s => new SupplierViewModel
@@ -78,6 +104,8 @@ namespace WarehouseManagement.BackendServer.Controllers
                 })
                 .ToListAsync();
 
+            _logger.LogInformation("Retrieved {SupplierCount} suppliers", suppliers.Count);
+
             return Ok(suppliers);
         }
 
@@ -90,9 +118,15 @@ namespace WarehouseManagement.BackendServer.Controllers
             int pageIndex = 1,
             int pageSize = 10)
         {
+            _logger.LogInformation("Retrieving suppliers with filters - SupplierName: {SupplierName}, ContactPerson: {ContactPerson}, IsActive: {IsActive}, Filter: {Filter}, PageIndex: {PageIndex}, PageSize: {PageSize}",
+                supplierName, contactPerson, isActive, filter, pageIndex, pageSize);
+
             // normalize paging
             pageIndex = pageIndex <= 0 ? 1 : pageIndex;
+
             pageSize = pageSize <= 0 ? 10 : pageSize;
+
+            _logger.LogInformation("Normalized paging parameters - PageIndex: {PageIndex}, PageSize: {PageSize}", pageIndex, pageSize);
 
             var query = _context.Suppliers
                 .Where(x => !x.IsDeleted)
@@ -101,6 +135,8 @@ namespace WarehouseManagement.BackendServer.Controllers
             // Filter by supplierName
             if (!string.IsNullOrWhiteSpace(supplierName))
             {
+                _logger.LogInformation("Applying filter for SupplierName containing: {SupplierName}", supplierName);
+
                 query = query.Where(x =>
                     x.SupplierName.Contains(supplierName));
             }
@@ -108,6 +144,8 @@ namespace WarehouseManagement.BackendServer.Controllers
             // Filter by contactPerson
             if (!string.IsNullOrWhiteSpace(contactPerson))
             {
+                _logger.LogInformation("Applying filter for ContactPerson containing: {ContactPerson}", contactPerson);
+
                 query = query.Where(x =>
                     x.ContactPerson != null &&
                     x.ContactPerson.Contains(contactPerson));
@@ -116,6 +154,8 @@ namespace WarehouseManagement.BackendServer.Controllers
             // Filter by status
             if (isActive.HasValue)
             {
+                _logger.LogInformation("Applying filter for IsActive: {IsActive}", isActive.Value);
+
                 query = query.Where(x =>
                     x.IsActive == isActive.Value);
             }
@@ -123,13 +163,19 @@ namespace WarehouseManagement.BackendServer.Controllers
             // Global filter
             if (!string.IsNullOrWhiteSpace(filter))
             {
+                _logger.LogInformation("Applying global filter for SupplierName or ContactPerson containing: {Filter}", filter);
+
                 query = query.Where(x =>
                     x.SupplierName.Contains(filter) ||
                     (x.ContactPerson != null &&
                      x.ContactPerson.Contains(filter)));
             }
 
+            _logger.LogInformation("Executing query to count total records");
+
             var totalRecords = await query.CountAsync();
+
+            _logger.LogInformation("Total records found: {TotalRecords}", totalRecords);
 
             var items = await query
                 .OrderByDescending(x => x.Id)
@@ -148,11 +194,15 @@ namespace WarehouseManagement.BackendServer.Controllers
                 })
                 .ToListAsync();
 
+            _logger.LogInformation("Retrieved {ItemCount} items for current page", items.Count);
+
             var result = new Pagination<SupplierViewModel>
             {
                 Items = items,
                 TotalRecords = totalRecords
             };
+
+            _logger.LogInformation("Returning paginated result with {ItemCount} items and {TotalRecords} total records", items.Count, totalRecords);
 
             return Ok(result);
         }
@@ -160,9 +210,17 @@ namespace WarehouseManagement.BackendServer.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutSupplier(int id, [FromBody] SupplierUpdateRequest request)
         {
+            _logger.LogInformation("Updating supplier with ID: {SupplierId}", id);
+
             var supplier = await _context.Suppliers.FindAsync(id);
             if (supplier == null)
+            {
+                _logger.LogWarning("Supplier with ID: {SupplierId} not found for update", id);
+
                 return NotFound();
+            }
+
+            _logger.LogInformation("Updating properties of supplier with ID: {SupplierId}", id);
 
             supplier.SupplierName = request.SupplierName;
             supplier.ContactPerson = request.ContactPerson;
@@ -172,17 +230,29 @@ namespace WarehouseManagement.BackendServer.Controllers
             supplier.IsActive = request.IsActive;
             supplier.IsDeleted = request.IsDeleted;
 
+            _logger.LogInformation("Saving changes to database for supplier with ID: {SupplierId}", id);
+
             var result = await _context.SaveChangesAsync();
 
             if (result > 0)
+            {
+                _logger.LogInformation("Supplier with ID: {SupplierId} updated successfully", id);
+
                 return NoContent();
+            }
             else
+            {
+                _logger.LogError("Failed to update supplier with ID: {SupplierId}", id);
+
                 return BadRequest("Failed to update supplier");
+            }
         }
 
         [HttpGet("trash")]
         public async Task<IActionResult> GetSupplierInTrash()
         {
+            _logger.LogInformation("Retrieving suppliers in trash");
+
             var suppliersInTrash = await _context.Suppliers
                 .Where(x => x.IsDeleted)
                 .Select(x => new SupplierViewModel
@@ -198,65 +268,127 @@ namespace WarehouseManagement.BackendServer.Controllers
                 })
                 .ToListAsync();
 
+            _logger.LogInformation("Retrieved {SupplierCount} suppliers in trash", suppliersInTrash.Count);
+
             return Ok(suppliersInTrash);
         }
 
         [HttpDelete("{id}/soft-delete")]
         public async Task<IActionResult> SoftDeleteSupplier(int id)
         {
+            _logger.LogInformation("Soft deleting supplier with ID: {SupplierId}", id);
+
             var supplier = await _context.Suppliers.FindAsync(id);
             if (supplier == null)
+            {
+                _logger.LogWarning("Supplier with ID: {SupplierId} not found for soft delete", id);
+
                 return NotFound();
+            }
 
             if (supplier.IsDeleted)
+            {
+                _logger.LogWarning("Supplier with ID: {SupplierId} is already in trash", id);
+
                 return BadRequest("Supplier is already in trash");
+            }
+
+            _logger.LogInformation("Marking supplier with ID: {SupplierId} as deleted", id);
 
             supplier.IsDeleted = true;
 
             var result = await _context.SaveChangesAsync();
             if (result > 0)
+            {
+                _logger.LogInformation("Supplier with ID: {SupplierId} soft deleted successfully", id);
+
                 return NoContent();
+            }
             else
+            {
+                _logger.LogError("Failed to soft delete supplier with ID: {SupplierId}", id);
+
                 return BadRequest("Failed to soft delete supplier");
+            }
         }
 
         [HttpPut("{id}/restore")]
         public async Task<IActionResult> RestoreSupplier(int id)
         {
+            _logger.LogInformation("Restoring supplier with ID: {SupplierId}", id);
+
             var supplier = await _context.Suppliers.FindAsync(id);
             if (supplier == null)
+            {
+                _logger.LogWarning("Supplier with ID: {SupplierId} not found for restore", id);
+
                 return NotFound();
+            }
 
             if (!supplier.IsDeleted)
+            {
+                _logger.LogWarning("Supplier with ID: {SupplierId} is not in trash, cannot restore", id);
+
                 return BadRequest("Supplier is not in trash");
+            }
+
+            _logger.LogInformation("Marking supplier with ID: {SupplierId} as not deleted", id);
 
             supplier.IsDeleted = false;
 
             var result = await _context.SaveChangesAsync();
             if (result > 0)
+            {
+                _logger.LogInformation("Supplier with ID: {SupplierId} restored successfully", id);
+
                 return NoContent();
+            }
             else
+            {
+                _logger.LogError("Failed to restore supplier with ID: {SupplierId}", id);
+
                 return BadRequest("Failed to restore supplier");
+            }
         }
 
 
         [HttpDelete("{id}/permanent-delete")]
         public async Task<IActionResult> PermanentDeleteSupplier(int id)
         {
+            _logger.LogInformation("Permanently deleting supplier with ID: {SupplierId}", id);
+
             var supplier = await _context.Suppliers.FindAsync(id);
             if (supplier == null)
+            {
+                _logger.LogWarning("Supplier with ID: {SupplierId} not found for permanent delete", id);
+
                 return NotFound();
+            }
 
             if (!supplier.IsDeleted)
+            {
+                _logger.LogWarning("Supplier with ID: {SupplierId} is not in trash, cannot permanently delete", id);
+
                 return BadRequest("Supplier must be in trash before permanent delete");
+            }
+
+            _logger.LogInformation("Removing supplier with ID: {SupplierId} from database context", id);
 
             _context.Suppliers.Remove(supplier);
 
             var result = await _context.SaveChangesAsync();
             if (result > 0)
+            {
+                _logger.LogInformation("Supplier with ID: {SupplierId} permanently deleted successfully", id);
+
                 return NoContent();
+            }
             else
+            {
+                _logger.LogError("Failed to permanently delete supplier with ID: {SupplierId}", id);
+
                 return BadRequest("Failed to permanently delete supplier");
+            }
         }
     }
 }
