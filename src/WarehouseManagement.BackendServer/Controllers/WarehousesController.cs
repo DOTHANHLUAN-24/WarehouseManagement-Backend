@@ -15,6 +15,10 @@ namespace WarehouseManagement.BackendServer.Controllers
             ILogger<WarehousesController> _logger
         ) : BaseController
     {
+        /// <summary>
+        /// Get all warehouses that are not deleted
+        /// </summary>
+        /// <returns>List of warehouses</returns>
         [HttpGet]
         public async Task<IActionResult> GetAllWarehouses()
         {
@@ -37,17 +41,22 @@ namespace WarehouseManagement.BackendServer.Controllers
             return Ok(listWarehouses);
         }
 
+        /// <summary>
+        /// Create a new warehouse
+        /// </summary>
+        /// <param name="request">Ware house model</param>
+        /// <returns>Result of create process</returns>
         [HttpPost]
-        public async Task<IActionResult> PostWarehouse(WarehouseBase warehouseBase)
+        public async Task<IActionResult> PostWarehouse(WarehouseCreateRequest request)
         {
-            _logger.LogInformation("Creating a new warehouse at location: {Location}", warehouseBase.Location);
+            _logger.LogInformation("Creating a new warehouse at location: {Location}", request.Location);
 
             var warehouse = new Warehouse
             {
-                Location = warehouseBase.Location,
-                Capacity = warehouseBase.Capacity,
-                Email = warehouseBase.Email,
-                IsDeleted = warehouseBase.IsDeleted
+                Location = request.Location,
+                Capacity = request.Capacity,
+                Email = request.Email,
+                IsDeleted = request.IsDeleted
             };
 
             _context.Warehouses.Add(warehouse);
@@ -63,11 +72,16 @@ namespace WarehouseManagement.BackendServer.Controllers
                 return CreatedAtAction(nameof(GetById), new { id = warehouse.Id }, warehouse);
             }
 
-            _logger.LogError("Failed to create warehouse at location: {Location}", warehouseBase.Location);
+            _logger.LogError("Failed to create warehouse at location: {Location}", request.Location);
 
             return BadRequest();
         }
 
+        /// <summary>
+        /// Get a warehouse by id
+        /// </summary>
+        /// <param name="id">Ware house id</param>
+        /// <returns>Ware house with id</returns>
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -97,6 +111,16 @@ namespace WarehouseManagement.BackendServer.Controllers
             return Ok(warehouseViewModel);
         }
 
+        /// <summary>
+        /// Get warehouses with filters and pagination
+        /// </summary>
+        /// <param name="location">Location of storage</param>
+        /// <param name="capacity">Capacity of storage</param>
+        /// <param name="email">Email of storage</param>
+        /// <param name="filter">Name of storage</param>
+        /// <param name="pageIndex">Page index</param>
+        /// <param name="pageSize">Page size</param>
+        /// <returns>List storage with filter</returns>
         [HttpGet("filter")]
         public async Task<IActionResult> GetWarehouses(
             [FromQuery] string? location,
@@ -185,6 +209,12 @@ namespace WarehouseManagement.BackendServer.Controllers
             return Ok(result);
         }
 
+        /// <summary>
+        /// Update a warehouse by id
+        /// </summary>
+        /// <param name="id">Ware house id</param>
+        /// <param name="request">Ware house model</param>
+        /// <returns>Result of filter process</returns>
         [HttpPut("{id}")]
         public async Task<IActionResult> PutWarehouse(int id, [FromBody] WarehouseUpdateRequest request)
         {
@@ -222,6 +252,10 @@ namespace WarehouseManagement.BackendServer.Controllers
             }
         }
 
+        /// <summary>
+        /// Get warehouses in trash (soft deleted)
+        /// </summary>
+        /// <returns>List ware house in the trash</returns>
         [HttpGet("trash")]
         public async Task<IActionResult> GetWarehousesInTrash()
         {
@@ -244,6 +278,11 @@ namespace WarehouseManagement.BackendServer.Controllers
             return Ok(warehousesInTrash);
         }
 
+        /// <summary>
+        /// Soft delete a warehouse by id (move to trash)
+        /// </summary>
+        /// <param name="id">Ware house id</param>
+        /// <returns>Result of soft process</returns>
         [HttpDelete("{id}/soft-delete")]
         public async Task<IActionResult> SoftDeleteWarehouse(int id)
         {
@@ -283,6 +322,11 @@ namespace WarehouseManagement.BackendServer.Controllers
             return BadRequest();
         }
 
+        /// <summary>
+        /// Restore a warehouse from trash by id (undo soft delete)
+        /// </summary>
+        /// <param name="id">Ware house id</param>
+        /// <returns>Result of restore process</returns>
         [HttpPut("{id}/restore")]
         public async Task<IActionResult> RestoreWarehouse(int id)
         {
@@ -322,6 +366,11 @@ namespace WarehouseManagement.BackendServer.Controllers
             return BadRequest();
         }
 
+        /// <summary>
+        /// Permanently delete a warehouse by id (only if it's in trash)
+        /// </summary>
+        /// <param name="id">Ware house id</param>
+        /// <returns>Process of permanent deleted</returns>
         [HttpDelete("{id}/permanent-delete")]
         public async Task<IActionResult> PermanentDeleteWarehouse(int id)
         {
