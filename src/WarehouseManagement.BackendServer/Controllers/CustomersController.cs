@@ -16,6 +16,11 @@ namespace WarehouseManagement.BackendServer.Controllers
             ILogger<CustomersController> _logger
         ) : BaseController
     {
+        /// <summary>
+        /// Create a new customer
+        /// </summary>
+        /// <param name="request">Customer model</param>
+        /// <returns>Result of create process</returns>
         [HttpPost]
         public async Task<IActionResult> PostCustomer([FromBody] CustomerCreateRequest request)
         {
@@ -46,6 +51,11 @@ namespace WarehouseManagement.BackendServer.Controllers
             }
         }
 
+        /// <summary>
+        /// Get a customer by id
+        /// </summary>
+        /// <param name="id">Customer id</param>
+        /// <returns>Result of process</returns>
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -66,6 +76,10 @@ namespace WarehouseManagement.BackendServer.Controllers
             return Ok(customerViewModel);
         }
 
+        /// <summary>
+        /// Get all customers
+        /// </summary>
+        /// <returns>List of customer</returns>
         [HttpGet("all")]
         public async Task<IActionResult> GetAllCustomers()
         {
@@ -80,24 +94,21 @@ namespace WarehouseManagement.BackendServer.Controllers
             return Ok(customerViewModels);
         }
 
+        /// <summary>
+        /// Get customers with paging and filter by name
+        /// </summary>
+        /// <param name="filter"></param>
+        /// <param name="pageIndex"></param>
+        /// <param name="pageSize"></param>
+        /// <returns></returns>
         [HttpGet("filter")]
         public async Task<IActionResult> GetCustomersPaging(string? filter, int pageIndex = 1, int pageSize = 10)
         {
             _logger.LogInformation("Begin GetCustomersPaging API. Filter={Filter}, PageIndex={PageIndex}, PageSize={PageSize}", filter, pageIndex, pageSize);
 
-            if (pageIndex <= 0)
-            {
-                _logger.LogWarning("Invalid PageIndex. Reset to 1. PageIndex={PageIndex}", pageIndex);
+            pageIndex = pageIndex <= 0 ? 1 : pageIndex;
 
-                pageIndex = 1;
-            }
-
-            if (pageSize <= 0)
-            {
-                _logger.LogWarning("Invalid PageSize. Reset to 10. PageSize={PageSize}", pageSize);
-
-                pageSize = 10;
-            }
+            pageSize = pageSize <= 0 ? 10 : pageSize;
 
             var query = _context.Customers.AsQueryable();
 
@@ -126,6 +137,12 @@ namespace WarehouseManagement.BackendServer.Controllers
             return Ok(pagination);
         }
 
+        /// <summary>
+        /// Update a customer by id
+        /// </summary>
+        /// <param name="id">Customer id</param>
+        /// <param name="request">Customer model</param>
+        /// <returns>Result of update process</returns>
         [HttpPut("{id}")]
         public async Task<IActionResult> PutCustomer(int id, CustomerUpdateRequest request)
         {
@@ -158,6 +175,12 @@ namespace WarehouseManagement.BackendServer.Controllers
             return BadRequest();
         }
 
+        /// <summary>
+        /// Update customer status by id
+        /// </summary>
+        /// <param name="id">Customer id</param>
+        /// <param name="status">Customer status</param>
+        /// <returns>Result of update status process</returns>
         [HttpPut("{id}/status")]
         public async Task<IActionResult> UpdateCustomerStatus(int id, CustomerStatus status)
         {
@@ -201,6 +224,11 @@ namespace WarehouseManagement.BackendServer.Controllers
             return BadRequest();
         }
 
+        /// <summary>
+        /// Delete a customer by id (set status to Inactive)
+        /// </summary>
+        /// <param name="id">Customer id</param>
+        /// <returns>Result of delete process</returns>
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCustomer(int id)
         {
@@ -244,6 +272,11 @@ namespace WarehouseManagement.BackendServer.Controllers
             return BadRequest();
         }
 
+        /// <summary>
+        /// Restore a customer by id (set status to Active)
+        /// </summary>
+        /// <param name="id">Customer id</param>
+        /// <returns>Result of restore process</returns>
         [HttpPut("{id}/restore")]
         public async Task<IActionResult> RestoreCustomer(int id)
         {
@@ -287,24 +320,24 @@ namespace WarehouseManagement.BackendServer.Controllers
             return BadRequest();
         }
 
+        /// <summary>
+        /// Filter customers by keyword, status and create date range with paging
+        /// </summary>
+        /// <param name="keyword">Keyword filter</param>
+        /// <param name="status">Status filter</param>
+        /// <param name="fromDate">Start date</param>
+        /// <param name="toDate">End date</param>
+        /// <param name="pageIndex">Page index</param>
+        /// <param name="pageSize">Page size</param>
+        /// <returns>Result of filter process</returns>
         [HttpGet("search")]
         public async Task<IActionResult> SearchCustomers(string? keyword, CustomerStatus? status, DateTime? fromDate, DateTime? toDate, int pageIndex = 1, int pageSize = 10)
         {
             _logger.LogInformation("Begin SearchCustomers API. Keyword={Keyword}, Status={Status}, FromDate={FromDate}, ToDate={ToDate}, PageIndex={PageIndex}, PageSize={PageSize}", keyword, status, fromDate, toDate, pageIndex, pageSize);
 
-            if (pageIndex <= 0)
-            {
-                _logger.LogWarning("Invalid PageIndex. Reset to 1. PageIndex={PageIndex}", pageIndex);
+            pageIndex = pageIndex <= 0 ? 1 : pageIndex;
 
-                pageIndex = 1;
-            }
-
-            if (pageSize <= 0)
-            {
-                _logger.LogWarning("Invalid PageSize. Reset to 10. PageSize={PageSize}", pageSize);
-
-                pageSize = 10;
-            }
+            pageSize = pageSize <= 0 ? 10 : pageSize;
 
             var query = _context.Customers
                 .AsNoTracking()
@@ -362,6 +395,13 @@ namespace WarehouseManagement.BackendServer.Controllers
             });
         }
 
+        /// <summary>
+        /// Get customers by status with paging
+        /// </summary>
+        /// <param name="status">Filter status</param>
+        /// <param name="pageIndex">Page index</param>
+        /// <param name="pageSize">Page size</param>
+        /// <returns>List customer filter by status</returns>
         [HttpGet("status/{status}")]
         public async Task<IActionResult> GetByStatus(
             CustomerStatus status,
@@ -370,19 +410,9 @@ namespace WarehouseManagement.BackendServer.Controllers
         {
             _logger.LogInformation("Begin GetByStatus API. Status={Status}, PageIndex={PageIndex}, PageSize={PageSize}", status, pageIndex, pageSize);
 
-            if (pageIndex <= 0)
-            {
-                _logger.LogWarning("Invalid PageIndex. Reset to 1. PageIndex={PageIndex}", pageIndex);
+            pageIndex = pageIndex <= 0 ? 1 : pageIndex;
 
-                pageIndex = 1;
-            }
-
-            if (pageSize <= 0)
-            {
-                _logger.LogWarning("Invalid PageSize. Reset to 10. PageSize={PageSize}", pageSize);
-
-                pageSize = 10;
-            }
+            pageSize = pageSize <= 0 ? 10 : pageSize;
 
             var query = _context.Customers
                 .AsNoTracking()
@@ -406,6 +436,11 @@ namespace WarehouseManagement.BackendServer.Controllers
             });
         }
 
+        /// <summary>
+        /// Check if a phone number already exists in the system
+        /// </summary>
+        /// <param name="phone">Phone check</param>
+        /// <returns>Result of check process</returns>
         [HttpGet("check-phone")]
         public async Task<IActionResult> CheckPhoneExists(string phone)
         {
@@ -420,6 +455,11 @@ namespace WarehouseManagement.BackendServer.Controllers
             return Ok(new { exists });
         }
 
+        /// <summary>
+        /// Create a CustomerViewModel from a Customer entity
+        /// </summary>
+        /// <param name="customer">Customer model</param>
+        /// <returns>Customer view model</returns>
         private static CustomerViewModel CreateCustomerViewModel(Customer customer)
         {
             return new CustomerViewModel
