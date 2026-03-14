@@ -5,6 +5,7 @@ using Moq;
 using WarehouseManagement.BackendServer.Controllers;
 using WarehouseManagement.BackendServer.Data;
 using WarehouseManagement.BackendServer.Data.Entities;
+using WarehouseManagement.BackendServer.Data.Enums;
 using WarehouseManagement.ViewModels.Contents.Products;
 using WarehouseManagement.ViewModels.Systems;
 
@@ -446,6 +447,30 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     ImageUrl = "test",
                     IsDefault = true,
                     SortOrder = 1
+                }
+            );
+
+            _context.ProductVariants.AddRange
+            (
+                new ProductVariant
+                {
+                    ProductId = 1,
+                    Name = "Test loại 1",
+                    SKU = "Test 1",
+                    Price = 1320,
+                    StockQuantity = 12,
+                    Status = ProductVariantStatus.Active,
+                    CreateDate = DateTime.UtcNow
+                },
+                new ProductVariant
+                {
+                    ProductId = 2,
+                    Name = "Test loại 2",
+                    SKU = "Test 1",
+                    Price = 282,
+                    StockQuantity = 72,
+                    Status = ProductVariantStatus.Active,
+                    CreateDate = DateTime.UtcNow
                 }
             );
 
@@ -1950,12 +1975,12 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             );
 
             await _context.SaveChangesAsync();
-            
+
             var controller = new ProductsController(_context, _mockLogger.Object);
 
             // Act
             var result = await controller.PermanentDeleteProduct(1);
-            
+
             // Assert
             Assert.IsType<BadRequestObjectResult>(result);
         }
@@ -1968,7 +1993,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
 
             // Act
             var result = await controller.PermanentDeleteProduct(1);
-            
+
             // Assert
             Assert.IsType<NotFoundResult>(result);
         }
