@@ -31,6 +31,7 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         public int BalanceAfter { get; set; }
 
         public DateTime CreateDate { get; set; }
+
         public DateTime? LastModifiedDate { get; set; }
     }
 }

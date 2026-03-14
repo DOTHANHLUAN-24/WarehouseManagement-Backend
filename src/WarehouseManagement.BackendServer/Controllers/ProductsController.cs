@@ -132,8 +132,6 @@ namespace WarehouseManagement.BackendServer.Controllers
             return Ok(products);
         }
 
-        [HttpGet()]
-
         /// <summary>
         /// Get paged products filtered by name.
         /// </summary>
@@ -231,10 +229,13 @@ namespace WarehouseManagement.BackendServer.Controllers
                 from p in _context.Products
                 join pi in _context.ProductImages
                     on p.Id equals pi.ProductId
+                join pv in _context.ProductVariants
+                    on p.Id equals pv.ProductId
                 where
                     !p.IsDeleted
                    && !pi.IsDeleted
                    && pi.IsDefault
+                   && pv.IsActive
                 select new ProductViewModel
                 {
                     Id = p.Id,
@@ -244,7 +245,9 @@ namespace WarehouseManagement.BackendServer.Controllers
                     Code = p.Code,
                     IsActive = p.IsActive,
                     ImageUrl = pi.ImageUrl,
-                    IsDefault = pi.IsDefault
+                    IsDefault = pi.IsDefault,
+                    Price = pv.Price,
+                    Quantity = pv.StockQuantity
                 }
             ).ToListAsync();
 
