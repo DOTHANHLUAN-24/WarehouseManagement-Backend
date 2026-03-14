@@ -1,4 +1,6 @@
-﻿namespace WarehouseManagement.ViewModels.Contents.StockTransactions
+﻿using WarehouseManagement.ViewModels.Enums;
+
+namespace WarehouseManagement.ViewModels.Contents.StockTransactions
 {
     public class StockTransactionBase
     {
@@ -7,6 +9,10 @@
         public int WarehouseId { get; set; }
 
         public int QuantityChange { get; set; }
+
+        public StockTransactionType TransactionType { get; set; }
+
+        public ReferenceType ReferenceType { get; set; }
 
         public int? ReferenceId { get; set; }
 
