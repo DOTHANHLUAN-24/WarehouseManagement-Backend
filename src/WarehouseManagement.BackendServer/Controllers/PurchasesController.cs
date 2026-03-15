@@ -109,25 +109,104 @@ namespace WarehouseManagement.BackendServer.Controllers
             }
         }
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeletePurchase(int id)
+        [HttpGet("trash")]
+        public async Task<IActionResult> GetAllPurchaseInTrash()
+        {
+            var purchases = await _context.Purchases
+                .Where(x => x.IsDeleted)
+                .ToListAsync();
+
+            return Ok(new
+            {
+                total = purchases.Count,
+                items = purchases
+            });
+        }
+
+        [HttpDelete("{id}/soft-delete")]
+        public async Task<IActionResult> SoftDeletePurchase(int id)
         {
             var purchase = await _context.Purchases.FindAsync(id);
             if (purchase == null)
             {
                 return NotFound();
             }
+
+            if (purchase.IsDeleted)
+                return BadRequest();
+
+            purchase.IsDeleted = true;
+
+            var purchaseItemInPurchase = await _context.PurchaseItems
+                .Where(x => x.PurchaseId == id)
+                .ToListAsync();
+
+            foreach (var purchaseItem in purchaseItemInPurchase)
+            {
+                purchaseItem.IsDeleted = true;
+            }
+
+            var result = await _context.SaveChangesAsync();
+            if (result > 0)
+                return Ok(result);
+
+            return BadRequest();
+        }
+
+        [HttpPut("{id}/restore")]
+        public async Task<IActionResult> RestorePurchase(int id)
+        {
+            var purchase = await _context.Purchases.FindAsync(id);
+            if (purchase == null)
+                return NotFound();
+
+            if (!purchase.IsDeleted)
+                return BadRequest();
+
+            purchase.IsDeleted = false;
+
+            var purchaseItemInPurchase = await _context.PurchaseItems
+               .Where(x => x.PurchaseId == id)
+               .ToListAsync();
+
+            foreach (var purchaseItem in purchaseItemInPurchase)
+            {
+                purchaseItem.IsDeleted = false;
+            }
+
+            var result = await _context.SaveChangesAsync();
+            if (result > 0) 
+                return Ok(result);
+
+            return BadRequest();
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> PermanentDeletePurchase(int id)
+        {
+            var purchase = await _context.Purchases.FindAsync(id);
+            if(purchase == null)
+                return NotFound();
+
+            if (!purchase.IsDeleted)
+                return BadRequest("Purchase must be soft-deleted before permanent deletion");
+
+            var purchaseItemInPurchase = await _context.PurchaseItems
+               .Where(x => x.PurchaseId == id)
+               .ToListAsync();
+
+            foreach(var purchaseItem in purchaseItemInPurchase)
+            {
+                _context.PurchaseItems.Remove(purchaseItem);
+            }    
+
             _context.Purchases.Remove(purchase);
 
-            var result = _context.SaveChanges();
+            var result = await _context.SaveChangesAsync();
             if (result > 0)
-            {
                 return NoContent();
-            }
-            else
-            {
-                return BadRequest();
-            }
+
+            return BadRequest();
         }
     }
 }
