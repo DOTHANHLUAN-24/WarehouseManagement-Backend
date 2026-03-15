@@ -6,7 +6,7 @@ using WarehouseManagement.BackendServer.Data.Interfaces;
 namespace WarehouseManagement.BackendServer.Data.Entities
 {
     [Table("Purchases")]
-    public class Purchase : IDateTracking
+    public class Purchase : IDateTracking, ISoftDelete
     {
         [Key]
         public int Id { get; set; }
@@ -22,6 +22,8 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         public DateTime CreateDate { get; set; }
 
         public DateTime? LastModifiedDate { get; set; }
+
+        public bool IsDeleted { get; set; } = false;
 
         public ICollection<PurchaseItem> PurchaseItems { get; set; } = new List<PurchaseItem>();
     }
