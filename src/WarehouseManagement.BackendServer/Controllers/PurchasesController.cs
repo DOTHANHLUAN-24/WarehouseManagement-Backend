@@ -14,6 +14,10 @@ namespace WarehouseManagement.BackendServer.Controllers
         ILogger<PurchasesController> _logger
     ) : ControllerBase
     {
+        /// <summary>
+        /// Get list purchase in the system
+        /// </summary>
+        /// <returns>Return list purchase</returns>
         [HttpGet]
         public async Task<IActionResult> GetAllPurchase()
         {
@@ -38,6 +42,11 @@ namespace WarehouseManagement.BackendServer.Controllers
             return Ok(purchases);
         }
 
+        /// <summary>
+        /// Get purchase by id
+        /// </summary>
+        /// <param name="id">Purchase id</param>
+        /// <returns>The purchase or not found</returns>
         [HttpGet("{id}")]
         public async Task<IActionResult> GetPurchaseById(int id)
         {
@@ -68,6 +77,11 @@ namespace WarehouseManagement.BackendServer.Controllers
             return Ok(purchase);
         }
 
+        /// <summary>
+        /// Create the purchase
+        /// </summary>
+        /// <param name="request">Purchase model</param>
+        /// <returns>Result of create process</returns>
         [HttpPost]
         public async Task<IActionResult> PostPurchase([FromBody] PurchaseCreateRequest request)
         {
@@ -98,6 +112,13 @@ namespace WarehouseManagement.BackendServer.Controllers
             }
         }
 
+
+        /// <summary>
+        /// Update the purchase by id
+        /// </summary>
+        /// <param name="id">Purchase id</param>
+        /// <param name="request">Purchase model</param>
+        /// <returns>Result of update process</returns>
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdatePurchase(int id, [FromBody] PurchaseUpdateRequest request)
         {
@@ -132,6 +153,10 @@ namespace WarehouseManagement.BackendServer.Controllers
             }
         }
 
+        /// <summary>
+        /// Get list purchase in the trash
+        /// </summary>
+        /// <returns>Return list of purchase in the trash</returns>
         [HttpGet("trash")]
         public async Task<IActionResult> GetAllPurchaseInTrash()
         {
@@ -150,6 +175,11 @@ namespace WarehouseManagement.BackendServer.Controllers
             });
         }
 
+        /// <summary>
+        /// Soft delete the purchase by id
+        /// </summary>
+        /// <param name="id">Purchase id</param>
+        /// <returns>Result of soft delete process</returns>
         [HttpDelete("{id}/soft-delete")]
         public async Task<IActionResult> SoftDeletePurchase(int id)
         {
@@ -194,6 +224,11 @@ namespace WarehouseManagement.BackendServer.Controllers
             return BadRequest();
         }
 
+        /// <summary>
+        /// Restore purchase by id
+        /// </summary>
+        /// <param name="id">Purchase id</param>
+        /// <returns>Result of restore process</returns>
         [HttpPut("{id}/restore")]
         public async Task<IActionResult> RestorePurchase(int id)
         {
@@ -238,6 +273,11 @@ namespace WarehouseManagement.BackendServer.Controllers
             return BadRequest();
         }
 
+        /// <summary>
+        /// Permanent delete purchase by id
+        /// </summary>
+        /// <param name="id">Purchase id</param>
+        /// <returns>Result of permanent process</returns>
         [HttpDelete("{id}")]
         public async Task<IActionResult> PermanentDeletePurchase(int id)
         {
