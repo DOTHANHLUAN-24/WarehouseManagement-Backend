@@ -16,6 +16,10 @@ namespace WarehouseManagement.BackendServer.Controllers
             ILogger<StockTransactionsController> _logger
         ) : BaseController
     {
+        /// <summary>
+        /// Get all stock transactions in the system
+        /// </summary>
+        /// <returns>List stock transactions</returns>
         [HttpGet]
         public async Task<IActionResult> GetAllStockTransactions()
         {
@@ -30,6 +34,11 @@ namespace WarehouseManagement.BackendServer.Controllers
             return Ok(listStockTransactions);
         }
 
+        /// <summary>
+        /// Get stock transaction by id
+        /// </summary>
+        /// <param name="id">Stock transaction id</param>
+        /// <returns>The stock transaction or not found</returns>
         [HttpGet("{id}")]
         public async Task<IActionResult> GetStockTransactionById(int id)
         {
@@ -51,6 +60,11 @@ namespace WarehouseManagement.BackendServer.Controllers
             return Ok(stockTransaction);
         }
 
+        /// <summary>
+        /// Create stock transactions with create model
+        /// </summary>
+        /// <param name="request">Stock transaction model</param>
+        /// <returns>Result of create process</returns>
         [HttpPost]
         public async Task<IActionResult> PostStockTransaction(StockTransactionCreateRequest request)
         {
@@ -85,6 +99,14 @@ namespace WarehouseManagement.BackendServer.Controllers
             return BadRequest();
         }
 
+        /// <summary>
+        /// Get stock transaction by filter and paging
+        /// </summary>
+        /// <param name="productName">Product name</param>
+        /// <param name="warehouseEmail">Warehouse email</param>
+        /// <param name="pageIndex">Page index</param>
+        /// <param name="pageSize">Page Size</param>
+        /// <returns>List stock transactions by filter</returns>
         [HttpGet("filter")]
         public async Task<IActionResult> GetStockTransactions
         (
@@ -150,6 +172,11 @@ namespace WarehouseManagement.BackendServer.Controllers
             return Ok(result);
         }
 
+        /// <summary>
+        /// Get stock transactions by warehouse id
+        /// </summary>
+        /// <param name="warehouseId">Warehouse id</param>
+        /// <returns>The stock transaction or not found</returns>
         [HttpGet("warehouse/{warehouseId}")]
         public async Task<IActionResult> GetStockTransactionsByWarehouseId(int warehouseId)
         {
@@ -165,6 +192,12 @@ namespace WarehouseManagement.BackendServer.Controllers
             return Ok(stockTransactions);
         }
 
+        /// <summary>
+        /// Get stock transaction by reference id and reference type
+        /// </summary>
+        /// <param name="referenceType">Reference type</param>
+        /// <param name="referenceId">Reference id</param>
+        /// <returns>The stock transactions by reference</returns>
         [HttpGet("stockTransactions/reference/{referenceType}/{referenceId}")]
         public async Task<IActionResult> GetStockTransactionsByReference(ReferenceType referenceType, int referenceId)
         {
@@ -180,6 +213,11 @@ namespace WarehouseManagement.BackendServer.Controllers
             return Ok(stockTransactions);
         }
 
+        /// <summary>
+        /// Create stock transaction view model
+        /// </summary>
+        /// <param name="x">Stock transaction request</param>
+        /// <returns>Stock transaction view model</returns>
         private static StockTransactionViewModel CreateStockTransactionViewModel(StockTransaction x)
         {
             return new StockTransactionViewModel
