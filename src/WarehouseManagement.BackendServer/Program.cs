@@ -14,24 +14,19 @@ using WarehouseManagement.ViewModels.Systems.Roles;
 
 var builder = WebApplication.CreateBuilder(args);
 
-//
-// =======================
-// CORS (PHẢI TRƯỚC BUILD)
-// =======================
+// CORS 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontend", policy =>
-    {
-        policy.WithOrigins("http://localhost:5173")
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
+    options.AddPolicy("AllowAll",
+        policy =>
+        {
+            policy.AllowAnyOrigin()
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
 });
 
-//
-// =======================
 // SERILOG
-// =======================
 Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
     .WriteTo.Console()
@@ -121,16 +116,10 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<JwtService>();
 
-//
-// =======================
 // BUILD APP
-// =======================
 var app = builder.Build();
 
-//
-// =======================
 // SEED DATABASE
-// =======================
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -148,17 +137,14 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-//
-// =======================
 // MIDDLEWARE
-// =======================
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseCors("AllowFrontend");
+app.UseCors("AllowAll");
 
 app.UseStaticFiles();
 app.UseSerilogRequestLogging();
