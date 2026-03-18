@@ -14,13 +14,18 @@ using WarehouseManagement.ViewModels.Systems.Roles;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// CORS 
+var frontendUrl = builder.Configuration["FrontendUrl"] ?? "http://localhost:5173";
+
+//
+// =======================
+// CORS (PHẢI TRƯỚC BUILD)
+// =======================
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll",
+    options.AddPolicy("AllowFrontend",
         policy =>
         {
-            policy.AllowAnyOrigin()
+            policy.WithOrigins(frontendUrl)
                   .AllowAnyHeader()
                   .AllowAnyMethod();
         });
@@ -49,6 +54,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo { Title = "Warehouse Management API", Version = "v1" });
+
+    options.CustomSchemaIds(type => type.FullName);
 
     var jwtSecurityScheme = new OpenApiSecurityScheme
     {
