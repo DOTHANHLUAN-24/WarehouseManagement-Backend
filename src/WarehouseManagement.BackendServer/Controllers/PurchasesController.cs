@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.BackendServer.Data;
 using WarehouseManagement.BackendServer.Data.Entities;
 using WarehouseManagement.ViewModels.Contents.Purchases;
+using WarehouseManagement.ViewModels.Systems;
 
 namespace WarehouseManagement.BackendServer.Controllers
 {
@@ -14,6 +15,8 @@ namespace WarehouseManagement.BackendServer.Controllers
         ILogger<PurchasesController> _logger
     ) : ControllerBase
     {
+        #region Purchases
+
         /// <summary>
         /// Get list purchase in the system
         /// </summary>
@@ -33,13 +36,60 @@ namespace WarehouseManagement.BackendServer.Controllers
                     TotalCost = x.TotalCost,
                     CreateDate = x.CreateDate,
                     LastModifiedDate = x.LastModifiedDate
-
                 })
                 .ToListAsync();
 
             _logger.LogInformation("Success GetAllPurchase API");
 
             return Ok(purchases);
+        }
+
+        [HttpGet("filter")]
+        public async Task<IActionResult> GetPurchasesPaging
+        (
+            DateTime? fromDate,
+            DateTime? toDate,
+            int pageIndex = 1,
+            int pageSize = 10
+        )
+        {
+            pageIndex = pageIndex <= 0 ? 1 : pageIndex;
+            pageSize = pageSize <= 0 ? 10 : pageSize;
+
+            var query = _context.Purchases.AsQueryable();
+
+            if (fromDate != null)
+            {
+                query = query.Where(x => x.CreateDate >= fromDate);
+            }
+
+            if (toDate != null)
+            {
+                query = query.Where(x => x.CreateDate <= toDate);
+            }
+
+            var totalRecords = await query.CountAsync();
+
+            var items = await query.Skip((pageIndex - 1) * pageSize)
+                .Take(pageSize).ToListAsync();
+
+            var data = items.Select(x => new PurchaseViewModel
+            {
+                Id = x.Id,
+                SupplierId = x.SupplierId,
+                PurchaseDate = x.PurchaseDate,
+                TotalCost = x.TotalCost,
+                CreateDate = x.CreateDate,
+                LastModifiedDate = x.LastModifiedDate
+            }).ToList();
+
+            var pagination = new Pagination<PurchaseViewModel>
+            {
+                Items = data,
+                TotalRecords = totalRecords,
+            };
+
+            return Ok(pagination);
         }
 
         /// <summary>
@@ -284,7 +334,7 @@ namespace WarehouseManagement.BackendServer.Controllers
             _logger.LogInformation("Begin PermanentDeletePurchase API");
 
             var purchase = await _context.Purchases.FindAsync(id);
-            if(purchase == null)
+            if (purchase == null)
             {
                 _logger.LogError("Not found the purchase with id = {id}", id);
 
@@ -302,10 +352,10 @@ namespace WarehouseManagement.BackendServer.Controllers
                .Where(x => x.PurchaseId == id)
                .ToListAsync();
 
-            foreach(var purchaseItem in purchaseItemInPurchase)
+            foreach (var purchaseItem in purchaseItemInPurchase)
             {
                 _context.PurchaseItems.Remove(purchaseItem);
-            }    
+            }
 
             _context.Purchases.Remove(purchase);
 
@@ -321,5 +371,12 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             return BadRequest();
         }
+
+        #endregion
+
+        #region PurchaseItems
+
+
+        #endregion
     }
 }
