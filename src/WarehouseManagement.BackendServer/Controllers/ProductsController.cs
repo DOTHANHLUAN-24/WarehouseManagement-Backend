@@ -1069,7 +1069,7 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// </summary>
         /// <param name="id">Product ID</param>
         /// <returns>No content if deletion succeeds.</returns>
-        [HttpDelete("{id}")]
+        [HttpDelete("{id}/permanent-delete")]
         public async Task<IActionResult> PermanentDeleteProduct(int id)
         {
             _logger.LogInformation("Begin PermanentDeleteProduct API");

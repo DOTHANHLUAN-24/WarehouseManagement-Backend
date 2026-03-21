@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.BackendServer.Data;
 using WarehouseManagement.BackendServer.Data.Entities;
+using WarehouseManagement.ViewModels.Contents.PurchaseItems;
 using WarehouseManagement.ViewModels.Contents.Purchases;
 using WarehouseManagement.ViewModels.Systems;
 
@@ -376,6 +377,111 @@ namespace WarehouseManagement.BackendServer.Controllers
 
         #region PurchaseItems
 
+        [HttpGet("{id}/items")]
+        public async Task<IActionResult> GetItemsByPurchaseId(int id)
+        {
+            var listPurchaseItems = await _context.PurchaseItems
+                .Where(x => x.PurchaseId == id && !x.IsDeleted)
+                .ToListAsync();
+
+            return Ok(listPurchaseItems);
+        }
+
+        [HttpPost("{id}/items")]
+        public async Task<IActionResult> AddItemToPurchase(int id, PurchaseItemCreateRequest request)
+        {
+            var existPurchase = await _context.Purchases.FindAsync(id);
+            if (existPurchase == null)
+                return NotFound();
+
+            var purchaseItem = new PurchaseItem
+            {
+                PurchaseId = request.PurchaseId,
+                ProductVariantId = request.ProductVariantId,
+                Quantity = request.Quantity,
+                UnitCost = request.UnitCost,
+                CreateDate = request.CreateDate,
+                LastModifiedDate = request.LastModifiedDate,
+            };
+
+            _context.PurchaseItems.Add(purchaseItem);
+
+            var result = await _context.SaveChangesAsync();
+            if (result > 0)
+                return CreatedAtAction(nameof(GetItemsByPurchaseId), new { id = purchaseItem.Id }, purchaseItem);
+
+            return BadRequest();
+        }
+
+        [HttpDelete("{id}/items/{itemId}/soft-delete")]
+        public async Task<IActionResult> SoftDeletePurchaseItem(int id, int itemId)
+        {
+            var existPurchase = await _context.Purchases.FindAsync(id);
+            if (existPurchase == null)
+                return NotFound();
+
+            var existPurchaseItem = await _context.PurchaseItems.FindAsync(itemId);
+            if (existPurchaseItem == null)
+                return NotFound();
+
+            if (existPurchaseItem.IsDeleted || existPurchase.IsDeleted)
+                return BadRequest();
+
+            existPurchaseItem.IsDeleted = true;
+
+            // Xử lý phần cost
+
+            var result = await _context.SaveChangesAsync();
+            if (result > 0)
+                return Ok(existPurchaseItem);
+            return BadRequest();
+        }
+
+        [HttpPut("{id}/items/{itemId}/restore")]
+        public async Task<IActionResult> RestorePurchaseItem(int id, int itemId) 
+        {
+            var existPurchase = await _context.Purchases.FindAsync(id);
+            if (existPurchase == null)
+                return NotFound();
+
+            var existPurchaseItem = await _context.PurchaseItems.FindAsync(itemId);
+            if (existPurchaseItem == null)
+                return NotFound();
+
+            if (!existPurchaseItem.IsDeleted)
+                return BadRequest();
+
+            existPurchaseItem.IsDeleted = false;
+
+            // Xử lý phần cost
+
+            var result = await _context.SaveChangesAsync();
+            if (result > 0)
+                return Ok(existPurchaseItem);
+            return BadRequest();
+        }
+
+        [HttpDelete("{id}/items/{itemId}/permanent-delete")]
+        public async Task<IActionResult> PermanentDeletePurchaseItem(int id, int itemId)
+        {
+            var existPurchase = await _context.Purchases.FindAsync(id);
+            if (existPurchase == null)
+                return NotFound();
+
+            var existPurchaseItem = await _context.PurchaseItems.FindAsync(itemId);
+            if (existPurchaseItem == null)
+                return NotFound();
+
+            if (!existPurchaseItem.IsDeleted)
+                return BadRequest();
+
+            _context.PurchaseItems.Remove(existPurchaseItem);
+
+            var result = await _context.SaveChangesAsync();
+            if (result > 0)
+                return Ok(existPurchaseItem);
+            return BadRequest();
+        }
 
         #endregion
     }
