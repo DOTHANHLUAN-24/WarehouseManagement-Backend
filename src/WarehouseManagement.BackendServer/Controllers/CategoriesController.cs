@@ -12,7 +12,7 @@ namespace WarehouseManagement.BackendServer.Controllers
     [ApiController]
     public class CategoriesController
         (
-            ApplicationDbContext _context, 
+            ApplicationDbContext _context,
             ILogger<CategoriesController> _logger
         ) : BaseController
     {
@@ -33,16 +33,18 @@ namespace WarehouseManagement.BackendServer.Controllers
                 SeoAlias = request.SeoAlias,
                 SeoDescription = request.SeoDescription,
                 SortOrder = request.SortOrder,
+                IsDeleted = false
             };
 
             _context.Categories.Add(category);
+
             var result = await _context.SaveChangesAsync();
 
             if (result > 0)
             {
                 _logger.LogInformation("PostCategory API success. Id={Id}", category.Id);
 
-                return CreatedAtAction(nameof(GetById), new { id = category.Id }, category);
+                return CreatedAtAction(nameof(GetCategoryById), new { id = category.Id }, category);
             }
             else
             {
@@ -58,7 +60,7 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// <param name="id">Category id</param>
         /// <returns>The category with the id</returns>
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(int id)
+        public async Task<IActionResult> GetCategoryById(int id)
         {
             _logger.LogInformation("Begin GetCategoryById. Id={Id}", id);
 
@@ -93,6 +95,51 @@ namespace WarehouseManagement.BackendServer.Controllers
             _logger.LogInformation("GetCategories API success to get all categories in system.");
 
             return Ok(categoryViewModels);
+        }
+
+        /// <summary>
+        /// Check category name in system
+        /// </summary>
+        /// <param name="categoryName">Category name</param>
+        /// <returns>Result of process</returns>
+        [HttpGet("check-name")]
+        public async Task<IActionResult> CheckCategoryName(string categoryName)
+        {
+            _logger.LogInformation("Begin CheckCategoryName API");
+
+            var existCategory = await _context.Categories
+                .Where(x => x.Name == categoryName)
+                .FirstOrDefaultAsync();
+
+            if (existCategory != null)
+            {
+                _logger.LogError("The category name exist in the system");
+
+                return BadRequest();
+            }
+
+            _logger.LogInformation("Success CheckCategoryName API");
+
+            return Ok("The category name don't exist in the system");
+        }
+
+        /// <summary>
+        /// Get all categories in the trash
+        /// </summary>
+        /// <returns>List of categories in the trash</returns>
+        [HttpGet("trash")]
+        public async Task<IActionResult> GetAllCategoriesInTrash()
+        {
+            _logger.LogInformation("Begin GetAllCategoriesInTrash API");
+
+            var listCategories = await _context.Categories
+                .Where(x => x.IsDeleted)
+                .Select(category => CreateCategoryViewModel(category))
+                .ToListAsync();
+
+            _logger.LogInformation("Success GetAllCategoriesInTrash API");
+
+            return Ok(listCategories);
         }
 
         /// <summary>
@@ -248,6 +295,7 @@ namespace WarehouseManagement.BackendServer.Controllers
             category.LastModifiedDate = DateTime.Now;
 
             _context.Categories.Update(category);
+
             var result = await _context.SaveChangesAsync();
 
             if (result > 0)
@@ -271,7 +319,7 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// The deleted category information if the operation succeeds;
         /// otherwise, an appropriate error response.
         /// </returns>
-        [HttpDelete("{id}")]
+        [HttpDelete("{id}/permanent-delete")]
         public async Task<IActionResult> PermanentDeleteCategory(int id)
         {
             _logger.LogInformation("Begin PermanentDeleteCategory API. Id={id}", id);
@@ -291,6 +339,22 @@ namespace WarehouseManagement.BackendServer.Controllers
                 return BadRequest("Category must be soft-deleted before permanent deletion.");
             }
 
+            var listStockTransactions = await
+                                        (
+                                            from p in _context.Products
+                                            join st in _context.StockTransactions
+                                            on p.Id equals st.ProductId
+                                            where p.CategoryId == id
+                                            select st.Id
+                                        )
+                                        .ToListAsync();
+
+            if (listStockTransactions.Any())
+            {
+                _logger.LogError("List stock transactions contains invalid category id");
+
+                return BadRequest();
+            }
 
             _context.Categories.Remove(category);
 
@@ -304,6 +368,76 @@ namespace WarehouseManagement.BackendServer.Controllers
             }
 
             _logger.LogError("Permanent delete category failed. Database did not persist changes. Id={id}", id);
+
+            return BadRequest();
+        }
+
+        /// <summary>
+        /// Permanent delete list category
+        /// </summary>
+        /// <param name="request">List category id</param>
+        /// <returns>Result of process</returns>
+        [HttpDelete("bulk-permanent-delete")]
+        public async Task<IActionResult> BulkPermanentDeleteCategory([FromBody] BulkDeleteRequest request)
+        {
+            _logger.LogInformation("Begin BulkPermanentDeleteCategory API");
+
+            if (request.Ids == null || !request.Ids.Any())
+            {
+                _logger.LogError("List Ids is empty");
+
+                return BadRequest();
+            }
+
+            var categories = await _context.Categories
+                .Where(c => request.Ids.Contains(c.Id))
+                .ToListAsync();
+
+            if(!categories.Any())
+            {
+                _logger.LogError("Not found the category");
+
+                return NotFound();
+            }
+
+            foreach(var category in categories)
+            {
+                if (!category.IsDeleted)
+                {
+                    _logger.LogWarning("Permanent delete category rejected. Category is not soft-deleted yet. Id={id}", category.Id);
+
+                    return BadRequest("Category must be soft-deleted before permanent deletion.");
+                }
+
+                var listStockTransactions = await
+                                       (
+                                           from p in _context.Products
+                                           join st in _context.StockTransactions
+                                           on p.Id equals st.ProductId
+                                           where p.CategoryId == category.Id
+                                           select st.Id
+                                       )
+                                       .ToListAsync();
+
+                if (listStockTransactions.Any())
+                {
+                    _logger.LogError("List stock transactions contains invalid category id = {id}", category.Id);
+
+                    return BadRequest();
+                }
+
+                _context.Categories.Remove(category);
+            }
+
+            var result = await _context.SaveChangesAsync();
+            if(result > 0)
+            {
+                _logger.LogInformation("Success BulkPermanentDeleteCategory API");
+
+                return Ok();
+            }
+
+            _logger.LogWarning("Failed to save into db");
 
             return BadRequest();
         }
@@ -333,6 +467,17 @@ namespace WarehouseManagement.BackendServer.Controllers
                 return BadRequest("Category already in trash.");
             }
 
+            var listProduct = await _context.Products
+                .Where(x => x.CategoryId == id && !x.IsDeleted)
+                .ToListAsync();
+
+            if (listProduct.Any())
+            {
+                _logger.LogError("List product is exist with category id = {id}", id);
+
+                return BadRequest();
+            }
+
             category.IsDeleted = true;
 
             await _context.SaveChangesAsync();
@@ -340,6 +485,71 @@ namespace WarehouseManagement.BackendServer.Controllers
             _logger.LogInformation("Soft delete category success. Id={id}", id);
 
             return Ok();
+        }
+
+        /// <summary>
+        /// Soft delete list category
+        /// </summary>
+        /// <param name="request">List category id</param>
+        /// <returns>Result of process</returns>
+        [HttpDelete("bulk-soft-delete")]
+        public async Task<IActionResult> BulkSoftDeleteCategory([FromBody] BulkDeleteRequest request)
+        {
+            _logger.LogInformation("Begin BulkSoftDeleteCategory API");
+
+            if (request.Ids == null || !request.Ids.Any())
+            {
+                _logger.LogError("List Ids is empty");
+
+                return BadRequest();
+            }
+
+            var categories = await _context.Categories
+                .Where(c => request.Ids.Contains(c.Id) && !c.IsDeleted)
+                .ToListAsync();
+
+            if (!categories.Any())
+            {
+                _logger.LogError("Not found the category");
+
+                return NotFound();
+            }
+
+            foreach(var category in categories)
+            {
+                if (category.IsDeleted)
+                {
+                    _logger.LogInformation("Category already soft deleted. Id = {id}", category.Id);
+
+                    return BadRequest("Category already in trash.");
+                }
+
+                var listProduct = await _context.Products
+                .Where(x => x.CategoryId == category.Id && !x.IsDeleted)
+                .ToListAsync();
+
+                if (listProduct.Any())
+                {
+                    _logger.LogError("List product is exist with category id = {id}", category.Id);
+
+                    return BadRequest();
+                }
+
+                category.IsDeleted = true;
+            }
+
+            var result = await _context.SaveChangesAsync();
+            if(result > 0)
+            {
+                _logger.LogInformation("Success BulkSoftDeleteCategory API");
+
+                return Ok(new { Message = "Success to soft delete list category"});
+            }
+
+            _logger.LogWarning("Failed to save into db");
+
+            return BadRequest();
+
         }
 
         /// <summary>
@@ -384,8 +594,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                 ParentId = category.ParentId,
                 SortOrder = category.SortOrder,
                 SeoAlias = category.SeoAlias,
-                SeoDescription = category.SeoDescription,
-                IsDeleted = category.IsDeleted
+                SeoDescription = category.SeoDescription
             };
         }
     }

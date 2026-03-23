@@ -47,7 +47,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                     Code = p.Code,
                     IsActive = p.IsActive,
 
-                    Price = pv.Price,
+                    SellingPrice = pv.SellingPrice,
                     Quantity = pv.StockQuantity,
 
                     ImageUrl = _context.ProductImages
@@ -115,14 +115,14 @@ namespace WarehouseManagement.BackendServer.Controllers
                 from pv in _context.ProductVariants
                 join p in _context.Products on pv.ProductId equals p.Id
                 join pi in _context.ProductImages on pv.ProductId equals pi.ProductId
-                where pv.Price >= minPrice && pv.Price <= maxPrice && pi.IsDefault == true
+                where pv.SellingPrice >= minPrice && pv.SellingPrice <= maxPrice && pi.IsDefault == true
                 select new
                 {
                     p.Id,
                     p.Name,
                     p.Code,
                     pi.ImageUrl,
-                    pv.Price,
+                    pv.SellingPrice,
                     pv.StockQuantity,
                 }
             ).Distinct().ToListAsync();
@@ -166,7 +166,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                     ProductId = p.Id,
                     Name = p.Name,
                     Code = p.Code,
-                    Price = pv.Price,
+                    SellingPrice = pv.SellingPrice,
                     Quantity = pv.StockQuantity,
                     Description = p.Description,
                     ImageUrl = _context.ProductImages
@@ -198,10 +198,9 @@ namespace WarehouseManagement.BackendServer.Controllers
                 Id = x.ProductId,
                 Name = x.Name,
                 Code = x.Code,
-                Price = x.Price,
+                SellingPrice = x.SellingPrice,
                 ImageUrl = x.ImageUrl,
                 Quantity = x.Quantity
-
             }).ToList();
 
 
@@ -246,7 +245,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                     IsActive = p.IsActive,
                     ImageUrl = pi.ImageUrl,
                     IsDefault = pi.IsDefault,
-                    Price = pv.Price,
+                    SellingPrice = pv.SellingPrice,
                     Quantity = pv.StockQuantity
                 }
             ).ToListAsync();
@@ -294,7 +293,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                         Code = product.Code,
                         IsActive = product.IsActive,
                         SKU = productVariant.SKU,
-                        Price = productVariant.Price,
+                        SellingPrice = productVariant.SellingPrice,
                         StockQuantity = productVariant.StockQuantity,
                         IsActiveInVariant = productVariant.IsActive
                     });
@@ -335,7 +334,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                     Code = p.Code,
                     IsActive = p.IsActive,
 
-                    Price = pv.Price,
+                    SellingPrice = pv.SellingPrice,
                     Quantity = pv.StockQuantity,
 
                     ImageUrl = _context.ProductImages
@@ -423,7 +422,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                 ProductId = product.Id,
                 Name = product.Name,
                 SKU = request.SKU,
-                Price = request.Price,
+                SellingPrice = request.SellingPrice,
                 StockQuantity = request.InitialStock,
                 IsActive = true,
                 Status = ProductVariantStatus.Active,
@@ -444,7 +443,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                     CategoryId = product.CategoryId,
                     IsActive = product.IsActive,
 
-                    Price = request.Price,
+                    SellingPrice = request.SellingPrice,
                     Quantity = request.InitialStock
                 });
             }
@@ -619,7 +618,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                 return NotFound();
             }
 
-            variant.Price = price;
+            variant.SellingPrice = price;
             await _context.SaveChangesAsync();
 
             _logger.LogInformation("UpdatePrice by id and new price success. Id = {id}", id);
@@ -629,7 +628,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                 {
                     Name = variant.Name,
                     ProductVariantId = variant.Id,
-                    Price = variant.Price,
+                    SellingPrice = variant.SellingPrice,
                     StockQuantity = variant.StockQuantity,
                     IsActiveInVariant = variant.IsActive
                 }
@@ -674,7 +673,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                 {
                     Name = variant.Name,
                     ProductVariantId = variant.Id,
-                    Price = variant.Price,
+                    SellingPrice = variant.SellingPrice,
                     StockQuantity = variant.StockQuantity,
                     IsActiveInVariant = variant.IsActive
                 }
