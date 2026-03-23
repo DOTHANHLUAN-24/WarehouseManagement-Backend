@@ -18,7 +18,7 @@ namespace WarehouseManagement.ViewModels.UnitTest.Contents.Products
                 Description = "This is a test product.",
                 CategoryId = 1,
                 Code = "TP001",
-                Price = 10.99m,
+                SellingPrice = 10.99m,
                 InitialStock = 100,
                 SKU = "TEST12345"
             };
@@ -29,7 +29,7 @@ namespace WarehouseManagement.ViewModels.UnitTest.Contents.Products
         [InlineData(-1.5)]
         public void Should_Have_Error_When_Price_Is_Invalid(decimal data)
         {
-            _request.Price = data;
+            _request.SellingPrice = data;
 
             var result = _validator.Validate(_request);
             Assert.False(result.IsValid);

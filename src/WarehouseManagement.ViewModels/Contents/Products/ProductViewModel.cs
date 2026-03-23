@@ -6,7 +6,7 @@
 
         public bool IsDefault { get; set; } = false;
 
-        public decimal Price { get; set; }
+        public decimal SellingPrice { get; set; }
 
         public int Quantity { get; set; }
 

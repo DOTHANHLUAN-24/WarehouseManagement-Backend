@@ -79,7 +79,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     ProductId = 1,
                     Name = "Hàng mới",
                     SKU = "54d5644d6a",
-                    Price = 76000,
+                    SellingPrice = 76000,
                     StockQuantity = 4654,
                 }
             );
@@ -161,7 +161,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     ProductId = 1,
                     Name = "Hàng mới",
                     SKU = "54d5644d6a",
-                    Price = 76000,
+                    SellingPrice = 76000,
                     StockQuantity = 4654,
                 }
             );
@@ -205,14 +205,14 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
         }
 
         // =========================
-        // Get list product by price range
+        // Get list product by SellingPrice range
         // =========================
 
         [Theory]
         [InlineData(10000, 55000, 1)]
         [InlineData(55000, 80000, 1)]
         [InlineData(10000, 80000, 2)]
-        public async Task GetByPriceRange_HasData_ReturnListProduct(decimal minPrice, decimal maxPrice, int countOfItem)
+        public async Task GetBySellingPriceRange_HasData_ReturnListProduct(decimal minSellingPrice, decimal maxSellingPrice, int countOfItem)
         {
             // Arrange
             _context.Categories.AddRange(
@@ -258,7 +258,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     ProductId = 1,
                     Name = "Hàng mới",
                     SKU = "54d5644d6a",
-                    Price = 76000,
+                    SellingPrice = 76000,
                     StockQuantity = 4654,
                 },
                 new ProductVariant
@@ -266,7 +266,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     ProductId = 2,
                     Name = "Hàng mới",
                     SKU = "5a4a56d454",
-                    Price = 50000,
+                    SellingPrice = 50000,
                     StockQuantity = 1133,
                 }
             );
@@ -294,7 +294,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             var controller = new ProductsController(_context, _mockLogger.Object);
 
             // Act
-            var result = await controller.GetByPriceRange(minPrice, maxPrice);
+            var result = await controller.GetByPriceRange(minSellingPrice, maxSellingPrice);
             var okResult = Assert.IsType<OkObjectResult>(result);
             var listProduct = Assert.IsAssignableFrom<IEnumerable<object>>(okResult.Value);
 
@@ -305,7 +305,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
 
 
         [Fact]
-        public async Task GetByPriceRange_HasNoData_ReturnEmptyList()
+        public async Task GetBySellingPriceRange_HasNoData_ReturnEmptyList()
         {
             // Arrange
             var controller = new ProductsController(_context, _mockLogger.Object);
@@ -361,7 +361,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     ProductId = 1,
                     Name = "Hàng mới",
                     SKU = "54d5644d6a",
-                    Price = 76000,
+                    SellingPrice = 76000,
                     StockQuantity = 4654,
                 },
                 new ProductVariant
@@ -369,7 +369,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     ProductId = 2,
                     Name = "Hàng mới",
                     SKU = "5a4a56d454",
-                    Price = 50000,
+                    SellingPrice = 50000,
                     StockQuantity = 1133,
                 }
             );
@@ -457,7 +457,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     ProductId = 1,
                     Name = "Test loại 1",
                     SKU = "Test 1",
-                    Price = 1320,
+                    SellingPrice = 1320,
                     StockQuantity = 12,
                     Status = ProductVariantStatus.Active,
                     CreateDate = DateTime.UtcNow
@@ -467,7 +467,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     ProductId = 2,
                     Name = "Test loại 2",
                     SKU = "Test 1",
-                    Price = 282,
+                    SellingPrice = 282,
                     StockQuantity = 72,
                     Status = ProductVariantStatus.Active,
                     CreateDate = DateTime.UtcNow
@@ -554,7 +554,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     ProductId = 1,
                     Name = "Hàng mới",
                     SKU = "54d5644d6a",
-                    Price = 76000,
+                    SellingPrice = 76000,
                     StockQuantity = 4654,
                 },
                 new ProductVariant
@@ -562,7 +562,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     ProductId = 1,
                     Name = "Hàng mới 2",
                     SKU = "5a4a56d454",
-                    Price = 50000,
+                    SellingPrice = 50000,
                     StockQuantity = 1133,
                 }
             );
@@ -659,7 +659,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     ProductId = 1,
                     Name = "Hàng mới",
                     SKU = "54d5644d6a",
-                    Price = 76000,
+                    SellingPrice = 76000,
                     StockQuantity = 4654,
                 },
                 new ProductVariant
@@ -667,7 +667,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     ProductId = 1,
                     Name = "Hàng mới 2",
                     SKU = "5a4a56d454",
-                    Price = 50000,
+                    SellingPrice = 50000,
                     StockQuantity = 1133,
                 }
             );
@@ -884,7 +884,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     Description = "description of product 1",
                     CategoryId = 1,
                     Code = "code of product 1",
-                    Price = 10000,
+                    SellingPrice = 10000,
                     InitialStock = 45646,
                     SKU = "sku of product 1"
                 }
@@ -1161,16 +1161,16 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
 
         #endregion
 
-        #region Price & stock
+        #region SellingPrice & stock
 
         // =========================
-        // Update price
+        // Update SellingPrice
         // =========================
 
         [Theory]
         [InlineData(46521, 1454)]
         [InlineData(4651, 145654)]
-        public async Task UpdatePrice_HasDataAndValidInput_ReturnSuccess(decimal beforePrice, decimal afterPrice)
+        public async Task UpdateSellingPrice_HasDataAndValidInput_ReturnSuccess(decimal beforeSellingPrice, decimal afterSellingPrice)
         {
             // Arrange
             _context.Products.Add
@@ -1191,7 +1191,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     ProductId = 1,
                     Name = "Hàng mới",
                     SKU = "54d5644d6a",
-                    Price = beforePrice,
+                    SellingPrice = beforeSellingPrice,
                     StockQuantity = 4654,
                 }
             );
@@ -1201,16 +1201,16 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             var controller = new ProductsController(_context, _mockLogger.Object);
 
             // Act
-            var result = await controller.UpdatePrice(1, afterPrice);
+            var result = await controller.UpdatePrice(1, afterSellingPrice);
             var okResult = Assert.IsType<OkObjectResult>(result);
             var product = Assert.IsType<ProductVariantViewModel>(okResult.Value);
 
             // Assert
-            Assert.Equal(afterPrice, product.Price);
+            Assert.Equal(afterSellingPrice, product.SellingPrice);
         }
 
         [Fact]
-        public async Task UpdatePrice_HasNoDataInProduct_ReturnNotFound()
+        public async Task UpdateSellingPrice_HasNoDataInProduct_ReturnNotFound()
         {
             // Arrange
             var controller = new ProductsController(_context, _mockLogger.Object);
@@ -1223,7 +1223,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
         }
 
         // =========================
-        // Update price
+        // Update SellingPrice
         // =========================
 
         [Theory]
@@ -1250,7 +1250,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     ProductId = 1,
                     Name = "Hàng mới",
                     SKU = "54d5644d6a",
-                    Price = 455123,
+                    SellingPrice = 455123,
                     StockQuantity = beforeStock,
                 }
             );
