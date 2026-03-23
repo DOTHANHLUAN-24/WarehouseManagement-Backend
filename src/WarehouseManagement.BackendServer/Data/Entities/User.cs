@@ -30,5 +30,9 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         public bool IsActive { get; set; } = true;
 
         public bool IsBanned { get; set; } = false;
+
+        public string? RefreshToken { get; set; }
+
+        public DateTime? RefreshTokenExpiryTime { get; set; }
     }
 }
