@@ -1,3 +1,79 @@
+# 🏭 Warehouse Management Backend
+
+## 📌 Introduction
+
+**Warehouse Management Backend** là hệ thống backend hỗ trợ quản lý kho hàng, bao gồm các chức năng như quản lý sản phẩm, nhập/xuất kho, tồn kho và các nghiệp vụ liên quan.
+
+Dự án được xây dựng nhằm:
+
+* Cung cấp API cho hệ thống quản lý kho
+* Tối ưu quy trình nhập xuất và theo dõi tồn kho
+* Làm nền tảng cho frontend (web/mobile)
+
+---
+
+## 🚀 Technologies
+
+* .NET 8 (ASP.NET Core Web API)
+* Entity Framework Core
+* SQL Server
+* JWT Authentication
+* AutoMapper
+* FluentValidation
+* Logging (ILogger)
+
+---
+
+## 🧱 Architecture
+
+Dự án được tổ chức theo mô hình **N-Tier Architecture** với cấu trúc chi tiết như sau:
+
+```
+WarehouseManagement-Backend
+├── BackendServer
+│   ├── Controllers          # Xử lý request/response
+│   ├── Services             # Business logic
+│   ├── Repositories         # Data access layer
+│   ├── Entities             # Domain models (mapping DB)
+│   ├── ViewModels           # DTOs trả về client
+│   ├── Data
+│   │   ├── DbContext        # Cấu hình EF Core
+│   │   └── Migrations       # Migration files
+│   ├── Configurations       # Fluent API config
+│   ├── Validators           # FluentValidation
+│   ├── Helpers              # Helper classes
+│   ├── Constants            # Static constants
+│   └── Program.cs           # Entry point
+│
+├── .gitignore
+├── appsettings.json
+└── README.md
+```
+
+### 📖 Giải thích:
+
+* **Controllers** → nhận request từ client, trả response
+* **Services** → xử lý nghiệp vụ (business logic)
+* **Repositories** → thao tác với database (CRUD)
+* **Entities** → đại diện bảng trong DB
+* **ViewModels (DTOs)** → dữ liệu trao đổi giữa API và client
+* **DbContext** → cấu hình kết nối DB và EF Core
+* **Migrations** → quản lý version database
+* **Configurations** → cấu hình quan hệ (Fluent API)
+* **Validators** → validate dữ liệu đầu vào
+* **Helpers** → các hàm tiện ích
+* **Constants** → giá trị cố định toàn hệ thống
+
+👉 Ưu điểm:
+
+* Tách biệt rõ ràng từng layer
+* Dễ maintain và test
+* Dễ mở rộng (scalable)
+
+---
+
+## 🎮 Controllers Overview
+
 # 📦 Tổng hợp các Controller đã thực hiện
 
 Tài liệu này mô tả ngắn gọn các **Controller** đã được triển khai trong hệ thống Web API, kèm theo chức năng chính và tình trạng hiện tại.
@@ -89,11 +165,129 @@ Tài liệu này mô tả ngắn gọn các **Controller** đã được triển
 
 ---
 
-## ✅ Tổng kết
+## 🔑 Features
 
-* ✔️ Đã triển khai **Authentication & Authorization (JWT + Role + Permission)**
-* ✔️ Có **XML Documentation** cho Swagger
-* ✔️ Có **Unit Test** cho các controller quan trọng
-* ✔️ Kiến trúc rõ ràng, dễ mở rộng
+* 🔐 Authentication & Authorization (JWT)
+* 📦 Product Management
+* 🏬 Warehouse Management
+* 🔄 Stock Transaction (Import / Export)
+* 📊 Inventory Tracking
+* 🧾 Category Management
+* ⚠️ Validation & Error Handling
 
-👉 Phù hợp cho đồ án Backend / Warehouse / E-commerce API
+---
+
+## 📡 API Overview
+
+### 🔑 Auth
+
+* `POST /api/auth/login`
+* `POST /api/auth/register`
+
+### 📦 Product
+
+* `GET /api/products`
+* `POST /api/products`
+* `PUT /api/products/{id}`
+* `DELETE /api/products/{id}`
+
+### 🏬 Warehouse
+
+* `GET /api/warehouses`
+* `POST /api/warehouses`
+
+### 🔄 Stock Transaction
+
+* Import / Export stock
+* Track history
+
+---
+
+## ⚙️ Setup & Run
+
+### 1️⃣ Clone project
+
+```bash
+git clone https://github.com/DOTHANHLUAN-24/WarehouseManagement-Backend.git
+cd WarehouseManagement-Backend
+```
+
+### 2️⃣ Setup database
+
+Update connection string trong `appsettings.json`
+
+```json
+"ConnectionStrings": {
+  "DefaultConnection": "your_connection_string"
+}
+```
+
+### 3️⃣ Apply migration
+
+```bash
+dotnet ef database update
+```
+
+### 4️⃣ Run project
+
+```bash
+dotnet run
+```
+
+---
+
+## 🔐 Authentication
+
+Hệ thống sử dụng JWT Token:
+
+* Login → nhận token
+* Gửi token qua header:
+
+```
+Authorization: Bearer {token}
+```
+
+---
+
+## 🧪 Testing
+
+* Sử dụng Postman / Swagger
+* Swagger URL:
+
+```
+https://localhost:{port}/swagger
+```
+
+---
+
+## 📊 Database Design
+
+Hệ thống bao gồm các bảng chính:
+
+* Products
+* Categories
+* Warehouses
+* StockTransactions
+* Users
+
+---
+
+## 📌 Future Improvements
+
+* Pagination & Filtering
+* Role-based Authorization
+* Caching (Redis)
+* Unit Test
+* Docker Deployment
+
+---
+
+## 👨‍💻 Author
+
+* DOTHANHLUAN
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License.
