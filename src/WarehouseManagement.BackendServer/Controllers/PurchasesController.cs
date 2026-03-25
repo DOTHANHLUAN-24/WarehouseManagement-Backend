@@ -28,21 +28,26 @@ namespace WarehouseManagement.BackendServer.Controllers
             _logger.LogInformation("Begin GetAllPurchase API");
 
             var purchases = await _context.Purchases
-                .Select(x =>
-                new PurchaseViewModel
-                {
-                    Id = x.Id,
-                    SupplierId = x.SupplierId,
-                    PurchaseDate = x.PurchaseDate,
-                    TotalCost = x.TotalCost,
-                    CreateDate = x.CreateDate,
-                    LastModifiedDate = x.LastModifiedDate
-                })
+                .Select(x => CreatePurchaseViewModel(x))
                 .ToListAsync();
 
             _logger.LogInformation("Success GetAllPurchase API");
 
             return Ok(purchases);
+        }
+
+        private static PurchaseViewModel CreatePurchaseViewModel(Purchase x)
+        {
+            return new PurchaseViewModel
+            {
+                Id = x.Id,
+                SupplierId = x.SupplierId,
+                PurchaseDate = x.PurchaseDate,
+                TotalCost = x.TotalCost,
+                CreateDate = x.CreateDate,
+                LastModifiedDate = x.LastModifiedDate,
+                Status = (ViewModels.Enums.PurchaseStatus)x.Status
+            };
         }
 
         [HttpGet("filter")]
@@ -74,15 +79,7 @@ namespace WarehouseManagement.BackendServer.Controllers
             var items = await query.Skip((pageIndex - 1) * pageSize)
                 .Take(pageSize).ToListAsync();
 
-            var data = items.Select(x => new PurchaseViewModel
-            {
-                Id = x.Id,
-                SupplierId = x.SupplierId,
-                PurchaseDate = x.PurchaseDate,
-                TotalCost = x.TotalCost,
-                CreateDate = x.CreateDate,
-                LastModifiedDate = x.LastModifiedDate
-            }).ToList();
+            var data = items.Select(x => CreatePurchaseViewModel(x)).ToList();
 
             var pagination = new Pagination<PurchaseViewModel>
             {
@@ -105,16 +102,7 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             var purchase = await _context.Purchases
                 .Where(x => x.Id == id)
-                .Select(x =>
-                new PurchaseViewModel
-                {
-                    Id = x.Id,
-                    SupplierId = x.SupplierId,
-                    PurchaseDate = x.PurchaseDate,
-                    TotalCost = x.TotalCost,
-                    CreateDate = x.CreateDate,
-                    LastModifiedDate = x.LastModifiedDate
-                })
+                .Select(x => CreatePurchaseViewModel(x))
                 .FirstOrDefaultAsync();
             if (purchase == null)
             {
@@ -373,6 +361,70 @@ namespace WarehouseManagement.BackendServer.Controllers
             return BadRequest();
         }
 
+        /// <summary>
+        /// Confirm the purchase and save into stock transactions        
+        /// </summary>
+        /// <param name="id">Purchase id</param>
+        /// <returns>Result of process</returns>
+        [HttpPost("{id}/confirm")]
+        public async Task<IActionResult> ConfirmPurchase(int id)
+        {
+            _logger.LogInformation("Begin ConfirmPurchase API");
+
+            var existPurchase = await _context.Purchases.FindAsync(id);
+            if (existPurchase == null)
+            {
+                _logger.LogWarning("Can't found the purchase with id = {id}", id);
+                return NotFound();
+            }
+
+            var listPurchaseItem = await _context.PurchaseItems
+                .Where(x => x.PurchaseId == id && !x.IsDeleted)
+                .ToListAsync();
+
+            var totalPrice = 0;
+            foreach (var item in listPurchaseItem)
+            {
+                var price = ((int)item.UnitCost * item.Quantity);
+                totalPrice += price;
+                var product = await _context.ProductVariants
+                    .Where(x => x.Id == item.ProductVariantId)
+                    .FirstOrDefaultAsync();
+
+                var stockTransaction = new StockTransaction
+                {
+                    ProductId = product!.ProductId,
+                    ReferenceId = id,
+                    ReferenceType = Data.Enums.ReferenceType.Purchase,
+                    WarehouseId = 1, // Fake
+                    QuantityChange = item.Quantity,
+                    BalanceAfter = price,
+                    CreateDate = DateTime.UtcNow,
+                };
+
+                _context.StockTransactions.Add(stockTransaction);
+            }
+
+            if (totalPrice != existPurchase.TotalCost)
+            {
+                _logger.LogInformation("Change total price with new total price = {totalPrice}", totalPrice);
+
+                existPurchase.TotalCost = totalPrice;
+            }
+
+            var result = await _context.SaveChangesAsync();
+            if(result > 0)
+            {
+                _logger.LogInformation("Success ConfirmPurchase API");
+
+                return Ok();
+            }
+
+            _logger.LogWarning("Failed to save changes");
+
+            return BadRequest();
+        }
+
         #endregion
 
         #region PurchaseItems
@@ -438,7 +490,7 @@ namespace WarehouseManagement.BackendServer.Controllers
         }
 
         [HttpPut("{id}/items/{itemId}/restore")]
-        public async Task<IActionResult> RestorePurchaseItem(int id, int itemId) 
+        public async Task<IActionResult> RestorePurchaseItem(int id, int itemId)
         {
             var existPurchase = await _context.Purchases.FindAsync(id);
             if (existPurchase == null)

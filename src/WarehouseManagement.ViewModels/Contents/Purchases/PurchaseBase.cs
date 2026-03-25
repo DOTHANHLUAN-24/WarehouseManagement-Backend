@@ -1,4 +1,6 @@
-﻿namespace WarehouseManagement.ViewModels.Contents.Purchases
+﻿using WarehouseManagement.ViewModels.Enums;
+
+namespace WarehouseManagement.ViewModels.Contents.Purchases
 {
     public class PurchaseBase
     {
@@ -11,5 +13,7 @@
         public DateTime CreateDate { get; set; }
 
         public DateTime? LastModifiedDate { get; set; }
+
+        public PurchaseStatus Status { get; set; } = PurchaseStatus.None;
     }
 }
