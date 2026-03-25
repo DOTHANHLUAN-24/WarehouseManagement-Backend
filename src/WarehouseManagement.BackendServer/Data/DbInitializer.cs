@@ -355,12 +355,14 @@ namespace WarehouseManagement.BackendServer.Data
                 {
                     for (int i = 1; i <= 3; i++)
                     {
+                        var random = new Random();
                         variants.Add(new ProductVariant
                         {
                             ProductId = product.Id,
                             Name = $"{product.Name} - Variant {i}",
                             SKU = $"{product.Code}-V{i}",
-                            Price = 100000 + (i * 50000),
+                            SellingPrice = random.Next(10000, 7000000) + (i * random.Next(1, 8372)),
+                            OriginalPrice = random.Next(200000, 4000000) + (i * 10 * random.Next(1, 5683)),
                             StockQuantity = 100 + (i * 10),
                             IsActive = true,
                             CreateDate = now,

@@ -8,8 +8,8 @@ namespace WarehouseManagement.ViewModels.Contents.Products
         {
             Include(new ProductBaseValidator<ProductCreateRequest>());
 
-            RuleFor(x => x.Price)
-                .NotNull().WithMessage("Price in product is required")
+            RuleFor(x => x.SellingPrice)
+                .NotNull().WithMessage("Selling price in product is required")
                 .GreaterThan(0).WithMessage("Price must be greater than 0.");
 
             RuleFor(x => x.InitialStock)

@@ -4,7 +4,7 @@ namespace WarehouseManagement.ViewModels.Contents.Products
 {
     public class ProductCreateRequest : ProductBase
     {
-        public decimal Price { get; set; }
+        public decimal SellingPrice { get; set; }
 
         public int InitialStock { get; set; }
         

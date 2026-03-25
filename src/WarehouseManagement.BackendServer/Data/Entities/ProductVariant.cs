@@ -24,7 +24,13 @@ namespace WarehouseManagement.BackendServer.Data.Entities
 
         [Required]
         [Precision(18, 2)]
-        public decimal Price { get; set; }
+        public decimal SellingPrice { get; set; }
+
+        [Required]
+        [Precision(18, 2)]
+        public decimal OriginalPrice { get; set; }
+
+        public int MinStockLevel { get; set; } = 0;
 
         public int StockQuantity { get; set; }
 

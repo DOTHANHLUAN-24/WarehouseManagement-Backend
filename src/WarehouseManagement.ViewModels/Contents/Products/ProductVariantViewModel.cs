@@ -8,7 +8,9 @@ namespace WarehouseManagement.ViewModels.Contents.Products
 
         public string? SKU { get; set; }
 
-        public decimal Price { get; set; }
+        public decimal SellingPrice { get; set; }
+
+        public decimal OriginalPrice { get; set; }
 
         public int StockQuantity { get; set; }
 

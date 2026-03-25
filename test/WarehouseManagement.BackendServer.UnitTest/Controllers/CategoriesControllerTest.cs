@@ -90,7 +90,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             var controller = new CategoriesController(_context, _mockLogger.Object);
 
             // Act 
-            var result = await controller.GetById(1);
+            var result = await controller.GetCategoryById(1);
             var okResult = Assert.IsType<OkObjectResult>(result);
             var categoryViewModel = okResult.Value as CategoryViewModel;
 
@@ -106,7 +106,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             var controller = new CategoriesController(_context, _mockLogger.Object);
 
             // Act
-            var result = await controller.GetById(1);
+            var result = await controller.GetCategoryById(1);
 
             // Assert
             Assert.IsType<NotFoundResult>(result);
