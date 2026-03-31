@@ -1,3 +1,5 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
 using FluentValidation;
 using FluentValidation.AspNetCore;
@@ -9,6 +11,7 @@ using Microsoft.OpenApi.Models;
 using Serilog;
 using WarehouseManagement.BackendServer.Data;
 using WarehouseManagement.BackendServer.Data.Entities;
+using WarehouseManagement.BackendServer.Helpers;
 using WarehouseManagement.BackendServer.Services;
 using WarehouseManagement.ViewModels.Systems.Roles;
 
@@ -117,11 +120,16 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-    };
+
+        NameClaimType = JwtRegisteredClaimNames.Name,
+        RoleClaimType = ClaimTypes.Role,
+
+        ClockSkew = TimeSpan.Zero
+    }; 
 });
 
 builder.Services.AddAuthorization();
-builder.Services.AddScoped<JwtService>();
+builder.Services.AddScoped<IJwtService, JwtService>();
 
 // BUILD APP
 var app = builder.Build();
@@ -151,11 +159,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseCors("AllowFrontend");
+app.UseMiddleware<ErrorWrappingMiddleware>();
+app.UseHttpsRedirection();
 
 app.UseStaticFiles();
 app.UseSerilogRequestLogging();
-app.UseHttpsRedirection();
+
+app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
 app.UseAuthorization();

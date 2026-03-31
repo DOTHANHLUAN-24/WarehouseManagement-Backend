@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using WarehouseManagement.BackendServer.Helpers;
 using WarehouseManagement.BackendServer.Services;
 using WarehouseManagement.ViewModels.Systems.Authentication;
 using WarehouseManagement.ViewModels.Systems.Login;
@@ -10,9 +11,9 @@ namespace WarehouseManagement.BackendServer.Controllers
     [ApiController]
     public class AuthenticationController : ControllerBase
     {
-        private readonly JwtService _jwtService;
+        private readonly IJwtService _jwtService;
 
-        public AuthenticationController(JwtService jwtService)
+        public AuthenticationController(IJwtService jwtService)
         {
             _jwtService = jwtService;
         }
@@ -61,6 +62,27 @@ namespace WarehouseManagement.BackendServer.Controllers
         {
             await _jwtService.RevokeToken(User.Identity!.Name!);
             return NoContent();
+        }
+
+        [Authorize]
+        [HttpGet("token-status")]
+        public async Task<IActionResult> GetTokenStatus()
+        {
+            // Lấy Access Token từ Header
+            string accessToken = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+
+            var accessRemaining = _jwtService.GetAccessTokenRemainingTime(accessToken);
+            var test = User.Identity!.Name!;
+            var refreshRemaining = await _jwtService.GetRefreshTokenRemainingTime(User.Identity!.Name!);
+
+            return Ok(new ApiOkResponse<object>(new
+            {
+                AccessTokenRemainingMinutes = Math.Round(accessRemaining.TotalMinutes, 2),
+                RefreshTokenRemainingDays = refreshRemaining.HasValue
+                    ? Math.Round(refreshRemaining.Value.TotalDays, 2)
+                    : 0,
+                IsNearExpiry = accessRemaining.TotalMinutes < 5 
+            }));
         }
     }
 }

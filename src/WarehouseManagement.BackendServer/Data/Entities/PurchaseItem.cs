@@ -11,6 +11,7 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         [Key]
         public int Id { get; set; }
 
+        [Required]
         public int PurchaseId { get; set; }
 
         [Required]

@@ -49,7 +49,7 @@ namespace WarehouseManagement.BackendServer.Controllers
             {
                 _logger.LogInformation("Supplier created successfully with ID: {SupplierId}", supplier.Id);
 
-                return CreatedAtAction(nameof(GetById), supplier);
+                return CreatedAtAction(nameof(GetById), new { id = supplier.Id }, supplier);
             }
             else
             {

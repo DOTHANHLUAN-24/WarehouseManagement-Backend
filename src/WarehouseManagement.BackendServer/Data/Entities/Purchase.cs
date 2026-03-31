@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
+using WarehouseManagement.BackendServer.Data.Enums;
 using WarehouseManagement.BackendServer.Data.Interfaces;
 
 namespace WarehouseManagement.BackendServer.Data.Entities
@@ -15,6 +16,8 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         public int SupplierId { get; set; }
 
         public DateTime? PurchaseDate { get; set; }
+
+        public PurchaseStatus Status { get; set; }
 
         [Precision(18, 2)]
         public decimal TotalCost { get; set; }
