@@ -9,6 +9,7 @@ using Microsoft.OpenApi.Models;
 using Serilog;
 using WarehouseManagement.BackendServer.Data;
 using WarehouseManagement.BackendServer.Data.Entities;
+using WarehouseManagement.BackendServer.Helpers;
 using WarehouseManagement.BackendServer.Services;
 using WarehouseManagement.ViewModels.Systems.Roles;
 
@@ -163,11 +164,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseCors("AllowFrontend");
+app.UseMiddleware<ErrorWrappingMiddleware>();
+app.UseHttpsRedirection();
 
 app.UseStaticFiles();
 app.UseSerilogRequestLogging();
-app.UseHttpsRedirection();
+
+app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
 app.UseAuthorization();
