@@ -4,25 +4,21 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
-using WarehouseManagement.BackendServer.Data;
 using WarehouseManagement.BackendServer.Data.Entities;
 using WarehouseManagement.ViewModels.Systems.Authentication;
 using WarehouseManagement.ViewModels.Systems.Login;
 
 namespace WarehouseManagement.BackendServer.Services
 {
-    public class JwtService
+    public class JwtService : IJwtService
     {
-        private readonly ApplicationDbContext _context;
         private readonly UserManager<User> _userManager;
         private readonly IConfiguration _configuration;
 
         public JwtService(
-            ApplicationDbContext context,
             UserManager<User> userManager,
             IConfiguration configuration)
         {
-            _context = context;
             _userManager = userManager;
             _configuration = configuration;
         }
@@ -34,25 +30,27 @@ namespace WarehouseManagement.BackendServer.Services
                 return null;
 
             var user = await _userManager.FindByNameAsync(request.UserName);
-            if (user == null)
-                return null;
-
-            var isValidPassword = await _userManager.CheckPasswordAsync(user, request.Password);
-            if (!isValidPassword)
+            if (user == null || !await _userManager.CheckPasswordAsync(user, request.Password))
                 return null;
 
             var issuer = _configuration["JwtConfig:Issuer"];
             var audience = _configuration["JwtConfig:Audience"];
             var key = _configuration["JwtConfig:Key"];
             var tokenValidityMins = _configuration.GetValue<int>("JwtConfig:TokenValidityMins");
-            var tokenExpiryTimeStamp=DateTime.UtcNow.AddMinutes(tokenValidityMins);
+            var tokenExpiryTimeStamp = DateTime.UtcNow.AddMinutes(tokenValidityMins);
+
+            var claims = new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Name, user.UserName!),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()) 
+            };
+
+            var identity = new ClaimsIdentity(claims, "Jwt", JwtRegisteredClaimNames.Name, ClaimTypes.Role);
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(new[]
-                {
-                    new Claim(JwtRegisteredClaimNames.Name, request.UserName)
-                }),
+                Subject = identity,
                 Expires = tokenExpiryTimeStamp,
                 Issuer = issuer,
                 Audience = audience,
@@ -63,9 +61,18 @@ namespace WarehouseManagement.BackendServer.Services
             var securityToken = tokenHandler.CreateToken(tokenDescriptor);
             var accessToken = tokenHandler.WriteToken(securityToken);
 
+            var refreshToken = GenerateRefreshToken();
+            var refreshTokenExpiryDays = _configuration.GetValue<int>("JwtConfig:RefreshTokenValidityDays", 7);
+
+            user.RefreshToken = refreshToken;
+            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(refreshTokenExpiryDays);
+
+            await _userManager.UpdateAsync(user);
+
             return new LoginResponseModel
             {
                 AccessToken = accessToken,
+                RefreshToken = refreshToken,
                 UserName = request.UserName,
                 ExpiresIn = (int)tokenExpiryTimeStamp.Subtract(DateTime.UtcNow).TotalSeconds,
             };
@@ -75,10 +82,11 @@ namespace WarehouseManagement.BackendServer.Services
         {
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtConfig:Key"]!));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var identity = new ClaimsIdentity(claims, "Jwt", JwtRegisteredClaimNames.Name, ClaimTypes.Role);
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(claims),
+                Subject = identity,
                 Expires = DateTime.UtcNow.AddMinutes(_configuration.GetValue<int>("JwtConfig:TokenValidityMins")),
                 Issuer = _configuration["JwtConfig:Issuer"],
                 Audience = _configuration["JwtConfig:Audience"],
@@ -104,28 +112,37 @@ namespace WarehouseManagement.BackendServer.Services
             if (principal == null) return null;
 
             var username = principal.FindFirst(JwtRegisteredClaimNames.Name)?.Value;
+            if (string.IsNullOrEmpty(username)) return null;
 
-            var user = await _userManager.FindByNameAsync(username!);
+            var user = await _userManager.FindByNameAsync(username);
 
-            if (user == null || (user.RefreshToken != null && user.RefreshToken != refreshToken) || (user.RefreshTokenExpiryTime != null && user.RefreshTokenExpiryTime <= DateTime.UtcNow))
+            if (user == null ||
+                user.RefreshToken != refreshToken ||
+                user.RefreshTokenExpiryTime <= DateTime.UtcNow)
+            {
                 return null;
+            }
 
+            // Tạo bộ Token mới
             var newAccessToken = CreateToken(principal.Claims);
             var newRefreshToken = GenerateRefreshToken();
-            var refreshTokenExpiryTime = 
 
+            // CẬP NHẬT CẢ HAI: Token và Ngày hết hạn mới
             user.RefreshToken = newRefreshToken;
-            await _userManager.UpdateAsync(user);
+            var refreshTokenDays = _configuration.GetValue<int>("JwtConfig:RefreshTokenValidityDays", 7);
+            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(refreshTokenDays);
+
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded) return null;
 
             return new LoginResponseModel
             {
                 AccessToken = newAccessToken,
                 RefreshToken = newRefreshToken,
                 UserName = username,
-                ExpiresIn = 30,
+                ExpiresIn = _configuration.GetValue<int>("JwtConfig:TokenValidityMins") * 60,
             };
         }
-
         private ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
         {
             var tokenValidationParameters = new TokenValidationParameters
@@ -134,15 +151,23 @@ namespace WarehouseManagement.BackendServer.Services
                 ValidateIssuer = false,
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtConfig:Key"]!)),
-                ValidateLifetime = false 
+                ValidateLifetime = false
             };
 
             var tokenHandler = new JwtSecurityTokenHandler();
-            var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
-            if (securityToken is not JwtSecurityToken jwtSecurityToken || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
-                throw new SecurityTokenException("Invalid token");
 
-            return principal;
+            try
+            {
+                var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
+                if (securityToken is not JwtSecurityToken jwtSecurityToken || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
+                    throw new SecurityTokenException("Invalid token");
+
+                return principal;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         public async Task<bool> ChangePassword(string userName, ChangePasswordRequest request)
@@ -164,6 +189,37 @@ namespace WarehouseManagement.BackendServer.Services
             user.RefreshTokenExpiryTime = null;
 
             await _userManager.UpdateAsync(user);
+        }
+
+        public TimeSpan GetAccessTokenRemainingTime(string accessToken)
+        {
+            try
+            {
+                var handler = new JwtSecurityTokenHandler();
+                var jwtToken = handler.ReadJwtToken(accessToken);
+
+                var expClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Exp);
+                if (expClaim == null) return TimeSpan.Zero;
+
+                var expTime = DateTimeOffset.FromUnixTimeSeconds(long.Parse(expClaim.Value)).UtcDateTime;
+                var remaining = expTime - DateTime.UtcNow;
+
+                return remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
+            }
+            catch
+            {
+                return TimeSpan.Zero;
+            }
+        }
+
+        public async Task<TimeSpan?> GetRefreshTokenRemainingTime(string userName)
+        {
+            var user = await _userManager.FindByNameAsync(userName);
+            if (user == null || user.RefreshTokenExpiryTime == null)
+                return null;
+
+            var remaining = user.RefreshTokenExpiryTime.Value - DateTime.UtcNow;
+            return remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
         }
     }
 }
