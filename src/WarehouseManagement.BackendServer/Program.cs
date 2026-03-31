@@ -34,10 +34,7 @@ builder.Services.AddCors(options =>
         });
 });
 
-//
-// =======================
 // SERILOG
-// =======================
 Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
     .WriteTo.Console()
@@ -134,16 +131,10 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<IJwtService, JwtService>();
 
-//
-// =======================
 // BUILD APP
-// =======================
 var app = builder.Build();
 
-//
-// =======================
 // SEED DATABASE
-// =======================
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -161,10 +152,7 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-//
-// =======================
 // MIDDLEWARE
-// =======================
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
