@@ -12,7 +12,11 @@ using Serilog;
 using WarehouseManagement.BackendServer.Data;
 using WarehouseManagement.BackendServer.Data.Entities;
 using WarehouseManagement.BackendServer.Helpers;
-using WarehouseManagement.BackendServer.Services;
+using WarehouseManagement.BackendServer.Repositories.Implements;
+using WarehouseManagement.BackendServer.Repositories.Interfaces;
+using WarehouseManagement.BackendServer.Services.Implementations;
+using WarehouseManagement.BackendServer.Services.Implementations.Authentication;
+using WarehouseManagement.BackendServer.Services.Interfaces;
 using WarehouseManagement.ViewModels.Systems.Roles;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -130,6 +134,7 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // BUILD APP
 var app = builder.Build();

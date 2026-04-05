@@ -20,7 +20,5 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         public string Email { get; set; } = null!;
 
         public bool IsDeleted { get; set; } = false;
-
-        public ICollection<Shipment> Shipments { get; set; } = new List<Shipment>();
     }
 }

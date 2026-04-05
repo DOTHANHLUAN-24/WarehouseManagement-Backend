@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WarehouseManagement.BackendServer.Helpers;
-using WarehouseManagement.BackendServer.Services;
+using WarehouseManagement.BackendServer.Services.Interfaces;
 using WarehouseManagement.ViewModels.Systems.Authentication;
 using WarehouseManagement.ViewModels.Systems.Login;
 

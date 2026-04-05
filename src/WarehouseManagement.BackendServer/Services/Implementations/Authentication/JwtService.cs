@@ -5,10 +5,11 @@ using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using WarehouseManagement.BackendServer.Data.Entities;
+using WarehouseManagement.BackendServer.Services.Interfaces;
 using WarehouseManagement.ViewModels.Systems.Authentication;
 using WarehouseManagement.ViewModels.Systems.Login;
 
-namespace WarehouseManagement.BackendServer.Services
+namespace WarehouseManagement.BackendServer.Services.Implementations.Authentication
 {
     public class JwtService : IJwtService
     {
@@ -62,7 +63,7 @@ namespace WarehouseManagement.BackendServer.Services
             var accessToken = tokenHandler.WriteToken(securityToken);
 
             var refreshToken = GenerateRefreshToken();
-            var refreshTokenExpiryDays = _configuration.GetValue<int>("JwtConfig:RefreshTokenValidityDays", 7);
+            var refreshTokenExpiryDays = _configuration.GetValue("JwtConfig:RefreshTokenValidityDays", 7);
 
             user.RefreshToken = refreshToken;
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(refreshTokenExpiryDays);
@@ -129,7 +130,7 @@ namespace WarehouseManagement.BackendServer.Services
 
             // CẬP NHẬT CẢ HAI: Token và Ngày hết hạn mới
             user.RefreshToken = newRefreshToken;
-            var refreshTokenDays = _configuration.GetValue<int>("JwtConfig:RefreshTokenValidityDays", 7);
+            var refreshTokenDays = _configuration.GetValue("JwtConfig:RefreshTokenValidityDays", 7);
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(refreshTokenDays);
 
             var result = await _userManager.UpdateAsync(user);

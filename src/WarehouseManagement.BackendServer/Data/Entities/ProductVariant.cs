@@ -43,8 +43,6 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         [Required]
         public ProductVariantStatus Status { get; set; } = ProductVariantStatus.Active;
 
-        public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
-
         public ICollection<PurchaseItem> PurchaseItems { get; set; } = new List<PurchaseItem>();
     }
 }
