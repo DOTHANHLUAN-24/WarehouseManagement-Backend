@@ -319,12 +319,9 @@ namespace WarehouseManagement.BackendServer.Controllers
                 from p in _context.Products.AsNoTracking()
                 join pv in _context.ProductVariants.AsNoTracking()
                     on p.Id equals pv.ProductId
-                join pc in _context.ProductComments.AsNoTracking()
-                    on p.Id equals pc.ProductId
                 where p.Id == id
                       && !p.IsDeleted
                       && pv.IsActive
-                      && !pc.IsDeleted
                 select new ProductDetailViewModel
                 {
                     Id = p.Id,
@@ -333,7 +330,6 @@ namespace WarehouseManagement.BackendServer.Controllers
                     CategoryId = p.CategoryId,
                     Code = p.Code,
                     IsActive = p.IsActive,
-
                     SellingPrice = pv.SellingPrice,
                     Quantity = pv.StockQuantity,
 
@@ -344,10 +340,6 @@ namespace WarehouseManagement.BackendServer.Controllers
                         .FirstOrDefault()!,
 
                     UserId = string.Empty, // Todo: Get user id
-                    Content = pc.Content,
-                    Rating = pc.Rating,
-                    ParentId = pc.ParentId,
-                    IsApproved = pc.IsApproved
                 }
             ).FirstOrDefaultAsync();
 
@@ -359,31 +351,6 @@ namespace WarehouseManagement.BackendServer.Controllers
             }
 
             return Ok(product);
-        }
-
-        /// <summary>
-        /// Get all comment in product with product id
-        /// </summary>
-        /// <param name="id">Product id</param>
-        /// <returns>List comment of product</returns>
-        [HttpGet("{id}/comment")]
-        public async Task<IActionResult> GetAllCommentInProduct(int id)
-        {
-            _logger.LogInformation("Begin GetAllCommentInProduct API");
-
-            var product = await _context.Products.FindAsync(id);
-            if (product == null)
-            {
-                _logger.LogWarning("Not found product with id = {id}", id);
-
-                return NotFound();
-            }
-
-            var comments = await _context.ProductComments.Where(x => x.ProductId == id).ToListAsync();
-
-            _logger.LogInformation("Success GetAllCommentInProduct API. Id = {id}", id);
-
-            return Ok(comments);
         }
 
         #endregion
@@ -455,50 +422,6 @@ namespace WarehouseManagement.BackendServer.Controllers
             }
         }
 
-        /// <summary>
-        /// Post comment into product with product id
-        /// </summary>
-        /// <param name="id">Product id</param>
-        /// <param name="request">Comment model</param>
-        /// <returns>Result of process</returns>
-        [HttpPost("{id}/comments")]
-        public async Task<IActionResult> PostCommentInProduct(int id, [FromForm] ProductCommentCreateRequest request)
-        {
-            _logger.LogInformation("Begin PostCommentInProduct API");
-
-            var product = await _context.Products.FindAsync(id);
-            if (product == null)
-            {
-                _logger.LogInformation("Begin PostCommentInProduct API");
-
-                return NotFound();
-            }
-
-            var commentInProduct = new ProductComment
-            {
-                ProductId = id,
-                ProductVariantId = request.ProductVariantId,
-                UserId = string.Empty,
-                Content = request.Content,
-                Rating = request.Rating,
-                ParentId = request.ParentId,
-            };
-
-            _context.ProductComments.Add(commentInProduct);
-
-            var result = await _context.SaveChangesAsync();
-            if (result > 0)
-            {
-                _logger.LogInformation("Success to post comment in product. Product id = {id}", id);
-
-                return Ok(commentInProduct);
-            }
-
-            _logger.LogWarning("Fail to post comment in product. Product id = {id}", id);
-
-            return BadRequest();
-        }
-
         #endregion
 
         #region Update
@@ -534,56 +457,6 @@ namespace WarehouseManagement.BackendServer.Controllers
                     IsActive = product.IsActive
                 }
             );
-        }
-
-        /// <summary>
-        /// Update comment in product with product id and comment id
-        /// </summary>
-        /// <param name="id">Product id</param>
-        /// <param name="commentId">Comment id</param>
-        /// <param name="request">Comment model</param>
-        /// <returns>Result of process</returns>
-        [HttpPut("{id}/comment/{commentId}")]
-        public async Task<IActionResult> UpdateCommentInProduct(int id, int commentId, [FromForm] ProductCommentUpdateRequest request)
-        {
-            _logger.LogInformation("Begin UpdateCommentInProduct API");
-
-            string currentUserId = string.Empty; // Todo: Get current user id
-
-            var product = await _context.Products.FindAsync(id);
-            if (product == null)
-            {
-                _logger.LogInformation("Not fount the product with id = {id}", id);
-
-                return NotFound();
-            }
-
-            var comment = await _context.ProductComments
-                .Where(x => x.ProductId == id && x.Id == commentId)
-                .SingleOrDefaultAsync();
-            if (comment == null)
-            {
-                _logger.LogInformation("Not found comment with id = {commentId}", commentId);
-
-                return NotFound();
-            }
-
-            if (comment.UserId == currentUserId)
-            {
-                comment.Content = request.Content;
-
-                comment.IsDeleted = request.IsDeleted;
-
-                await _context.SaveChangesAsync();
-
-                return Ok(comment);
-            }
-            else
-            {
-                _logger.LogWarning("This comment is not yours.");
-
-                return BadRequest();
-            }
         }
 
         #endregion

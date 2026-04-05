@@ -594,7 +594,8 @@ namespace WarehouseManagement.BackendServer.Controllers
                 ParentId = category.ParentId,
                 SortOrder = category.SortOrder,
                 SeoAlias = category.SeoAlias,
-                SeoDescription = category.SeoDescription
+                SeoDescription = category.SeoDescription,
+                IsDeleted = category.IsDeleted,
             };
         }
     }

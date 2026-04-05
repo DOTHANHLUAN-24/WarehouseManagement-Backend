@@ -1,7 +1,7 @@
 ﻿using WarehouseManagement.ViewModels.Systems.Authentication;
 using WarehouseManagement.ViewModels.Systems.Login;
 
-namespace WarehouseManagement.BackendServer.Services
+namespace WarehouseManagement.BackendServer.Services.Interfaces
 {
     public interface IJwtService
     {
