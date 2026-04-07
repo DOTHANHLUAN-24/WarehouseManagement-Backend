@@ -6,15 +6,19 @@ using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using WarehouseManagement.BackendServer.Data;
 using WarehouseManagement.BackendServer.Data.Entities;
+using WarehouseManagement.BackendServer.DependencyInjection;
 using WarehouseManagement.BackendServer.Helpers;
+using WarehouseManagement.BackendServer.Mapping;
 using WarehouseManagement.BackendServer.Repositories.Implements;
+using WarehouseManagement.BackendServer.Repositories.Implements.Authentication;
 using WarehouseManagement.BackendServer.Repositories.Interfaces;
-using WarehouseManagement.BackendServer.Services.Implementations;
+using WarehouseManagement.BackendServer.Repositories.Interfaces.Authentication;
 using WarehouseManagement.BackendServer.Services.Implementations.Authentication;
 using WarehouseManagement.BackendServer.Services.Interfaces;
 using WarehouseManagement.ViewModels.Systems.Roles;
@@ -134,8 +138,9 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<ITokenManagement, TokenManagement>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-
+builder.Services.AddApplicationServices();
 // BUILD APP
 var app = builder.Build();
 

@@ -80,6 +80,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     Name = "Hàng mới",
                     SKU = "54d5644d6a",
                     SellingPrice = 76000,
+                    OriginalPrice = 30000,
                     StockQuantity = 4654,
                 }
             );
@@ -162,6 +163,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     Name = "Hàng mới",
                     SKU = "54d5644d6a",
                     SellingPrice = 76000,
+                    OriginalPrice = 30000,
                     StockQuantity = 4654,
                 }
             );
@@ -259,6 +261,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     Name = "Hàng mới",
                     SKU = "54d5644d6a",
                     SellingPrice = 76000,
+                    OriginalPrice = 30000,
                     StockQuantity = 4654,
                 },
                 new ProductVariant
@@ -267,6 +270,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     Name = "Hàng mới",
                     SKU = "5a4a56d454",
                     SellingPrice = 50000,
+                    OriginalPrice = 20000,
                     StockQuantity = 1133,
                 }
             );
@@ -362,6 +366,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     Name = "Hàng mới",
                     SKU = "54d5644d6a",
                     SellingPrice = 76000,
+                    OriginalPrice = 30000,
                     StockQuantity = 4654,
                 },
                 new ProductVariant
@@ -370,6 +375,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     Name = "Hàng mới",
                     SKU = "5a4a56d454",
                     SellingPrice = 50000,
+                    OriginalPrice = 20000,
                     StockQuantity = 1133,
                 }
             );
@@ -458,6 +464,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     Name = "Test loại 1",
                     SKU = "Test 1",
                     SellingPrice = 1320,
+                    OriginalPrice = 500,
                     StockQuantity = 12,
                     Status = ProductVariantStatus.Active,
                     CreateDate = DateTime.UtcNow
@@ -468,6 +475,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     Name = "Test loại 2",
                     SKU = "Test 1",
                     SellingPrice = 282,
+                    OriginalPrice = 100,
                     StockQuantity = 72,
                     Status = ProductVariantStatus.Active,
                     CreateDate = DateTime.UtcNow
@@ -555,6 +563,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     Name = "Hàng mới",
                     SKU = "54d5644d6a",
                     SellingPrice = 76000,
+                    OriginalPrice = 30000,
                     StockQuantity = 4654,
                 },
                 new ProductVariant
@@ -563,6 +572,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     Name = "Hàng mới 2",
                     SKU = "5a4a56d454",
                     SellingPrice = 50000,
+                    OriginalPrice = 20000,
                     StockQuantity = 1133,
                 }
             );
@@ -660,6 +670,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     Name = "Hàng mới",
                     SKU = "54d5644d6a",
                     SellingPrice = 76000,
+                    OriginalPrice = 30000,
                     StockQuantity = 4654,
                 },
                 new ProductVariant
@@ -668,6 +679,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     Name = "Hàng mới 2",
                     SKU = "5a4a56d454",
                     SellingPrice = 50000,
+                    OriginalPrice = 20000,
                     StockQuantity = 1133,
                 }
             );
@@ -752,6 +764,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     CategoryId = 1,
                     Code = "code of product 1",
                     SellingPrice = 10000,
+                    OriginalPrice = 5000,
                     InitialStock = 45646,
                     SKU = "sku of product 1"
                 }
@@ -845,6 +858,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     Name = "Hàng mới",
                     SKU = "54d5644d6a",
                     SellingPrice = beforeSellingPrice,
+                    OriginalPrice = 30000,
                     StockQuantity = 4654,
                 }
             );
@@ -876,7 +890,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
         }
 
         // =========================
-        // Update SellingPrice
+        // Update Stock
         // =========================
 
         [Theory]
@@ -904,6 +918,7 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     Name = "Hàng mới",
                     SKU = "54d5644d6a",
                     SellingPrice = 455123,
+                    OriginalPrice = 30000,
                     StockQuantity = beforeStock,
                 }
             );

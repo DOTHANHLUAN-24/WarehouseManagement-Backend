@@ -167,6 +167,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                     Name = p.Name,
                     Code = p.Code,
                     SellingPrice = pv.SellingPrice,
+                    OriginalPrice = pv.OriginalPrice,
                     Quantity = pv.StockQuantity,
                     Description = p.Description,
                     ImageUrl = _context.ProductImages
@@ -199,6 +200,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                 Name = x.Name,
                 Code = x.Code,
                 SellingPrice = x.SellingPrice,
+                OriginalPrice = x.OriginalPrice,
                 ImageUrl = x.ImageUrl,
                 Quantity = x.Quantity
             }).ToList();
@@ -246,6 +248,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                     ImageUrl = pi.ImageUrl,
                     IsDefault = pi.IsDefault,
                     SellingPrice = pv.SellingPrice,
+                    OriginalPrice = pv.OriginalPrice,
                     Quantity = pv.StockQuantity
                 }
             ).ToListAsync();
@@ -294,6 +297,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                         IsActive = product.IsActive,
                         SKU = productVariant.SKU,
                         SellingPrice = productVariant.SellingPrice,
+                        OriginalPrice = productVariant.OriginalPrice,
                         StockQuantity = productVariant.StockQuantity,
                         IsActiveInVariant = productVariant.IsActive
                     });
@@ -331,8 +335,8 @@ namespace WarehouseManagement.BackendServer.Controllers
                     Code = p.Code,
                     IsActive = p.IsActive,
                     SellingPrice = pv.SellingPrice,
+                    OriginalPrice = pv.OriginalPrice,
                     Quantity = pv.StockQuantity,
-
                     ImageUrl = _context.ProductImages
                         .Where(i => i.ProductId == p.Id)
                         .OrderBy(i => i.Id)
@@ -390,6 +394,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                 Name = product.Name,
                 SKU = request.SKU,
                 SellingPrice = request.SellingPrice,
+                OriginalPrice = request.OriginalPrice,
                 StockQuantity = request.InitialStock,
                 IsActive = true,
                 Status = ProductVariantStatus.Active,
@@ -409,8 +414,8 @@ namespace WarehouseManagement.BackendServer.Controllers
                     Code = product.Code,
                     CategoryId = product.CategoryId,
                     IsActive = product.IsActive,
-
                     SellingPrice = request.SellingPrice,
+                    OriginalPrice = request.OriginalPrice,
                     Quantity = request.InitialStock
                 });
             }
@@ -502,6 +507,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                     Name = variant.Name,
                     ProductVariantId = variant.Id,
                     SellingPrice = variant.SellingPrice,
+                    OriginalPrice = variant.OriginalPrice,
                     StockQuantity = variant.StockQuantity,
                     IsActiveInVariant = variant.IsActive
                 }
@@ -547,6 +553,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                     Name = variant.Name,
                     ProductVariantId = variant.Id,
                     SellingPrice = variant.SellingPrice,
+                    OriginalPrice = variant.OriginalPrice,
                     StockQuantity = variant.StockQuantity,
                     IsActiveInVariant = variant.IsActive
                 }

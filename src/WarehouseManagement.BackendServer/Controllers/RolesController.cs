@@ -33,7 +33,7 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             var role = new IdentityRole()
             {
-                Id = request.Id,
+                Id = Guid.NewGuid().ToString(),
                 Name = request.Name,
                 NormalizedName = request.Name.ToUpper()
             };

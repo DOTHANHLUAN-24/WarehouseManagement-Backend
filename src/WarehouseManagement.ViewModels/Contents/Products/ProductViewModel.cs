@@ -8,6 +8,8 @@
 
         public decimal SellingPrice { get; set; }
 
+        public decimal OriginalPrice { get; set; }
+
         public int Quantity { get; set; }
 
         public string ImageUrl { get; set; } = string.Empty;

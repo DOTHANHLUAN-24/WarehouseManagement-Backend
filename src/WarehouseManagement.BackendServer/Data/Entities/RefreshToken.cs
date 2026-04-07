@@ -10,7 +10,7 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         public int Id { get; set; }
 
         [Required]
-        public Guid UserId { get; set; }
+        public string UserId { get; set; } = string.Empty;
 
         [Required]
         [MaxLength(500)]
