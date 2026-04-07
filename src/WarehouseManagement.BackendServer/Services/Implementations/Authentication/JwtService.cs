@@ -124,11 +124,9 @@ namespace WarehouseManagement.BackendServer.Services.Implementations.Authenticat
                 return null;
             }
 
-            // Tạo bộ Token mới
             var newAccessToken = CreateToken(principal.Claims);
             var newRefreshToken = GenerateRefreshToken();
 
-            // CẬP NHẬT CẢ HAI: Token và Ngày hết hạn mới
             user.RefreshToken = newRefreshToken;
             var refreshTokenDays = _configuration.GetValue("JwtConfig:RefreshTokenValidityDays", 7);
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(refreshTokenDays);
