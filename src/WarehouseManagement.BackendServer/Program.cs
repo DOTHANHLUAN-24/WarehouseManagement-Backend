@@ -6,7 +6,6 @@ using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
@@ -14,179 +13,169 @@ using WarehouseManagement.BackendServer.Data;
 using WarehouseManagement.BackendServer.Data.Entities;
 using WarehouseManagement.BackendServer.DependencyInjection;
 using WarehouseManagement.BackendServer.Helpers;
-using WarehouseManagement.BackendServer.Mapping;
-using WarehouseManagement.BackendServer.Repositories.Implements;
-using WarehouseManagement.BackendServer.Repositories.Implements.Authentication;
-using WarehouseManagement.BackendServer.Repositories.Interfaces;
-using WarehouseManagement.BackendServer.Repositories.Interfaces.Authentication;
-using WarehouseManagement.BackendServer.Services.Implementations.Authentication;
-using WarehouseManagement.BackendServer.Services.Interfaces;
 using WarehouseManagement.ViewModels.Systems.Roles;
 
-var builder = WebApplication.CreateBuilder(args);
-
-var frontendUrl = builder.Configuration["FrontendUrl"] ?? "http://localhost:5173";
-
-//
-// =======================
-// CORS (PHẢI TRƯỚC BUILD)
-// =======================
-builder.Services.AddCors(options =>
+internal class Program
 {
-    options.AddPolicy("AllowFrontend",
-        policy =>
+    private static async Task Main(string[] args)
+    {
+        var builder = WebApplication.CreateBuilder(args);
+
+        var frontendUrl = builder.Configuration["FrontendUrl"] ?? "http://localhost:5173";
+
+        //
+        // =======================
+        // CORS (PHẢI TRƯỚC BUILD)
+        // =======================
+        builder.Services.AddCors(options =>
         {
-            policy.WithOrigins(frontendUrl)
-                  .AllowAnyHeader()
-                  .AllowAnyMethod();
+            options.AddPolicy("AllowFrontend",
+                policy =>
+                {
+                    policy.WithOrigins(frontendUrl)
+                          .AllowAnyHeader()
+                          .AllowAnyMethod();
+                });
         });
-});
 
-// SERILOG
-Log.Logger = new LoggerConfiguration()
-    .Enrich.FromLogContext()
-    .WriteTo.Console()
-    .WriteTo.File("log/log.txt", rollingInterval: RollingInterval.Day)
-    .CreateLogger();
+        // SERILOG
+        Log.Logger = new LoggerConfiguration()
+            .Enrich.FromLogContext()
+            .WriteTo.Console()
+            .WriteTo.File("log/log.txt", rollingInterval: RollingInterval.Day)
+            .CreateLogger();
 
-builder.Host.UseSerilog();
-Log.Information("Application is building...");
+        builder.Host.UseSerilog();
+        Log.Information("Application is building...");
 
-//
-// =======================
-// SERVICES
-// =======================
-builder.Services.AddControllers();
+        builder.Services.AddControllers();
 
-builder.Services.AddFluentValidationAutoValidation();
-builder.Services.AddValidatorsFromAssemblyContaining<RoleCreateRequestValidator>();
+        builder.Services.AddFluentValidationAutoValidation();
+        builder.Services.AddValidatorsFromAssemblyContaining<RoleCreateRequestValidator>();
 
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
-{
-    options.SwaggerDoc("v1", new OpenApiInfo { Title = "Warehouse Management API", Version = "v1" });
-
-    options.CustomSchemaIds(type => type.FullName);
-
-    var jwtSecurityScheme = new OpenApiSecurityScheme
-    {
-        BearerFormat = "JWT",
-        Name = "Authorization",
-        In = ParameterLocation.Header,
-        Type = SecuritySchemeType.Http,
-        Scheme = JwtBearerDefaults.AuthenticationScheme,
-        Description = "Enter JWT token",
-        Reference = new OpenApiReference
+        builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddSwaggerGen(options =>
         {
-            Id = JwtBearerDefaults.AuthenticationScheme,
-            Type = ReferenceType.SecurityScheme
-        }
-    };
+            options.SwaggerDoc("v1", new OpenApiInfo { Title = "Warehouse Management API", Version = "v1" });
 
-    options.AddSecurityDefinition("Bearer", jwtSecurityScheme);
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
+            options.CustomSchemaIds(type => type.FullName);
+
+            var jwtSecurityScheme = new OpenApiSecurityScheme
+            {
+                BearerFormat = "JWT",
+                Name = "Authorization",
+                In = ParameterLocation.Header,
+                Type = SecuritySchemeType.Http,
+                Scheme = JwtBearerDefaults.AuthenticationScheme,
+                Description = "Enter JWT token",
+                Reference = new OpenApiReference
+                {
+                    Id = JwtBearerDefaults.AuthenticationScheme,
+                    Type = ReferenceType.SecurityScheme
+                }
+            };
+
+            options.AddSecurityDefinition("Bearer", jwtSecurityScheme);
+            options.AddSecurityRequirement(new OpenApiSecurityRequirement
+            {
         { jwtSecurityScheme, Array.Empty<string>() }
-    });
-});
+            });
+        });
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
-);
+        builder.Services.AddDbContext<ApplicationDbContext>(options =>
+            options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+        );
 
-builder.Services
-    .AddIdentity<User, IdentityRole>(options =>
-    {
-        options.Password.RequireDigit = false;
-        options.Password.RequiredLength = 6;
-        options.Password.RequireUppercase = false;
-        options.Password.RequireNonAlphanumeric = false;
-    })
-    .AddEntityFrameworkStores<ApplicationDbContext>()
-    .AddDefaultTokenProviders();
+        builder.Services
+            .AddIdentity<User, IdentityRole>(options =>
+            {
+                options.Password.RequireDigit = false;
+                options.Password.RequiredLength = 6;
+                options.Password.RequireUppercase = false;
+                options.Password.RequireNonAlphanumeric = false;
+            })
+            .AddEntityFrameworkStores<ApplicationDbContext>()
+            .AddDefaultTokenProviders();
 
-builder.Services.AddScoped<DbInitializer>();
+        builder.Services.AddScoped<DbInitializer>();
 
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.RequireHttpsMetadata = false;
-    options.SaveToken = true;
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidIssuer = builder.Configuration["JwtConfig:Issuer"],
-        ValidAudience = builder.Configuration["JwtConfig:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(builder.Configuration["JwtConfig:Key"]!)
-        ),
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
+        builder.Services.AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options =>
+        {
+            options.RequireHttpsMetadata = false;
+            options.SaveToken = true;
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidIssuer = builder.Configuration["JwtConfig:Issuer"],
+                ValidAudience = builder.Configuration["JwtConfig:Audience"],
+                IssuerSigningKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(builder.Configuration["JwtConfig:Key"]!)
+                ),
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
 
-        NameClaimType = JwtRegisteredClaimNames.Name,
-        RoleClaimType = ClaimTypes.Role,
+                NameClaimType = JwtRegisteredClaimNames.Name,
+                RoleClaimType = ClaimTypes.Role,
 
-        ClockSkew = TimeSpan.Zero
-    }; 
-});
+                ClockSkew = TimeSpan.Zero
+            };
+        });
 
-builder.Services.AddAuthorization();
-builder.Services.AddScoped<IJwtService, JwtService>();
-builder.Services.AddScoped<ITokenManagement, TokenManagement>();
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-builder.Services.AddApplicationServices();
-// BUILD APP
-var app = builder.Build();
+        builder.Services.AddAuthorization();
+        builder.Services.AddApplicationServices();
 
-// SEED DATABASE
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
+        var app = builder.Build();
 
-    try
-    {
-        Log.Information("Seeding data...");
-        var dbInitializer = services.GetRequiredService<DbInitializer>();
-        await dbInitializer.Seed();
+        using (var scope = app.Services.CreateScope())
+        {
+            var services = scope.ServiceProvider;
+
+            try
+            {
+                Log.Information("Seeding data...");
+                var dbInitializer = services.GetRequiredService<DbInitializer>();
+                await dbInitializer.Seed();
+            }
+            catch (Exception ex)
+            {
+                Log.Fatal(ex, "Seed error");
+                throw;
+            }
+        }
+
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI();
+        }
+
+        app.UseMiddleware<ErrorWrappingMiddleware>();
+        app.UseHttpsRedirection();
+
+        app.UseStaticFiles();
+        app.UseSerilogRequestLogging();
+
+        app.UseCors("AllowFrontend");
+
+        app.UseAuthentication();
+        app.UseAuthorization();
+
+        app.MapControllers();
+
+        try
+        {
+            app.Run();
+        }
+        finally
+        {
+            Log.CloseAndFlush();
+        }
     }
-    catch (Exception ex)
-    {
-        Log.Fatal(ex, "Seed error");
-        throw;
-    }
-}
-
-// MIDDLEWARE
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-app.UseMiddleware<ErrorWrappingMiddleware>();
-app.UseHttpsRedirection();
-
-app.UseStaticFiles();
-app.UseSerilogRequestLogging();
-
-app.UseCors("AllowFrontend");
-
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.MapControllers();
-
-try
-{
-    app.Run();
-}
-finally
-{
-    Log.CloseAndFlush();
 }

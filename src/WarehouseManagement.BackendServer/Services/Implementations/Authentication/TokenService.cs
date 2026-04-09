@@ -4,7 +4,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
-using WarehouseManagement.BackendServer.Repositories.Implements.Authentication;
+using WarehouseManagement.BackendServer.Repositories.Interfaces.Authentication;
 using WarehouseManagement.BackendServer.Services.Interfaces.Authentication;
 
 namespace WarehouseManagement.BackendServer.Services.Implementations.Authentication

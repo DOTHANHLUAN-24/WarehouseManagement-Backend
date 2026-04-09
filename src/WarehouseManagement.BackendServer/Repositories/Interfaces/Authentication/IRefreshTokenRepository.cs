@@ -1,4 +1,4 @@
-﻿namespace WarehouseManagement.BackendServer.Repositories.Implements.Authentication
+﻿namespace WarehouseManagement.BackendServer.Repositories.Interfaces.Authentication
 {
     public interface IRefreshTokenRepository
     {
