@@ -15,6 +15,9 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         public int ProductId { get; set; }
 
         [Required]
+        public int ProductVariantId { get; set; }
+
+        [Required]
         public int WarehouseId { get; set; }
 
         [Required]
@@ -22,6 +25,8 @@ namespace WarehouseManagement.BackendServer.Data.Entities
 
         [Required]
         public StockTransactionType TransactionType { get; set; }
+
+        public string? Note { get; set; }
 
         [Required]
         public ReferenceType ReferenceType { get; set; }
@@ -33,5 +38,15 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         public DateTime CreateDate { get; set; }
 
         public DateTime? LastModifiedDate { get; set; }
+
+        public bool IsCanceled { get; set; } = false;
+
+        [MaxLength(1000)]
+        public string? CancelReason { get; set; }
+
+        public DateTime? CanceledDate { get; set; }
+
+        [MaxLength(200)]
+        public string? CanceledBy { get; set; }
     }
 }

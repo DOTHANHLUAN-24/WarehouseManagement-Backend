@@ -73,15 +73,27 @@ namespace WarehouseManagement.BackendServer.Controllers
             var stockTransaction = new StockTransaction
             {
                 ProductId = request.ProductId,
+                ProductVariantId = request.ProductVariantId,
                 WarehouseId = request.WarehouseId,
                 QuantityChange = request.QuantityChange,
                 TransactionType = (StockTransactionType)request.TransactionType,
                 ReferenceType = (ReferenceType)request.ReferenceType,
                 ReferenceId = request.ReferenceId,
-                BalanceAfter = request.BalanceAfter, // Cần tính toán lại số lượng tồn sau khi thực hiện giao dịch
+                Note = request.Note,
                 CreateDate = DateTime.UtcNow,
                 LastModifiedDate = DateTime.UtcNow
             };
+
+            var lastBalance = await _context.StockTransactions
+                .Where(x => x.ProductId == request.ProductId && x.WarehouseId == request.WarehouseId)
+                .OrderByDescending(x => x.Id)
+                .Select(x => x.BalanceAfter)
+                .FirstOrDefaultAsync();
+
+            if (request.QuantityChange == 0)
+                return BadRequest("QuantityChange must not be 0");
+
+            stockTransaction.BalanceAfter = lastBalance + request.QuantityChange;
 
             _context.StockTransactions.Add(stockTransaction);
 
@@ -117,7 +129,7 @@ namespace WarehouseManagement.BackendServer.Controllers
         )
         {
             _logger.LogInformation("Begin GetStockTransactions API with " +
-                "product name = {productName}, warehouseEmail = {warehouseEmail}, pageIndex = {pageIndex}, pageSize = {pageSize}", 
+                "product name = {productName}, warehouseEmail = {warehouseEmail}, pageIndex = {pageIndex}, pageSize = {pageSize}",
                 productName, warehouseEmail, pageIndex, pageSize);
 
             pageIndex = pageIndex <= 0 ? 1 : pageIndex;
@@ -134,9 +146,9 @@ namespace WarehouseManagement.BackendServer.Controllers
                 var productIds = await _context.Products
                     .Where(p => p.Name.Contains(productName))
                     .Select(p => p.Id)
-                    .FirstOrDefaultAsync();
+                    .ToListAsync();
 
-                query = query.Where(st => st.ProductId == productIds);
+                query = query.Where(st => productIds.Contains(st.ProductId));
             }
 
             // Filter by warehouse name
@@ -147,9 +159,9 @@ namespace WarehouseManagement.BackendServer.Controllers
                 var warehouseIds = await _context.Warehouses
                     .Where(w => w.Email.Contains(warehouseEmail))
                     .Select(w => w.Id)
-                    .FirstOrDefaultAsync();
+                    .ToListAsync();
 
-                query = query.Where(st => st.WarehouseId == warehouseIds);
+                query = query.Where(st => warehouseIds.Contains(st.WarehouseId));
             }
 
             var totalRecords = await query.CountAsync();
@@ -198,7 +210,7 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// <param name="referenceType">Reference type</param>
         /// <param name="referenceId">Reference id</param>
         /// <returns>The stock transactions by reference</returns>
-        [HttpGet("stockTransactions/reference/{referenceType}/{referenceId}")]
+        [HttpGet("reference/{referenceType}/{referenceId}")]
         public async Task<IActionResult> GetStockTransactionsByReference(ReferenceType referenceType, int referenceId)
         {
             _logger.LogInformation("Begin GetStockTransactionsByReference API");
@@ -213,6 +225,233 @@ namespace WarehouseManagement.BackendServer.Controllers
             return Ok(stockTransactions);
         }
 
+        [HttpPost("importData")]
+        public async Task<IActionResult> ImportData([FromBody] List<StockTransactionCreateRequest>? requests)
+        {
+            _logger.LogInformation("Begin ImportData API");
+
+            if (requests == null || requests.Count == 0)
+            {
+                _logger.LogWarning("ImportData called with no requests");
+                return BadRequest("No stock transaction requests provided.");
+            }
+
+            var now = DateTime.UtcNow;
+
+            var stockTransactions = requests.Select(r => new StockTransaction
+            {
+                ProductId = r.ProductId,
+                WarehouseId = r.WarehouseId,
+                QuantityChange = r.QuantityChange,
+                TransactionType = (StockTransactionType)r.TransactionType,
+                ReferenceType = (ReferenceType)r.ReferenceType,
+                ProductVariantId = r.ProductVariantId,
+                Note = r.Note,
+                ReferenceId = r.ReferenceId,
+                BalanceAfter = r.BalanceAfter,
+                CreateDate = now,
+                LastModifiedDate = now
+            }).ToList();
+
+            try
+            {
+                _context.StockTransactions.AddRange(stockTransactions);
+                var saved = await _context.SaveChangesAsync();
+
+                if (saved > 0)
+                {
+                    _logger.LogInformation("ImportData success with {count} stock transactions", stockTransactions.Count);
+                    var createdIds = stockTransactions.Select(s => s.Id).ToList();
+                    return Ok(new { Count = stockTransactions.Count, Ids = createdIds });
+                }
+
+                _logger.LogWarning("ImportData failed to save changes");
+                return BadRequest("No changes were saved to the database.");
+            }
+            catch (DbUpdateException dbEx)
+            {
+                _logger.LogError(dbEx, "ImportData database update error");
+                return StatusCode(500, "Database update error occurred while importing stock transactions.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ImportData unexpected error");
+                return StatusCode(500, "An unexpected error occurred while importing stock transactions.");
+            }
+        }
+
+        [HttpPost("exportData")]
+        public async Task<IActionResult> ExportData([FromBody] List<int>? ids, [FromQuery] bool idsAreProductIds = false)
+        {
+            _logger.LogInformation("Begin ExportData API. ids provided = {count}, idsAreProductIds = {idsAreProductIds}", ids?.Count ?? 0, idsAreProductIds);
+
+            try
+            {
+                var query = _context.StockTransactions.AsQueryable();
+
+                if (ids != null && ids.Count > 0)
+                {
+                    // If idsAreProductIds == false treat ids as StockTransaction.Id; otherwise filter by ProductId
+                    query = idsAreProductIds
+                        ? query.Where(st => ids.Contains(st.ProductId))
+                        : query.Where(st => ids.Contains(st.Id));
+                }
+
+                var transactions = await query
+                    .OrderByDescending(st => st.Id)
+                    .ToListAsync();
+
+                _logger.LogInformation("Queried stock transactions. Count = {count}", transactions.Count);
+
+                System.Text.StringBuilder sb = new();
+
+                // include product info columns
+                sb.AppendLine("Id,ProductId,ProductName,ProductCode,WarehouseId,QuantityChange,TransactionType,ReferenceType,ReferenceId,BalanceAfter,CreateDate,LastModifiedDate");
+
+                static string EscapeCsv(object? value)
+                {
+                    if (value == null) return string.Empty;
+                    var s = value.ToString() ?? string.Empty;
+                    if (s.Contains('"')) s = s.Replace("\"", "\"\"");
+                    if (s.Contains(',') || s.Contains('\n') || s.Contains('\r') || s.Contains('"')) return "\"" + s + "\"";
+                    return s;
+                }
+
+                if (transactions.Count > 0)
+                {
+                    // Load product cache for names/codes to avoid per-row DB calls
+                    var productIds = transactions.Select(t => t.ProductId).Distinct().ToList();
+                    var products = await _context.Products
+                        .Where(p => productIds.Contains(p.Id))
+                        .Select(p => new { p.Id, p.Name, p.Code })
+                        .ToDictionaryAsync(p => p.Id);
+
+                    foreach (var t in transactions)
+                    {
+                        products.TryGetValue(t.ProductId, out var prod);
+
+                        var line = string.Join(",",
+                            EscapeCsv(t.Id),
+                            EscapeCsv(t.ProductId),
+                            EscapeCsv(prod?.Name),
+                            EscapeCsv(prod?.Code),
+                            EscapeCsv(t.WarehouseId),
+                            EscapeCsv(t.QuantityChange),
+                            EscapeCsv(t.TransactionType.ToString()),
+                            EscapeCsv(t.ReferenceType.ToString()),
+                            EscapeCsv(t.ReferenceId),
+                            EscapeCsv(t.BalanceAfter),
+                            EscapeCsv(t.CreateDate.ToString("o")),
+                            EscapeCsv(t.LastModifiedDate?.ToString("o"))
+                        );
+
+                        sb.AppendLine(line);
+                    }
+                }
+                else if (idsAreProductIds && ids != null && ids.Count > 0)
+                {
+                    // No transactions found but caller requested export by product IDs:
+                    // export product rows so client still gets meaningful data.
+                    var products = await _context.Products
+                        .Where(p => ids.Contains(p.Id))
+                        .OrderBy(p => p.Id)
+                        .Select(p => new { p.Id, p.Name, p.Code })
+                        .ToListAsync();
+
+                    foreach (var p in products)
+                    {
+                        var line = string.Join(",",
+                            EscapeCsv(string.Empty), // Id (no transaction)
+                            EscapeCsv(p.Id),
+                            EscapeCsv(p.Name),
+                            EscapeCsv(p.Code),
+                            EscapeCsv(string.Empty), // WarehouseId
+                            EscapeCsv(0),            // QuantityChange
+                            EscapeCsv(string.Empty), // TransactionType
+                            EscapeCsv(string.Empty), // ReferenceType
+                            EscapeCsv(string.Empty), // ReferenceId
+                            EscapeCsv(0),            // BalanceAfter
+                            EscapeCsv(string.Empty), // CreateDate
+                            EscapeCsv(string.Empty)  // LastModifiedDate
+                        );
+
+                        sb.AppendLine(line);
+                    }
+                }
+
+                var fileName = $"stock_transactions_{DateTime.UtcNow:yyyyMMddHHmmss}.csv";
+
+                var bom = System.Text.Encoding.UTF8.GetPreamble();
+                var contentBytes = System.Text.Encoding.UTF8.GetBytes(sb.ToString());
+                var bytes = new byte[bom.Length + contentBytes.Length];
+                Buffer.BlockCopy(bom, 0, bytes, 0, bom.Length);
+                Buffer.BlockCopy(contentBytes, 0, bytes, bom.Length, contentBytes.Length);
+
+                _logger.LogInformation("ExportData success. Exported {count} records.", transactions.Count);
+
+                return File(bytes, "text/csv; charset=utf-8", fileName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ExportData unexpected error");
+                return StatusCode(500, "An unexpected error occurred while exporting stock transactions.");
+            }
+        }
+
+        [HttpGet("by-product/{productId}")]
+        public async Task<IActionResult> GetStockTransactionsByProductId(int productId)
+        {
+            _logger.LogInformation("Begin GetStockTransactionsByProductId API");
+
+            var stockTransactions = await _context.StockTransactions
+                .Where(x => x.ProductId == productId)
+                .Select(x => CreateStockTransactionViewModel(x))
+                .ToListAsync();
+
+            _logger.LogInformation("GetStockTransactionsByProductId success");
+
+            return Ok(stockTransactions);
+        }
+
+        [HttpGet("showInfo/{id}")]
+        public async Task<IActionResult> ShowInfo(int id)
+        {
+            var data = await _context.StockTransactions
+                .Where(st => st.Id == id)
+                .Select(st => new
+                {
+                    Product = _context.Products
+            .Where(p => p.Id == st.ProductId)
+            .Select(p => new { p.Id, p.Name, p.Code, p.Description })
+            .FirstOrDefault(),
+
+                    ProductVariant = _context.ProductVariants
+            .Where(pv => pv.Id == st.ProductVariantId)
+            .Select(pv => new { pv.Id, pv.Name, pv.SKU, pv.SellingPrice, pv.StockQuantity })
+            .FirstOrDefault(),
+
+                    Warehouse = _context.Warehouses
+            .Where(w => w.Id == st.WarehouseId)
+            .Select(w => new { w.Id, w.Email })
+            .FirstOrDefault(),
+
+                    StockTransaction = new
+                    {
+                        st.Id,
+                        st.QuantityChange,
+                        st.TransactionType,
+                        st.ReferenceType,
+                        st.ReferenceId,
+                        st.BalanceAfter,
+                        st.CreateDate,
+                        st.LastModifiedDate
+                    }
+                })
+            .FirstOrDefaultAsync();
+
+            return Ok(data);
+        }
+
         /// <summary>
         /// Create stock transaction view model
         /// </summary>
@@ -224,6 +463,7 @@ namespace WarehouseManagement.BackendServer.Controllers
             {
                 Id = x.Id,
                 ProductId = x.ProductId,
+                ProductVariantId = x.ProductVariantId,
                 WarehouseId = x.WarehouseId,
                 QuantityChange = x.QuantityChange,
                 TransactionType = (ViewModels.Enums.StockTransactionType)x.TransactionType,

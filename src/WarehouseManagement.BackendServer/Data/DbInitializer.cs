@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.BackendServer.Data.Entities;
 using WarehouseManagement.BackendServer.Data.Enums;
 
@@ -10,9 +9,6 @@ namespace WarehouseManagement.BackendServer.Data
         UserManager<User> userManager,
         RoleManager<IdentityRole> roleManager)
     {
-        private readonly ApplicationDbContext _context = context;
-        private readonly UserManager<User> _userManager = userManager;
-        private readonly RoleManager<IdentityRole> _roleManager = roleManager;
         private readonly string AdminRoleName = "Admin";
         private readonly string UserRoleName = "User";
 
@@ -24,7 +20,7 @@ namespace WarehouseManagement.BackendServer.Data
 
             #region Role
 
-            if (!_roleManager.Roles.Any())
+            if (!roleManager.Roles.Any())
             {
                 var roles = new[]
                 {
@@ -34,7 +30,7 @@ namespace WarehouseManagement.BackendServer.Data
 
                 foreach (var roleName in roles)
                 {
-                    await _roleManager.CreateAsync
+                    await roleManager.CreateAsync
                     (
                         new IdentityRole
                         {
@@ -50,7 +46,7 @@ namespace WarehouseManagement.BackendServer.Data
 
             #region User
 
-            if (!_userManager.Users.Any())
+            if (!userManager.Users.Any())
             {
                 var users = new List<(User user, string password, string role)>
                 {
@@ -105,11 +101,11 @@ namespace WarehouseManagement.BackendServer.Data
 
                 foreach (var item in users)
                 {
-                    var result = await _userManager.CreateAsync(item.user, item.password);
+                    var result = await userManager.CreateAsync(item.user, item.password);
 
                     if (result.Succeeded)
                     {
-                        await _userManager.AddToRoleAsync(item.user, item.role);
+                        await userManager.AddToRoleAsync(item.user, item.role);
                     }
                 }
             }
@@ -117,9 +113,10 @@ namespace WarehouseManagement.BackendServer.Data
             #endregion
 
             #region Function
-            if (!_context.Functions.Any())
+            if (!context.Functions.Any())
             {
-                _context.Functions.AddRange(
+                context.Functions.AddRange
+                (
                     new Function { Id = "DASHBOARD", Name = "Bảng điều khiển", ParentId = null, SortOrder = 1, Url = "/dashboard" },
 
                     new Function { Id = "SYSTEM", Name = "Hệ thống", ParentId = null, Url = "/systems" },
@@ -131,52 +128,170 @@ namespace WarehouseManagement.BackendServer.Data
 
                     new Function { Id = "CONTENT", Name = "Nội dung", ParentId = null, Url = "/contents" },
                     new Function { Id = "CONTENT_CATEGORY", Name = "Danh mục", ParentId = "CONTENT", SortOrder = 1, Url = "/contents/categories" },
-                    new Function { Id = "CONTENT_COMMENT", Name = "Bình luận", ParentId = "CONTENT", SortOrder = 2, Url = "/contents/comments" },
 
                     new Function { Id = "STATISTIC", Name = "Thống kê", ParentId = null, Url = "/statistics" },
-                    new Function { Id = "STATISTIC_MONTHLY_NEWMEMBER", Name = "Đăng ký từng tháng", ParentId = "STATISTIC", SortOrder = 1, Url = "/statistics/monthly-new-members" },
-                    new Function { Id = "STATISTIC_MONTHLY_COMMENT", Name = "Bình luận theo tháng", ParentId = "STATISTIC", SortOrder = 2, Url = "/statistics/monthly-new-comments" },
+                    new Function { Id = "STATISTIC_MONTHLY_INCOME", Name = "Thu nhập theo tháng", ParentId = "STATISTIC", SortOrder = 1, Url = "/statistics/monthly-income" },
                     new Function { Id = "STATISTIC_MONTHLY_HOT_PRODUCT", Name = "Sản phẩm nổi bật theo tháng", ParentId = "STATISTIC", SortOrder = 3, Url = "/statistics/monthly-hot-products" }
-                    );
-                await _context.SaveChangesAsync();
+                );
+
+                context.AuditLogs.AddRange
+                (
+                    new AuditLog
+                    {
+                        UserId = userRoleAdminId,
+                        Action = "CREATE",
+                        Entity = "Function",
+                        EntityId = "DASHBOARD",
+                    },
+                    new AuditLog
+                    {
+                        UserId = userRoleAdminId,
+                        Action = "CREATE",
+                        Entity = "Function",
+                        EntityId = "SYSTEM",
+                    },
+                    new AuditLog
+                    {
+                        UserId = userRoleAdminId,
+                        Action = "CREATE",
+                        Entity = "Function",
+                        EntityId = "SYSTEM_ROLE",
+                    },
+                    new AuditLog
+                    {
+                        UserId = userRoleAdminId,
+                        Action = "CREATE",
+                        Entity = "Function",
+                        EntityId = "SYSTEM_USER",
+                    },
+                    new AuditLog
+                    {
+                        UserId = userRoleAdminId,
+                        Action = "CREATE",
+                        Entity = "Function",
+                        EntityId = "SYSTEM_FUNCTION",
+                    },
+                    new AuditLog
+                    {
+                        UserId = userRoleAdminId,
+                        Action = "CREATE",
+                        Entity = "Function",
+                        EntityId = "SYSTEM_PERMISSION",
+                    },
+                    new AuditLog
+                    {
+                        UserId = userRoleAdminId,
+                        Action = "CREATE",
+                        Entity = "Function",
+                        EntityId = "SYSTEM_ROLE_PERMISSION",
+                    },
+                    new AuditLog
+                    {
+                        UserId = userRoleAdminId,
+                        Action = "CREATE",
+                        Entity = "Function",
+                        EntityId = "CONTENT",
+                    },
+                    new AuditLog
+                    {
+                        UserId = userRoleAdminId,
+                        Action = "CREATE",
+                        Entity = "Function",
+                        EntityId = "CONTENT_CATEGORY",
+                    },
+                    new AuditLog
+                    {
+                        UserId = userRoleAdminId,
+                        Action = "CREATE",
+                        Entity = "Function",
+                        EntityId = "STATISTIC",
+                    },
+                    new AuditLog
+                    {
+                        UserId = userRoleAdminId,
+                        Action = "CREATE",
+                        Entity = "Function",
+                        EntityId = "STATISTIC_MONTHLY_INCOME",
+                    },
+                    new AuditLog
+                    {
+                        UserId = userRoleAdminId,
+                        Action = "CREATE",
+                        Entity = "Function",
+                        EntityId = "STATISTIC_MONTHLY_HOT_PRODUCT",
+                    }
+                );
+
+                await context.SaveChangesAsync();
             }
             #endregion
 
             #region Permission
-            if (!_context.Permissions.Any())
+            if (!context.Permissions.Any())
             {
-                var adminRole = await _roleManager.FindByNameAsync(AdminRoleName);
-                var functions = _context.Functions;
+                var adminRole = await roleManager.FindByNameAsync(AdminRoleName);
+                var functions = context.Functions;
+                var listPermissions = new List<Permission>();
                 foreach (var function in functions)
                 {
-                    _context.Permissions.Add(new Permission(function.Id, "CREATE"));
-                    _context.Permissions.Add(new Permission(function.Id, "UPDATE"));
-                    _context.Permissions.Add(new Permission(function.Id, "DELETE"));
-                    _context.Permissions.Add(new Permission(function.Id, "VIEW"));
+                    listPermissions.Add(new Permission(function.Id, "CREATE"));
+                    listPermissions.Add(new Permission(function.Id, "UPDATE"));
+                    listPermissions.Add(new Permission(function.Id, "DELETE"));
+                    listPermissions.Add(new Permission(function.Id, "VIEW"));
                 }
 
-                await _context.SaveChangesAsync();
+                context.Permissions.AddRange(listPermissions);
+
+                await context.SaveChangesAsync();
+
+                foreach (var permission in listPermissions)
+                {
+                    context.AuditLogs.Add(new AuditLog
+                    {
+                        UserId = adminRole!.Id.ToString(),
+                        Action = permission.Action,
+                        Entity = "Permission",
+                        EntityId = permission.Id.ToString()
+                    });
+                }
+
+                await context.SaveChangesAsync();
             }
             #endregion
 
             #region Role Permission
 
-            if (!_context.RolePermissions.Any())
+            if (!context.RolePermissions.Any())
             {
-                var permissions = _context.Permissions;
+                var permissions = context.Permissions;
+                var listRolePermissions = new List<RolePermission>();
                 foreach (var permission in permissions)
                 {
-                    _context.RolePermissions.Add(new RolePermission(AdminRoleName, permission.Id));
+                    listRolePermissions.Add(new RolePermission(AdminRoleName, permission.Id));
                 }
 
-                await _context.SaveChangesAsync();
+                context.RolePermissions.AddRange(listRolePermissions);
+
+                await context.SaveChangesAsync();
+
+                foreach (var rolePermission in listRolePermissions)
+                {
+                    context.AuditLogs.Add(new AuditLog
+                    {
+                        UserId = AdminRoleName,
+                        Action = "CREATE",
+                        Entity = "RolePermission",
+                        EntityId = $"{AdminRoleName}-{rolePermission.PermissionId}"
+                    });
+                }
+
             }
 
             #endregion
 
             #region Category
 
-            if (!_context.Categories.Any())
+            if (!context.Categories.Any())
             {
                 var now = DateTime.Now;
 
@@ -208,8 +323,8 @@ namespace WarehouseManagement.BackendServer.Data
                     SortOrder = 3
                 };
 
-                _context.Categories.AddRange(root1, root2, root3);
-                await _context.SaveChangesAsync();
+                context.Categories.AddRange(root1, root2, root3);
+                await context.SaveChangesAsync();
 
                 // ===== CHILD =====
                 var children = new List<Category>
@@ -224,20 +339,33 @@ namespace WarehouseManagement.BackendServer.Data
                     new Category { Name = "Máy ép kính", SeoAlias = "may-ep-kinh", ParentId = root3.Id, CreateDate = now }
                 };
 
-                _context.Categories.AddRange(children);
+                context.Categories.AddRange(children);
 
-                await _context.SaveChangesAsync();
+                await context.SaveChangesAsync();
+
+                // Audit log
+                var allCategories = context.Categories.ToList();
+                foreach (var category in allCategories)
+                {
+                    context.AuditLogs.Add(new AuditLog
+                    {
+                        UserId = AdminRoleName,
+                        Action = "CREATE",
+                        Entity = "Category",
+                        EntityId = category.Id.ToString()
+                    });
+                }
             }
 
             #endregion
 
             #region Product
 
-            if (!_context.Products.Any())
+            if (!context.Products.Any())
             {
                 var now = DateTime.Now;
 
-                var childCategories = _context.Categories
+                var childCategories = context.Categories
                     .Where(x => x.ParentId != null)
                     .ToList();
 
@@ -260,19 +388,32 @@ namespace WarehouseManagement.BackendServer.Data
                     }
                 }
 
-                _context.Products.AddRange(products);
-                await _context.SaveChangesAsync();
+                context.Products.AddRange(products);
+                await context.SaveChangesAsync();
+
+                // Audit log
+                var allProducts = context.Products.ToList();
+                foreach (var product in allProducts)
+                {
+                    context.AuditLogs.Add(new AuditLog
+                    {
+                        UserId = AdminRoleName,
+                        Action = "CREATE",
+                        Entity = "Product",
+                        EntityId = product.Id.ToString()
+                    });
+                }
             }
 
             #endregion
 
             #region Product variant
 
-            if (!_context.ProductVariants.Any())
+            if (!context.ProductVariants.Any())
             {
                 var now = DateTime.Now;
 
-                var products = _context.Products.ToList();
+                var products = context.Products.ToList();
                 var variants = new List<ProductVariant>();
 
                 foreach (var product in products)
@@ -295,19 +436,32 @@ namespace WarehouseManagement.BackendServer.Data
                     }
                 }
 
-                _context.ProductVariants.AddRange(variants);
-                await _context.SaveChangesAsync();
+                context.ProductVariants.AddRange(variants);
+                await context.SaveChangesAsync();
+
+                // Audit log
+                var allVariants = context.ProductVariants.ToList();
+                foreach (var variant in allVariants)
+                {
+                    context.AuditLogs.Add(new AuditLog
+                    {
+                        UserId = AdminRoleName,
+                        Action = "CREATE",
+                        Entity = "ProductVariant",
+                        EntityId = variant.Id.ToString()
+                    });
+                }
             }
 
             #endregion
 
             #region Product image
 
-            if (!_context.ProductImages.Any())
+            if (!context.ProductImages.Any())
             {
                 var now = DateTime.UtcNow;
 
-                var variants = _context.ProductVariants.ToList();
+                var variants = context.ProductVariants.ToList();
                 var images = new List<ProductImage>();
 
                 foreach (var variant in variants)
@@ -326,12 +480,63 @@ namespace WarehouseManagement.BackendServer.Data
                     }
                 }
 
-                _context.ProductImages.AddRange(images);
-                await _context.SaveChangesAsync();
+                context.ProductImages.AddRange(images);
+                await context.SaveChangesAsync();
+
+                // Audit log
+                var allImages = context.ProductImages.ToList();
+                foreach (var image in allImages)
+                {
+                    context.AuditLogs.Add(new AuditLog
+                    {
+                        UserId = AdminRoleName,
+                        Action = "CREATE",
+                        Entity = "ProductImage",
+                        EntityId = image.Id.ToString()
+                    });
+                }
             }
 
             #endregion
+
+            #region Warehouse
+
+            if (!context.Warehouses.Any())
+            {
+                var now = DateTime.Now;
+                context.Warehouses.AddRange
+                (
+                    new Warehouse
+                    {
+                        Location = "Số 13 ngõ 9, Phố Nguyễn Văn Huyên, Cầu Giấy, Hà Nội",
+                        Capacity = 1000,
+                        Email = "KhoB@gmail.com"
+                    },
+                    new Warehouse
+                    {
+                        Location = "Số 24 ngõ 8, Phố Trần Văn Ninh, Hà Nội",
+                        Capacity = 1000,
+                        Email = "KhoA@gmail.com"
+                    }
+                );
+
+                await context.SaveChangesAsync();
+
+                var allWarehouses = context.Warehouses.ToList();
+                foreach (var warehouse in allWarehouses)
+                {
+                    context.AuditLogs.Add(
+                        new AuditLog
+                        {
+                            UserId = AdminRoleName,
+                            Action = "CREATE",
+                            Entity = "Warehouse",
+                            EntityId = warehouse.Id.ToString()
+                        });
+                }
+            }
         }
+
+        #endregion
     }
 }
-

@@ -13,5 +13,10 @@
         {
             Data = data;
         }
+
+        public ApiOkResponse(string message) : base(200, message)
+        {
+            Data = default!;
+        }
     }
 }

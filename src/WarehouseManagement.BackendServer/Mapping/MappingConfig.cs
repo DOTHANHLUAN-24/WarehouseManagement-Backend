@@ -4,6 +4,7 @@ using WarehouseManagement.BackendServer.Data.Entities;
 using WarehouseManagement.ViewModels.Contents.Categories;
 using WarehouseManagement.ViewModels.Contents.Products;
 using WarehouseManagement.ViewModels.Contents.StockTransactions;
+using WarehouseManagement.ViewModels.Systems.AuditLogs;
 using WarehouseManagement.ViewModels.Systems.Functions;
 using WarehouseManagement.ViewModels.Systems.Login;
 using WarehouseManagement.ViewModels.Systems.Permissions;
@@ -49,6 +50,10 @@ namespace WarehouseManagement.BackendServer.Mapping
             // StockTransaction
             CreateMap<StockTransactionCreateRequest, StockTransaction>();
             CreateMap<StockTransaction, StockTransactionViewModel>();
+
+            // AuditLog
+            CreateMap<AuditLogCreateRequest, AuditLog>();
+            CreateMap<AuditLogViewModel, AuditLog>();
         }
     }
 }

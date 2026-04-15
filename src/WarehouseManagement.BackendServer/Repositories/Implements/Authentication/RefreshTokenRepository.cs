@@ -1,9 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.BackendServer.Data;
 using WarehouseManagement.BackendServer.Data.Entities;
-using WarehouseManagement.BackendServer.Repositories.Implements.Authentication;
+using WarehouseManagement.BackendServer.Repositories.Interfaces.Authentication;
 
-namespace WarehouseManagement.BackendServer.Repositories.Interfaces.Authentication
+namespace WarehouseManagement.BackendServer.Repositories.Implements.Authentication
 {
     public class RefreshTokenRepository(ApplicationDbContext context) : IRefreshTokenRepository
     {

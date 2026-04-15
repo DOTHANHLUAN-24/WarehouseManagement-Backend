@@ -1,10 +1,13 @@
-﻿using WarehouseManagement.ViewModels.Enums;
+﻿using System.ComponentModel.DataAnnotations;
+using WarehouseManagement.ViewModels.Enums;
 
 namespace WarehouseManagement.ViewModels.Contents.StockTransactions
 {
     public class StockTransactionBase
     {
         public int ProductId { get; set; }
+
+        public int ProductVariantId { get; set; }
 
         public int WarehouseId { get; set; }
 
@@ -21,5 +24,15 @@ namespace WarehouseManagement.ViewModels.Contents.StockTransactions
         public DateTime CreateDate { get; set; }
 
         public DateTime? LastModifiedDate { get; set; }
+
+        public string? Note { get; set; }
+
+        public bool IsCanceled { get; set; } = false;
+
+        public string? CancelReason { get; set; }
+
+        public DateTime? CanceledDate { get; set; }
+
+        public string? CanceledBy { get; set; }
     }
 }
