@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.BackendServer.Data.Entities;
 using WarehouseManagement.BackendServer.Data.Enums;
 
@@ -245,7 +244,7 @@ namespace WarehouseManagement.BackendServer.Data
 
                 await context.SaveChangesAsync();
 
-                foreach(var permission in listPermissions)
+                foreach (var permission in listPermissions)
                 {
                     context.AuditLogs.Add(new AuditLog
                     {
@@ -343,6 +342,19 @@ namespace WarehouseManagement.BackendServer.Data
                 context.Categories.AddRange(children);
 
                 await context.SaveChangesAsync();
+
+                // Audit log
+                var allCategories = context.Categories.ToList();
+                foreach (var category in allCategories)
+                {
+                    context.AuditLogs.Add(new AuditLog
+                    {
+                        UserId = AdminRoleName,
+                        Action = "CREATE",
+                        Entity = "Category",
+                        EntityId = category.Id.ToString()
+                    });
+                }
             }
 
             #endregion
@@ -378,6 +390,19 @@ namespace WarehouseManagement.BackendServer.Data
 
                 context.Products.AddRange(products);
                 await context.SaveChangesAsync();
+
+                // Audit log
+                var allProducts = context.Products.ToList();
+                foreach (var product in allProducts)
+                {
+                    context.AuditLogs.Add(new AuditLog
+                    {
+                        UserId = AdminRoleName,
+                        Action = "CREATE",
+                        Entity = "Product",
+                        EntityId = product.Id.ToString()
+                    });
+                }
             }
 
             #endregion
@@ -413,6 +438,19 @@ namespace WarehouseManagement.BackendServer.Data
 
                 context.ProductVariants.AddRange(variants);
                 await context.SaveChangesAsync();
+
+                // Audit log
+                var allVariants = context.ProductVariants.ToList();
+                foreach (var variant in allVariants)
+                {
+                    context.AuditLogs.Add(new AuditLog
+                    {
+                        UserId = AdminRoleName,
+                        Action = "CREATE",
+                        Entity = "ProductVariant",
+                        EntityId = variant.Id.ToString()
+                    });
+                }
             }
 
             #endregion
@@ -444,10 +482,61 @@ namespace WarehouseManagement.BackendServer.Data
 
                 context.ProductImages.AddRange(images);
                 await context.SaveChangesAsync();
+
+                // Audit log
+                var allImages = context.ProductImages.ToList();
+                foreach (var image in allImages)
+                {
+                    context.AuditLogs.Add(new AuditLog
+                    {
+                        UserId = AdminRoleName,
+                        Action = "CREATE",
+                        Entity = "ProductImage",
+                        EntityId = image.Id.ToString()
+                    });
+                }
             }
 
             #endregion
+
+            #region Warehouse
+
+            if (!context.Warehouses.Any())
+            {
+                var now = DateTime.Now;
+                context.Warehouses.AddRange
+                (
+                    new Warehouse
+                    {
+                        Location = "Số 13 ngõ 9, Phố Nguyễn Văn Huyên, Cầu Giấy, Hà Nội",
+                        Capacity = 1000,
+                        Email = "KhoB@gmail.com"
+                    },
+                    new Warehouse
+                    {
+                        Location = "Số 24 ngõ 8, Phố Trần Văn Ninh, Hà Nội",
+                        Capacity = 1000,
+                        Email = "KhoA@gmail.com"
+                    }
+                );
+
+                await context.SaveChangesAsync();
+
+                var allWarehouses = context.Warehouses.ToList();
+                foreach (var warehouse in allWarehouses)
+                {
+                    context.AuditLogs.Add(
+                        new AuditLog
+                        {
+                            UserId = AdminRoleName,
+                            Action = "CREATE",
+                            Entity = "Warehouse",
+                            EntityId = warehouse.Id.ToString()
+                        });
+                }
+            }
         }
+
+        #endregion
     }
 }
-

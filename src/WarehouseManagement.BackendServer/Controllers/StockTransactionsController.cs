@@ -73,15 +73,27 @@ namespace WarehouseManagement.BackendServer.Controllers
             var stockTransaction = new StockTransaction
             {
                 ProductId = request.ProductId,
+                ProductVariantId = request.ProductVariantId,
                 WarehouseId = request.WarehouseId,
                 QuantityChange = request.QuantityChange,
                 TransactionType = (StockTransactionType)request.TransactionType,
                 ReferenceType = (ReferenceType)request.ReferenceType,
                 ReferenceId = request.ReferenceId,
-                BalanceAfter = request.BalanceAfter, 
+                Note = request.Note,
                 CreateDate = DateTime.UtcNow,
                 LastModifiedDate = DateTime.UtcNow
             };
+
+            var lastBalance = await _context.StockTransactions
+                .Where(x => x.ProductId == request.ProductId && x.WarehouseId == request.WarehouseId)
+                .OrderByDescending(x => x.Id)
+                .Select(x => x.BalanceAfter)
+                .FirstOrDefaultAsync();
+
+            if (request.QuantityChange == 0)
+                return BadRequest("QuantityChange must not be 0");
+
+            stockTransaction.BalanceAfter = lastBalance + request.QuantityChange;
 
             _context.StockTransactions.Add(stockTransaction);
 
@@ -117,7 +129,7 @@ namespace WarehouseManagement.BackendServer.Controllers
         )
         {
             _logger.LogInformation("Begin GetStockTransactions API with " +
-                "product name = {productName}, warehouseEmail = {warehouseEmail}, pageIndex = {pageIndex}, pageSize = {pageSize}", 
+                "product name = {productName}, warehouseEmail = {warehouseEmail}, pageIndex = {pageIndex}, pageSize = {pageSize}",
                 productName, warehouseEmail, pageIndex, pageSize);
 
             pageIndex = pageIndex <= 0 ? 1 : pageIndex;
@@ -134,9 +146,9 @@ namespace WarehouseManagement.BackendServer.Controllers
                 var productIds = await _context.Products
                     .Where(p => p.Name.Contains(productName))
                     .Select(p => p.Id)
-                    .FirstOrDefaultAsync();
+                    .ToListAsync();
 
-                query = query.Where(st => st.ProductId == productIds);
+                query = query.Where(st => productIds.Contains(st.ProductId));
             }
 
             // Filter by warehouse name
@@ -147,9 +159,9 @@ namespace WarehouseManagement.BackendServer.Controllers
                 var warehouseIds = await _context.Warehouses
                     .Where(w => w.Email.Contains(warehouseEmail))
                     .Select(w => w.Id)
-                    .FirstOrDefaultAsync();
+                    .ToListAsync();
 
-                query = query.Where(st => st.WarehouseId == warehouseIds);
+                query = query.Where(st => warehouseIds.Contains(st.WarehouseId));
             }
 
             var totalRecords = await query.CountAsync();
@@ -198,7 +210,7 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// <param name="referenceType">Reference type</param>
         /// <param name="referenceId">Reference id</param>
         /// <returns>The stock transactions by reference</returns>
-        [HttpGet("stockTransactions/reference/{referenceType}/{referenceId}")]
+        [HttpGet("reference/{referenceType}/{referenceId}")]
         public async Task<IActionResult> GetStockTransactionsByReference(ReferenceType referenceType, int referenceId)
         {
             _logger.LogInformation("Begin GetStockTransactionsByReference API");
@@ -233,6 +245,8 @@ namespace WarehouseManagement.BackendServer.Controllers
                 QuantityChange = r.QuantityChange,
                 TransactionType = (StockTransactionType)r.TransactionType,
                 ReferenceType = (ReferenceType)r.ReferenceType,
+                ProductVariantId = r.ProductVariantId,
+                Note = r.Note,
                 ReferenceId = r.ReferenceId,
                 BalanceAfter = r.BalanceAfter,
                 CreateDate = now,
@@ -384,6 +398,59 @@ namespace WarehouseManagement.BackendServer.Controllers
             }
         }
 
+        [HttpGet("by-product/{productId}")]
+        public async Task<IActionResult> GetStockTransactionsByProductId(int productId)
+        {
+            _logger.LogInformation("Begin GetStockTransactionsByProductId API");
+
+            var stockTransactions = await _context.StockTransactions
+                .Where(x => x.ProductId == productId)
+                .Select(x => CreateStockTransactionViewModel(x))
+                .ToListAsync();
+
+            _logger.LogInformation("GetStockTransactionsByProductId success");
+
+            return Ok(stockTransactions);
+        }
+
+        [HttpGet("showInfo/{id}")]
+        public async Task<IActionResult> ShowInfo(int id)
+        {
+            var data = await _context.StockTransactions
+                .Where(st => st.Id == id)
+                .Select(st => new
+                {
+                    Product = _context.Products
+            .Where(p => p.Id == st.ProductId)
+            .Select(p => new { p.Id, p.Name, p.Code, p.Description })
+            .FirstOrDefault(),
+
+                    ProductVariant = _context.ProductVariants
+            .Where(pv => pv.Id == st.ProductVariantId)
+            .Select(pv => new { pv.Id, pv.Name, pv.SKU, pv.SellingPrice, pv.StockQuantity })
+            .FirstOrDefault(),
+
+                    Warehouse = _context.Warehouses
+            .Where(w => w.Id == st.WarehouseId)
+            .Select(w => new { w.Id, w.Email })
+            .FirstOrDefault(),
+
+                    StockTransaction = new
+                    {
+                        st.Id,
+                        st.QuantityChange,
+                        st.TransactionType,
+                        st.ReferenceType,
+                        st.ReferenceId,
+                        st.BalanceAfter,
+                        st.CreateDate,
+                        st.LastModifiedDate
+                    }
+                })
+            .FirstOrDefaultAsync();
+
+            return Ok(data);
+        }
 
         /// <summary>
         /// Create stock transaction view model
@@ -396,6 +463,7 @@ namespace WarehouseManagement.BackendServer.Controllers
             {
                 Id = x.Id,
                 ProductId = x.ProductId,
+                ProductVariantId = x.ProductVariantId,
                 WarehouseId = x.WarehouseId,
                 QuantityChange = x.QuantityChange,
                 TransactionType = (ViewModels.Enums.StockTransactionType)x.TransactionType,

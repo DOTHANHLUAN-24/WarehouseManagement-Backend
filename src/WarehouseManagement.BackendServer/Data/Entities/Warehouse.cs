@@ -5,7 +5,7 @@ using WarehouseManagement.BackendServer.Data.Interfaces;
 namespace WarehouseManagement.BackendServer.Data.Entities
 {
     [Table("Warehouses")]
-    public class Warehouse : ISoftDelete
+    public class Warehouse : ISoftDelete, IDateTracking
     {
         [Key]
         public int Id { get; set; }
@@ -20,5 +20,9 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         public string Email { get; set; } = null!;
 
         public bool IsDeleted { get; set; } = false;
+
+        public DateTime CreateDate { get; set; }
+
+        public DateTime? LastModifiedDate { get; set; }
     }
 }
