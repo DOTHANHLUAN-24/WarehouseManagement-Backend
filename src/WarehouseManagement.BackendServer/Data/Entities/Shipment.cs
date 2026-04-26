@@ -1,30 +1,28 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using WarehouseManagement.BackendServer.Data.Enums;
 using WarehouseManagement.BackendServer.Data.Interfaces;
 
 namespace WarehouseManagement.BackendServer.Data.Entities
 {
-    [Table("Warehouses")]
-    public class Warehouse : ISoftDelete, IDateTracking
+    [Table("Shipments")]
+    public class Shipment : IDateTracking
     {
         [Key]
         public int Id { get; set; }
 
         [Required]
-        public string Location { get; set; } = string.Empty;
+        public int OrderId { get; set; }
 
         [Required]
-        public int Capacity { get; set; }
+        public int WarehouseId { get; set; }
 
-        [Required]
-        public string Email { get; set; } = null!;
+        public DateTime ShipmentDate { get; set; }
 
-        public bool IsDeleted { get; set; } = false;
+        public ShipmentStatus Status { get; set; } = ShipmentStatus.Pending;
 
         public DateTime CreateDate { get; set; }
 
         public DateTime? LastModifiedDate { get; set; }
-
-        public ICollection<Shipment> Shipments { get; set; } = new List<Shipment>();
     }
 }

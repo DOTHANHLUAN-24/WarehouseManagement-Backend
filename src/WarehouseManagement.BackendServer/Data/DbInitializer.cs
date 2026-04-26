@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.BackendServer.Data.Entities;
 using WarehouseManagement.BackendServer.Data.Enums;
 
@@ -111,6 +112,83 @@ namespace WarehouseManagement.BackendServer.Data
             }
 
             #endregion
+
+            #region Customer
+
+            if (!context.Customers.Any())
+            {
+                var listUser = await userManager.Users.ToListAsync();
+
+                foreach (var user in listUser)
+                {
+                    context.Customers.Add
+                    (
+                        new Customer
+                        {
+                            UserId = user.Id,
+                            FullName = $"{user.FirstName} {user.LastName}",
+                            PhoneNumber = user.PhoneNumber!,
+                            Status = CustomerStatus.Active,
+                            CreateDate = DateTime.Now
+                        }
+                    );
+                }
+            }
+
+            #endregion
+
+            #region Customer address
+
+            if (!context.CustomerAddresses.Any())
+            {
+                var customers = await context.Customers.ToListAsync();
+                var random = new Random();
+
+                var streets = new[]
+                {
+                    "Nguyễn Trãi", "Trần Phú", "Lê Lợi", "Phạm Văn Đồng",
+                    "Cầu Giấy", "Xuân Thủy", "Hoàng Quốc Việt", "Kim Mã",
+                    "Giải Phóng", "Nguyễn Văn Cừ"
+                };
+
+                var districts = new[]
+                {
+                    "Ba Đình", "Hoàn Kiếm", "Đống Đa", "Cầu Giấy",
+                    "Thanh Xuân", "Hai Bà Trưng", "Long Biên", "Nam Từ Liêm"
+                };
+
+                var cities = new[]
+                {
+                    "Hà Nội",
+                    "Hồ Chí Minh",
+                    "Đà Nẵng"
+                };
+
+                var addresses = new List<CustomerAddress>();
+
+                foreach (var customer in customers)
+                {
+                    var houseNumber = random.Next(1, 500);
+                    var street = streets[random.Next(streets.Length)];
+                    var district = districts[random.Next(districts.Length)];
+                    var city = cities[random.Next(cities.Length)];
+
+                    addresses.Add(new CustomerAddress
+                    {
+                        CustomerId = customer.Id,
+                        AddressLine = $"{houseNumber} {street}, {district}",
+                        City = city,
+                        IsDefault = true,
+                        IsDeleted = false
+                    });
+                }
+
+                context.CustomerAddresses.AddRange(addresses);
+                await context.SaveChangesAsync();
+            }
+
+            #endregion
+
 
             #region Function
             if (!context.Functions.Any())

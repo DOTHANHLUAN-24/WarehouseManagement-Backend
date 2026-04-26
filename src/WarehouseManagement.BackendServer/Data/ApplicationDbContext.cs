@@ -41,6 +41,9 @@ namespace WarehouseManagement.BackendServer.Data
                 .Property(x => x.UserId).HasMaxLength(50).IsUnicode(false);
 
             // ========== Composite Keys ==========
+            builder.Entity<OrderItem>()
+                .HasKey(x => new { x.OrderId, x.ProductVariantId });
+
             builder.Entity<PurchaseItem>()
                 .HasKey(x => new { x.PurchaseId, x.ProductVariantId });
 
@@ -48,6 +51,9 @@ namespace WarehouseManagement.BackendServer.Data
                 .HasKey(x => new { x.RoleId, x.PermissionId });
 
             // ========== Index ==========
+            builder.Entity<Order>()
+                .HasIndex(x => x.CustomerId);
+
             builder.Entity<Product>()
                 .HasIndex(x => x.CategoryId);
 
@@ -83,6 +89,12 @@ namespace WarehouseManagement.BackendServer.Data
         public DbSet<Supplier> Suppliers { get; set; } = null!;
         public DbSet<Warehouse> Warehouses { get; set; } = null!;
         public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
-
+        public DbSet<Customer> Customers { get; set; } = null!;
+        public DbSet<CustomerAddress> CustomerAddresses { get; set; } = null!;
+        public DbSet<Order> Orders { get; set; } = null!;
+        public DbSet<OrderItem> OrderItems { get; set; } = null!;
+        public DbSet<Payment> Payments { get; set; } = null!;
+        public DbSet<Shipment> Shipments { get; set; } = null!;
+        public DbSet<ProductComment> ProductComments { get; set; } = null!;
     }
 }
