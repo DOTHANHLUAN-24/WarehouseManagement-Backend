@@ -1,30 +1,32 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.BackendServer.Data.Interfaces;
 
 namespace WarehouseManagement.BackendServer.Data.Entities
 {
-    [Table("Warehouses")]
-    public class Warehouse : ISoftDelete, IDateTracking
+    [Table("OrderItems")]
+    public class OrderItem : IDateTracking
     {
         [Key]
         public int Id { get; set; }
 
         [Required]
-        public string Location { get; set; } = string.Empty;
+        public int OrderId { get; set; }
 
         [Required]
-        public int Capacity { get; set; }
+        public int ProductVariantId { get; set; }
 
         [Required]
-        public string Email { get; set; } = null!;
+        [Range(1, int.MaxValue)]
+        public int Quantity { get; set; }
 
-        public bool IsDeleted { get; set; } = false;
+        [Required]
+        [Precision(18, 2)]
+        public decimal UnitPrice { get; set; }
 
         public DateTime CreateDate { get; set; }
 
         public DateTime? LastModifiedDate { get; set; }
-
-        public ICollection<Shipment> Shipments { get; set; } = new List<Shipment>();
     }
 }

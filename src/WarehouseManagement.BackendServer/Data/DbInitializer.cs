@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.BackendServer.Data.Entities;
 using WarehouseManagement.BackendServer.Data.Enums;
 
@@ -12,14 +13,40 @@ namespace WarehouseManagement.BackendServer.Data
         private readonly string AdminRoleName = "Admin";
         private readonly string UserRoleName = "User";
 
+        /// <summary>
+        /// Hàm chính để gọi các quy trình khởi tạo dữ liệu (Seeding) cho cơ sở dữ liệu.
+        /// Các hàm được gọi theo thứ tự để đảm bảo tính toàn vẹn của khóa ngoại (Foreign Keys).
+        /// </summary>
         public async Task Seed()
         {
-            string userRoleAdminId = Guid.NewGuid().ToString();
-            string user1RoleUserId = Guid.NewGuid().ToString();
-            string user2RoleUserId = Guid.NewGuid().ToString();
+            // 1. Khởi tạo dữ liệu người dùng và phân quyền (Identity)
+            var adminUserId = await SeedRolesAndUsersAsync();
 
-            #region Role
+            // 2. Khởi tạo dữ liệu Khách hàng
+            await SeedCustomersAsync();
 
+            // 3. Khởi tạo dữ liệu Hệ thống và Phân quyền truy cập
+            await SeedFunctionsAndPermissionsAsync(adminUserId);
+
+            // 4. Khởi tạo dữ liệu Sản phẩm (Catalog)
+            await SeedCatalogAsync();
+
+            // 5. Khởi tạo dữ liệu Đánh giá sản phẩm
+            await SeedProductCommentsAsync();
+
+            // 6. Khởi tạo dữ liệu Kho hàng
+            await SeedWarehousesAsync();
+
+            // 7. Khởi tạo dữ liệu Lịch sử Giao dịch Kho (Stock Transactions)
+            await SeedStockTransactionsAsync();
+        }
+
+        /// <summary>
+        /// Khởi tạo danh sách các Vai trò (Role) và Người dùng (User) mặc định của hệ thống.
+        /// </summary>
+        /// <returns>Chuỗi ID của tài khoản Admin.</returns>
+        private async Task<string> SeedRolesAndUsersAsync()
+        {
             if (!roleManager.Roles.Any())
             {
                 var roles = new[]
@@ -42,10 +69,6 @@ namespace WarehouseManagement.BackendServer.Data
                 }
             }
 
-            #endregion
-
-            #region User
-
             if (!userManager.Users.Any())
             {
                 var users = new List<(User user, string password, string role)>
@@ -54,7 +77,7 @@ namespace WarehouseManagement.BackendServer.Data
                     (
                         new User
                         {
-                            Id = userRoleAdminId,
+                            Id = Guid.NewGuid().ToString(),
                             UserName = "admin",
                             FirstName = "Quản trị",
                             LastName = "1",
@@ -70,7 +93,7 @@ namespace WarehouseManagement.BackendServer.Data
                     (
                         new User
                         {
-                            Id = user1RoleUserId,
+                            Id = Guid.NewGuid().ToString(),
                             UserName = "user1",
                             FirstName = "Người dùng",
                             LastName = "1",
@@ -86,7 +109,7 @@ namespace WarehouseManagement.BackendServer.Data
                     (
                         new User
                         {
-                            Id = user2RoleUserId,
+                            Id = Guid.NewGuid().ToString(),
                             UserName = "user2",
                             FirstName = "Người dùng",
                             LastName = "2",
@@ -94,9 +117,9 @@ namespace WarehouseManagement.BackendServer.Data
                             LockoutEnabled = false,
                             PhoneNumber = "0912345678"
                         },
-                            "User@123$",
-                            UserRoleName
-                        )
+                        "User@123$",
+                        UserRoleName
+                    )
                 };
 
                 foreach (var item in users)
@@ -110,9 +133,93 @@ namespace WarehouseManagement.BackendServer.Data
                 }
             }
 
-            #endregion
+            var adminUser = await userManager.FindByNameAsync("admin");
+            return adminUser!.Id;
+        }
 
-            #region Function
+        /// <summary>
+        /// Khởi tạo dữ liệu Khách hàng (Customer) và Địa chỉ mặc định (CustomerAddress) dựa trên danh sách User.
+        /// </summary>
+        private async Task SeedCustomersAsync()
+        {
+            // 1. Tạo Customer
+            if (!context.Customers.Any())
+            {
+                var listUser = await userManager.Users.ToListAsync();
+
+                foreach (var user in listUser)
+                {
+                    context.Customers.Add
+                    (
+                        new Customer
+                        {
+                            UserId = user.Id,
+                            FullName = $"{user.FirstName} {user.LastName}",
+                            PhoneNumber = user.PhoneNumber!,
+                            Status = CustomerStatus.Active,
+                            CreateDate = DateTime.Now
+                        }
+                    );
+                }
+                await context.SaveChangesAsync();
+            }
+
+            // 2. Tạo Customer Address
+            if (!context.CustomerAddresses.Any())
+            {
+                var customers = await context.Customers.ToListAsync();
+                var random = new Random();
+
+                var streets = new[]
+                {
+                    "Nguyễn Trãi", "Trần Phú", "Lê Lợi", "Phạm Văn Đồng",
+                    "Cầu Giấy", "Xuân Thủy", "Hoàng Quốc Việt", "Kim Mã",
+                    "Giải Phóng", "Nguyễn Văn Cừ"
+                };
+
+                var districts = new[]
+                {
+                    "Ba Đình", "Hoàn Kiếm", "Đống Đa", "Cầu Giấy",
+                    "Thanh Xuân", "Hai Bà Trưng", "Long Biên", "Nam Từ Liêm"
+                };
+
+                var cities = new[]
+                {
+                    "Hà Nội",
+                    "Hồ Chí Minh",
+                    "Đà Nẵng"
+                };
+
+                var addresses = new List<CustomerAddress>();
+
+                foreach (var customer in customers)
+                {
+                    var houseNumber = random.Next(1, 500);
+                    var street = streets[random.Next(streets.Length)];
+                    var district = districts[random.Next(districts.Length)];
+                    var city = cities[random.Next(cities.Length)];
+
+                    addresses.Add(new CustomerAddress
+                    {
+                        CustomerId = customer.Id,
+                        AddressLine = $"{houseNumber} {street}, {district}",
+                        City = city,
+                        IsDefault = true,
+                        IsDeleted = false
+                    });
+                }
+
+                context.CustomerAddresses.AddRange(addresses);
+                await context.SaveChangesAsync();
+            }
+        }
+
+        /// <summary>
+        /// Khởi tạo hệ thống Chức năng (Functions), Quyền hạn (Permissions) và gán toàn bộ quyền cho Vai trò Admin.
+        /// </summary>
+        /// <param name="adminUserId">ID của Admin User dùng để ghi nhận Audit Log.</param>
+        private async Task SeedFunctionsAndPermissionsAsync(string adminUserId)
+        {
             if (!context.Functions.Any())
             {
                 context.Functions.AddRange
@@ -138,84 +245,84 @@ namespace WarehouseManagement.BackendServer.Data
                 (
                     new AuditLog
                     {
-                        UserId = userRoleAdminId,
+                        UserId = adminUserId,
                         Action = "CREATE",
                         Entity = "Function",
                         EntityId = "DASHBOARD",
                     },
                     new AuditLog
                     {
-                        UserId = userRoleAdminId,
+                        UserId = adminUserId,
                         Action = "CREATE",
                         Entity = "Function",
                         EntityId = "SYSTEM",
                     },
                     new AuditLog
                     {
-                        UserId = userRoleAdminId,
+                        UserId = adminUserId,
                         Action = "CREATE",
                         Entity = "Function",
                         EntityId = "SYSTEM_ROLE",
                     },
                     new AuditLog
                     {
-                        UserId = userRoleAdminId,
+                        UserId = adminUserId,
                         Action = "CREATE",
                         Entity = "Function",
                         EntityId = "SYSTEM_USER",
                     },
                     new AuditLog
                     {
-                        UserId = userRoleAdminId,
+                        UserId = adminUserId,
                         Action = "CREATE",
                         Entity = "Function",
                         EntityId = "SYSTEM_FUNCTION",
                     },
                     new AuditLog
                     {
-                        UserId = userRoleAdminId,
+                        UserId = adminUserId,
                         Action = "CREATE",
                         Entity = "Function",
                         EntityId = "SYSTEM_PERMISSION",
                     },
                     new AuditLog
                     {
-                        UserId = userRoleAdminId,
+                        UserId = adminUserId,
                         Action = "CREATE",
                         Entity = "Function",
                         EntityId = "SYSTEM_ROLE_PERMISSION",
                     },
                     new AuditLog
                     {
-                        UserId = userRoleAdminId,
+                        UserId = adminUserId,
                         Action = "CREATE",
                         Entity = "Function",
                         EntityId = "CONTENT",
                     },
                     new AuditLog
                     {
-                        UserId = userRoleAdminId,
+                        UserId = adminUserId,
                         Action = "CREATE",
                         Entity = "Function",
                         EntityId = "CONTENT_CATEGORY",
                     },
                     new AuditLog
                     {
-                        UserId = userRoleAdminId,
+                        UserId = adminUserId,
                         Action = "CREATE",
                         Entity = "Function",
                         EntityId = "STATISTIC",
                     },
                     new AuditLog
                     {
-                        UserId = userRoleAdminId,
+                        UserId = adminUserId,
                         Action = "CREATE",
                         Entity = "Function",
                         EntityId = "STATISTIC_MONTHLY_INCOME",
                     },
                     new AuditLog
                     {
-                        UserId = userRoleAdminId,
+                        UserId = adminUserId,
                         Action = "CREATE",
                         Entity = "Function",
                         EntityId = "STATISTIC_MONTHLY_HOT_PRODUCT",
@@ -224,9 +331,7 @@ namespace WarehouseManagement.BackendServer.Data
 
                 await context.SaveChangesAsync();
             }
-            #endregion
 
-            #region Permission
             if (!context.Permissions.Any())
             {
                 var adminRole = await roleManager.FindByNameAsync(AdminRoleName);
@@ -257,9 +362,6 @@ namespace WarehouseManagement.BackendServer.Data
 
                 await context.SaveChangesAsync();
             }
-            #endregion
-
-            #region Role Permission
 
             if (!context.RolePermissions.Any())
             {
@@ -286,11 +388,14 @@ namespace WarehouseManagement.BackendServer.Data
                 }
 
             }
+        }
 
-            #endregion
-
-            #region Category
-
+        /// <summary>
+        /// Khởi tạo dữ liệu Danh mục sản phẩm (Categories), Sản phẩm (Products), Biến thể sản phẩm (Variants) và Hình ảnh (Images).
+        /// </summary>
+        private async Task SeedCatalogAsync()
+        {
+            // 1. Tạo Category
             if (!context.Categories.Any())
             {
                 var now = DateTime.Now;
@@ -355,12 +460,10 @@ namespace WarehouseManagement.BackendServer.Data
                         EntityId = category.Id.ToString()
                     });
                 }
+                await context.SaveChangesAsync();
             }
 
-            #endregion
-
-            #region Product
-
+            // 2. Tạo Product
             if (!context.Products.Any())
             {
                 var now = DateTime.Now;
@@ -403,12 +506,10 @@ namespace WarehouseManagement.BackendServer.Data
                         EntityId = product.Id.ToString()
                     });
                 }
+                await context.SaveChangesAsync();
             }
 
-            #endregion
-
-            #region Product variant
-
+            // 3. Tạo Product Variant
             if (!context.ProductVariants.Any())
             {
                 var now = DateTime.Now;
@@ -451,12 +552,10 @@ namespace WarehouseManagement.BackendServer.Data
                         EntityId = variant.Id.ToString()
                     });
                 }
+                await context.SaveChangesAsync();
             }
 
-            #endregion
-
-            #region Product image
-
+            // 4. Tạo Product Image
             if (!context.ProductImages.Any())
             {
                 var now = DateTime.UtcNow;
@@ -495,12 +594,70 @@ namespace WarehouseManagement.BackendServer.Data
                         EntityId = image.Id.ToString()
                     });
                 }
+                await context.SaveChangesAsync();
             }
+        }
 
-            #endregion
+        /// <summary>
+        /// Khởi tạo dữ liệu Đánh giá/Bình luận sản phẩm ngẫu nhiên từ Khách hàng.
+        /// </summary>
+        private async Task SeedProductCommentsAsync()
+        {
+            if (!context.ProductComments.Any())
+            {
+                // Lấy ra các Customer và Product đã được seed ở các bước trước
+                var customers = await context.Customers.ToListAsync();
+                var products = await context.Products.Take(10).ToListAsync();
 
-            #region Warehouse
+                if (customers.Any() && products.Any())
+                {
+                    var comments = new List<ProductComment>();
+                    var random = new Random();
+                    var now = DateTime.Now;
 
+                    foreach (var customer in customers)
+                    {
+                        // Mỗi khách hàng sẽ đánh giá ngẫu nhiên 3 sản phẩm
+                        var randomProducts = products.OrderBy(x => Guid.NewGuid()).Take(3).ToList();
+
+                        foreach (var product in randomProducts)
+                        {
+                            comments.Add(new ProductComment
+                            {
+                                UserId = customer.UserId,
+                                ProductId = product.Id,
+                                Content = $"Sản phẩm {product.Name} dùng rất ổn, shop giao hàng cực kỳ nhanh chóng. Rất đáng tiền!",
+                                Rating = random.Next(4, 6), // Ngẫu nhiên 4 hoặc 5 sao
+                                CreateDate = now.AddDays(-random.Next(1, 30)) // Random ngày bình luận trong 1 tháng trở lại
+                            });
+                        }
+                    }
+
+                    context.ProductComments.AddRange(comments);
+                    await context.SaveChangesAsync();
+
+                    // Lưu lịch sử Audit Log
+                    var allComments = context.ProductComments.ToList();
+                    foreach (var comment in allComments)
+                    {
+                        context.AuditLogs.Add(new AuditLog
+                        {
+                            UserId = AdminRoleName,
+                            Action = "CREATE",
+                            Entity = "ProductComment",
+                            EntityId = comment.Id.ToString()
+                        });
+                    }
+                    await context.SaveChangesAsync();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Khởi tạo thông tin danh sách Kho hàng (Warehouses) ban đầu của hệ thống.
+        /// </summary>
+        private async Task SeedWarehousesAsync()
+        {
             if (!context.Warehouses.Any())
             {
                 var now = DateTime.Now;
@@ -534,9 +691,62 @@ namespace WarehouseManagement.BackendServer.Data
                             EntityId = warehouse.Id.ToString()
                         });
                 }
+                await context.SaveChangesAsync();
             }
         }
 
-        #endregion
+        /// <summary>
+        /// Khởi tạo dữ liệu Lịch sử giao dịch kho (StockTransactions) ban đầu.
+        /// </summary>
+        private async Task SeedStockTransactionsAsync()
+        {
+            if (!context.StockTransactions.Any())
+            {
+                // Lấy ra các biến thể sản phẩm và kho hàng đã được tạo
+                var variants = await context.ProductVariants.Take(15).ToListAsync();
+                var warehouses = await context.Warehouses.ToListAsync();
+
+                if (variants.Any() && warehouses.Any())
+                {
+                    var defaultWarehouse = warehouses.First();
+                    var transactions = new List<StockTransaction>();
+                    var now = DateTime.Now;
+
+                    foreach (var variant in variants)
+                    {
+                        // Tạo giao dịch nhập kho khởi tạo cho từng sản phẩm
+                        transactions.Add(new StockTransaction
+                        {
+                            ProductId = variant.ProductId,
+                            ProductVariantId = variant.Id,
+                            WarehouseId = defaultWarehouse.Id,
+                            QuantityChange = variant.StockQuantity, // Khởi tạo với đúng số lượng tồn kho hiện tại
+                            TransactionType = StockTransactionType.AdjustmentIncrease,
+                            Note = "Hệ thống tự động tạo: Nhập kho ban đầu theo số lượng tồn",
+                            ReferenceType = (ReferenceType)1, // Ép kiểu sang giá trị Enum hiện có của ReferenceType
+                            BalanceAfter = variant.StockQuantity,
+                            CreateDate = now.AddDays(-1)
+                        });
+                    }
+
+                    context.StockTransactions.AddRange(transactions);
+                    await context.SaveChangesAsync();
+
+                    // Lưu lịch sử Audit Log
+                    var allTransactions = context.StockTransactions.ToList();
+                    foreach (var tx in allTransactions)
+                    {
+                        context.AuditLogs.Add(new AuditLog
+                        {
+                            UserId = AdminRoleName,
+                            Action = "CREATE",
+                            Entity = "StockTransaction",
+                            EntityId = tx.Id.ToString()
+                        });
+                    }
+                    await context.SaveChangesAsync();
+                }
+            }
+        }
     }
 }

@@ -31,7 +31,11 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         public ICollection<ProductImage> ProductImages { get; set; } = new List<ProductImage>();
 
         public ICollection<ProductVariant> ProductVariants { get; set; } = new List<ProductVariant>();
-        
+
+        public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
+
+        public ICollection<ProductComment> ProductComments { get; set; } = new List<ProductComment>();  
+
         public ICollection<PurchaseItem> PurchaseItems { get; set; } = new List<PurchaseItem>();
     }
 }
