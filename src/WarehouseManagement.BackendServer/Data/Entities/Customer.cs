@@ -8,10 +8,10 @@ namespace WarehouseManagement.BackendServer.Data.Entities
     [Table("Customers")]
     public class Customer : IDateTracking
     {
-        private CustomerStatus status = CustomerStatus.Active;
-
         [Key]
         public int Id { get; set; }
+
+        public CustomerStatus status = CustomerStatus.Active;
 
         [Required]
         [MaxLength(50)]
