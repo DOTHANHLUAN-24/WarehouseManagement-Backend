@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 using FluentValidation.AspNetCore;
 using WarehouseManagement.BackendServer.Mapping;
 using WarehouseManagement.BackendServer.Repositories.Implements;
@@ -33,6 +33,9 @@ namespace WarehouseManagement.BackendServer.DependencyInjection
             services.AddScoped<IAuditLogRepository, AuditLogRepository>();
             services.AddScoped<ITokenManagement, TokenManagement>();
             services.AddScoped<IUserRepository, UserRepository>();
+
+            // Register IUserService and its implementation
+            services.AddScoped<IUserService, UserService>();
 
             return services;
         }

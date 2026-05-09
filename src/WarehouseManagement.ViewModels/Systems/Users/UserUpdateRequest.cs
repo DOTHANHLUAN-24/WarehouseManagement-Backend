@@ -1,8 +1,12 @@
-﻿namespace WarehouseManagement.ViewModels.Systems.User
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace WarehouseManagement.ViewModels.Systems.User
 {
-    public class UserUpdateRequest
+    public class UserUpdateRequest : UserBase
     {
-        public string LastName { get; set; } = string.Empty;
-        public string FirstName { get; set; } = string.Empty;
+        public string Id { get; set; } = string.Empty;
+
+        public bool IsActive { get; set; } = true;
+
     }
 }
