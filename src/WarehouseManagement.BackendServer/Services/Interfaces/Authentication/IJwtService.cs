@@ -16,5 +16,8 @@ namespace WarehouseManagement.BackendServer.Services.Interfaces
         TimeSpan GetAccessTokenRemainingTime(string accessToken);
 
         Task<TimeSpan?> GetRefreshTokenRemainingTime(string userName);
+
+        // Register new user and return tokens (same response as login)
+        Task<LoginResponseModel?> Register(RegisterRequestModel request);
     }
 }

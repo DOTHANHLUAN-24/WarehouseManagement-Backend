@@ -30,6 +30,17 @@ namespace WarehouseManagement.BackendServer.Controllers
         }
 
         [AllowAnonymous]
+        [HttpPost("Register")]
+        public async Task<ActionResult<LoginResponseModel>> Register(RegisterRequestModel request)
+        {
+            var result = await _jwtService.Register(request);
+            if (result is null)
+                return BadRequest("Registration failed");
+
+            return result;
+        }
+
+        [AllowAnonymous]
         [HttpPost("refresh-token")]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
         {

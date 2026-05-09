@@ -79,6 +79,86 @@ namespace WarehouseManagement.BackendServer.Services.Implementations.Authenticat
             };
         }
 
+        public async Task<LoginResponseModel?> Register(RegisterRequestModel request)
+        {
+            if (request == null ||
+                string.IsNullOrWhiteSpace(request.UserName) ||
+                string.IsNullOrWhiteSpace(request.Password) ||
+                string.IsNullOrWhiteSpace(request.Email))
+            {
+                return null;
+            }
+
+            // Check existing username/email
+            if (await _userManager.FindByNameAsync(request.UserName) != null)
+                return null;
+            if (await _userManager.FindByEmailAsync(request.Email) != null)
+                return null;
+
+            var user = new User
+            {
+                Id = Guid.NewGuid().ToString(),
+                UserName = request.UserName,
+                Email = request.Email,
+                FirstName = request.FirstName ?? string.Empty,
+                LastName = request.LastName ?? string.Empty,
+                PhoneNumber = request.PhoneNumber,
+                LockoutEnabled = false
+            };
+
+            var createResult = await _userManager.CreateAsync(user, request.Password);
+            if (!createResult.Succeeded)
+                return null;
+
+            // Assign default role "User" if exists
+            await _userManager.AddToRoleAsync(user, "User");
+
+            // Issue tokens (same logic as Authenticate)
+            var issuer = _configuration["JwtConfig:Issuer"];
+            var audience = _configuration["JwtConfig:Audience"];
+            var key = _configuration["JwtConfig:Key"];
+            var tokenValidityMins = _configuration.GetValue<int>("JwtConfig:TokenValidityMins");
+            var tokenExpiryTimeStamp = DateTime.UtcNow.AddMinutes(tokenValidityMins);
+
+            var claims = new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Name, user.UserName!),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
+            };
+
+            var identity = new ClaimsIdentity(claims, "Jwt", JwtRegisteredClaimNames.Name, ClaimTypes.Role);
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = identity,
+                Expires = tokenExpiryTimeStamp,
+                Issuer = issuer,
+                Audience = audience,
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.ASCII.GetBytes(key!)), SecurityAlgorithms.HmacSha256Signature),
+            };
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var securityToken = tokenHandler.CreateToken(tokenDescriptor);
+            var accessToken = tokenHandler.WriteToken(securityToken);
+
+            var refreshToken = GenerateRefreshToken();
+            var refreshTokenExpiryDays = _configuration.GetValue("JwtConfig:RefreshTokenValidityDays", 7);
+
+            user.RefreshToken = refreshToken;
+            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(refreshTokenExpiryDays);
+
+            await _userManager.UpdateAsync(user);
+
+            return new LoginResponseModel
+            {
+                AccessToken = accessToken,
+                RefreshToken = refreshToken,
+                UserName = user.UserName,
+                ExpiresIn = (int)tokenExpiryTimeStamp.Subtract(DateTime.UtcNow).TotalSeconds,
+            };
+        }
+
         private string CreateToken(IEnumerable<Claim> claims)
         {
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtConfig:Key"]!));
