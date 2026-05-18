@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.BackendServer.Data;
 using WarehouseManagement.BackendServer.Data.Entities;
@@ -48,6 +48,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                     IsActive = p.IsActive,
 
                     SellingPrice = pv.SellingPrice,
+                    OriginalPrice = pv.OriginalPrice,
                     Quantity = pv.StockQuantity,
 
                     ImageUrl = _context.ProductImages
@@ -386,11 +387,8 @@ namespace WarehouseManagement.BackendServer.Controllers
                 IsDeleted = false
             };
 
-            _context.Products.Add(product);
-
             var variant = new ProductVariant
             {
-                ProductId = product.Id,
                 Name = product.Name,
                 SKU = request.SKU,
                 SellingPrice = request.SellingPrice,
@@ -401,35 +399,128 @@ namespace WarehouseManagement.BackendServer.Controllers
                 CreateDate = DateTime.UtcNow
             };
 
-            _context.ProductVariants.Add(variant);
-            var result = await _context.SaveChangesAsync();
-            if (result > 0)
+            product.ProductVariants.Add(variant);
+            _context.Products.Add(product);
+            
+            try
             {
-                _logger.LogInformation("PostProduct API success. Id = {id} ", product.Id);
-
-                return CreatedAtAction(nameof(GetById), new { id = product.Id }, new ProductViewModel
+                var result = await _context.SaveChangesAsync();
+                if (result > 0)
                 {
-                    Id = product.Id,
-                    Name = product.Name,
-                    Code = product.Code,
-                    CategoryId = product.CategoryId,
-                    IsActive = product.IsActive,
-                    SellingPrice = request.SellingPrice,
-                    OriginalPrice = request.OriginalPrice,
-                    Quantity = request.InitialStock
-                });
-            }
-            else
-            {
-                _logger.LogInformation("PostProduct API failed to save changes");
+                    _logger.LogInformation("PostProduct API success. Id = {id} ", product.Id);
 
-                return BadRequest();
+                    return CreatedAtAction(nameof(GetById), new { id = product.Id }, new ProductViewModel
+                    {
+                        Id = product.Id,
+                        Name = product.Name,
+                        Code = product.Code,
+                        CategoryId = product.CategoryId,
+                        IsActive = product.IsActive,
+                        SellingPrice = request.SellingPrice,
+                        OriginalPrice = request.OriginalPrice,
+                        Quantity = request.InitialStock
+                    });
+                }
+                else
+                {
+                    _logger.LogInformation("PostProduct API failed to save changes");
+                    return BadRequest(new { Message = "No records were written to the database." });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "DbUpdateException inside PostProduct API");
+                return StatusCode(500, new 
+                {
+                    StatusCode = 500,
+                    Message = "An error occurred while saving the entity changes. See details.",
+                    ErrorType = ex.GetType().Name,
+                    ErrorMessage = ex.Message,
+                    InnerExceptionMessage = ex.InnerException?.Message,
+                    StackTrace = ex.StackTrace
+                });
             }
         }
 
         #endregion
 
         #region Update
+
+        /// <summary>
+        /// Updates an existing product and its default variant.
+        /// </summary>
+        /// <param name="id">Product ID</param>
+        /// <param name="request">Product update request model</param>
+        /// <returns>Result of the update process</returns>
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutProduct(int id, [FromForm] ProductUpdateRequest request)
+        {
+            _logger.LogInformation("Begin PutProduct API. Id = {id}", id);
+
+            var product = await _context.Products.FindAsync(id);
+            if (product == null)
+            {
+                _logger.LogWarning("PutProduct product not found. Id = {id}", id);
+                return NotFound("Product not found.");
+            }
+
+            // Update basic info
+            product.Name = request.Name;
+            product.Description = request.Description;
+            product.CategoryId = request.CategoryId;
+            product.Code = request.Code;
+            product.IsActive = request.IsActive;
+            product.LastModifiedDate = DateTime.UtcNow;
+
+            // Find the default variant
+            var variant = await _context.ProductVariants
+                .FirstOrDefaultAsync(x => x.ProductId == id && x.IsActive);
+
+            if (variant != null)
+            {
+                variant.Name = request.Name;
+                variant.SellingPrice = request.SellingPrice;
+                variant.OriginalPrice = request.OriginalPrice;
+                variant.StockQuantity = request.InitialStock;
+                variant.SKU = request.SKU;
+                variant.LastModifiedDate = DateTime.UtcNow;
+            }
+            else
+            {
+                // Create a variant if somehow it does not exist
+                variant = new ProductVariant
+                {
+                    ProductId = id,
+                    Name = product.Name,
+                    SKU = request.SKU,
+                    SellingPrice = request.SellingPrice,
+                    OriginalPrice = request.OriginalPrice,
+                    StockQuantity = request.InitialStock,
+                    IsActive = true,
+                    Status = ProductVariantStatus.Active,
+                    CreateDate = DateTime.UtcNow
+                };
+                _context.ProductVariants.Add(variant);
+            }
+
+            try
+            {
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("PutProduct API success. Id = {id}", id);
+                return Ok(product);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating product in PutProduct");
+                return StatusCode(500, new 
+                {
+                    StatusCode = 500,
+                    Message = "An error occurred while saving the entity changes. See details.",
+                    ErrorMessage = ex.Message,
+                    InnerExceptionMessage = ex.InnerException?.Message
+                });
+            }
+        }
 
         /// <summary>
         /// Change status to show or hidden product
@@ -701,19 +792,9 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             imgOfChoose.IsDefault = true;
 
-            var result = await _context.SaveChangesAsync();
-            if (result > 0)
-            {
-                _logger.LogInformation("UpdateThumbInProduct API success. Id = {id}", id);
-
-                return Ok(product);
-            }
-            else
-            {
-                _logger.LogWarning("UpdateThumbInProduct API failed. Id = {id}", id);
-
-                return BadRequest();
-            }
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("UpdateThumbInProduct API success. Id = {id}", id);
+            return Ok(product);
         }
 
         /// <summary>
