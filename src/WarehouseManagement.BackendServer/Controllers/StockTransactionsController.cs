@@ -584,5 +584,150 @@ namespace WarehouseManagement.BackendServer.Controllers
                 LastModifiedDate = x.LastModifiedDate
             };
         }
+
+        /// <summary>
+        /// Nhập kho hàng loạt (Bulk Import stock)
+        /// </summary>
+        [HttpPost("bulk-import-stock")]
+        public async Task<IActionResult> BulkImportStock([FromBody] List<StockTransactionCreateRequest> requests)
+        {
+            _logger.LogInformation("Begin BulkImportStock API with {count} items", requests.Count);
+
+            if (requests == null || !requests.Any())
+                return BadRequest("Danh sách nhập kho không được để trống.");
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var now = DateTime.UtcNow;
+                var results = new List<StockTransaction>();
+
+                foreach (var request in requests)
+                {
+                    if (request.QuantityChange <= 0)
+                        return BadRequest($"Sản phẩm (ID: {request.ProductId}) có QuantityChange phải lớn hơn 0.");
+
+                    var productVariant = await _context.ProductVariants.FindAsync(request.ProductVariantId);
+                    if (productVariant == null)
+                        return BadRequest($"Không tìm thấy biến thể sản phẩm ID: {request.ProductVariantId}");
+
+                    var lastBalance = await _context.StockTransactions
+                        .Where(x => x.ProductId == request.ProductId && x.WarehouseId == request.WarehouseId)
+                        .OrderByDescending(x => x.Id)
+                        .Select(x => x.BalanceAfter)
+                        .FirstOrDefaultAsync();
+
+                    var newBalance = lastBalance + request.QuantityChange;
+
+                    var stockTransaction = new StockTransaction
+                    {
+                        ProductId = request.ProductId,
+                        ProductVariantId = request.ProductVariantId,
+                        WarehouseId = request.WarehouseId,
+                        QuantityChange = request.QuantityChange,
+                        TransactionType = (StockTransactionType)request.TransactionType,
+                        ReferenceType = (ReferenceType)request.ReferenceType,
+                        ReferenceId = request.ReferenceId,
+                        Note = request.Note,
+                        CreateDate = now,
+                        LastModifiedDate = now,
+                        BalanceAfter = newBalance
+                    };
+
+                    productVariant.StockQuantity += request.QuantityChange;
+
+                    _context.StockTransactions.Add(stockTransaction);
+                    _context.ProductVariants.Update(productVariant);
+
+                    results.Add(stockTransaction);
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                _logger.LogInformation("BulkImportStock success with {count} items", requests.Count);
+                return Ok(results.Select(x => CreateStockTransactionViewModel(x)));
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "BulkImportStock failed");
+                return StatusCode(500, "Lỗi hệ thống khi nhập kho hàng loạt.");
+            }
+        }
+
+        /// <summary>
+        /// Xuất kho hàng loạt (Bulk Export stock)
+        /// </summary>
+        [HttpPost("bulk-export-stock")]
+        public async Task<IActionResult> BulkExportStock([FromBody] List<StockTransactionCreateRequest> requests)
+        {
+            _logger.LogInformation("Begin BulkExportStock API with {count} items", requests.Count);
+
+            if (requests == null || !requests.Any())
+                return BadRequest("Danh sách xuất kho không được để trống.");
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var now = DateTime.UtcNow;
+                var results = new List<StockTransaction>();
+
+                foreach (var request in requests)
+                {
+                    if (request.QuantityChange >= 0)
+                        return BadRequest($"Sản phẩm (ID: {request.ProductId}) có QuantityChange phải nhỏ hơn 0 (ví dụ: -5).");
+
+                    var productVariant = await _context.ProductVariants.FindAsync(request.ProductVariantId);
+                    if (productVariant == null)
+                        return BadRequest($"Không tìm thấy biến thể sản phẩm ID: {request.ProductVariantId}");
+
+                    if (productVariant.StockQuantity + request.QuantityChange < 0)
+                        return BadRequest($"Sản phẩm (ID: {request.ProductId}) không đủ tồn kho để xuất. Hiện có: {productVariant.StockQuantity}");
+
+                    var lastBalance = await _context.StockTransactions
+                        .Where(x => x.ProductId == request.ProductId && x.WarehouseId == request.WarehouseId)
+                        .OrderByDescending(x => x.Id)
+                        .Select(x => x.BalanceAfter)
+                        .FirstOrDefaultAsync();
+
+                    var newBalance = lastBalance + request.QuantityChange;
+
+                    var stockTransaction = new StockTransaction
+                    {
+                        ProductId = request.ProductId,
+                        ProductVariantId = request.ProductVariantId,
+                        WarehouseId = request.WarehouseId,
+                        QuantityChange = request.QuantityChange,
+                        TransactionType = (StockTransactionType)request.TransactionType,
+                        ReferenceType = (ReferenceType)request.ReferenceType,
+                        ReferenceId = request.ReferenceId,
+                        Note = request.Note,
+                        CreateDate = now,
+                        LastModifiedDate = now,
+                        BalanceAfter = newBalance
+                    };
+
+                    productVariant.StockQuantity += request.QuantityChange; // Cộng số âm
+
+                    _context.StockTransactions.Add(stockTransaction);
+                    _context.ProductVariants.Update(productVariant);
+
+                    results.Add(stockTransaction);
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                _logger.LogInformation("BulkExportStock success with {count} items", requests.Count);
+                return Ok(results.Select(x => CreateStockTransactionViewModel(x)));
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "BulkExportStock failed");
+                return StatusCode(500, "Lỗi hệ thống khi xuất kho hàng loạt.");
+            }
+        }
     }
 }
