@@ -255,5 +255,47 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             return BadRequest("Failed to deleted the user");
         }
+
+        /// <summary>
+        /// Assign roles to a user
+        /// </summary>
+        /// <param name="id">User id</param>
+        /// <param name="request">Role assignment request containing role names</param>
+        /// <returns>Result of role assignment</returns>
+        [HttpPut("{id}/roles")]
+        public async Task<IActionResult> AssignRoles(string id, [FromBody] RoleAssignRequest request)
+        {
+            _logger.LogInformation("Assigning roles for user with id: {UserId}", id);
+
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                _logger.LogWarning("User with id {UserId} not found", id);
+                return NotFound("Can't found the user.");
+            }
+
+            var currentRoles = await _userManager.GetRolesAsync(user);
+
+            var removeResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
+            if (!removeResult.Succeeded)
+            {
+                _logger.LogError("Failed to remove existing roles for user {UserId}. Errors: {Errors}", id, string.Join(", ", removeResult.Errors.Select(e => e.Description)));
+                return BadRequest("Failed to remove existing roles.");
+            }
+
+            if (request.RoleNames != null && request.RoleNames.Any())
+            {
+                var addResult = await _userManager.AddToRolesAsync(user, request.RoleNames);
+                if (!addResult.Succeeded)
+                {
+                    _logger.LogError("Failed to add new roles for user {UserId}. Errors: {Errors}", id, string.Join(", ", addResult.Errors.Select(e => e.Description)));
+                    return BadRequest("Failed to assign new roles.");
+                }
+            }
+
+            _logger.LogInformation("Successfully assigned roles to user with id {UserId}", id);
+
+            return Ok("Roles assigned successfully.");
+        }
     }
 }
