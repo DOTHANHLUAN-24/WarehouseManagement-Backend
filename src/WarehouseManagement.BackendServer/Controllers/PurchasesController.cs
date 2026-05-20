@@ -413,7 +413,7 @@ namespace WarehouseManagement.BackendServer.Controllers
             }
 
             var result = await _context.SaveChangesAsync();
-            if(result > 0)
+            if (result > 0)
             {
                 _logger.LogInformation("Success ConfirmPurchase API");
 
