@@ -7,6 +7,7 @@
         Order = 2,
         Transfer = 3,
         Inventory = 4,
-        Return = 5
+        Return = 5,
+        Other = 99
     }
 }

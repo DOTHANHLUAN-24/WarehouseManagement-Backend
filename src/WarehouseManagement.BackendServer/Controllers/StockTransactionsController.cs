@@ -4,6 +4,7 @@ using WarehouseManagement.BackendServer.Data;
 using WarehouseManagement.BackendServer.Data.Entities;
 using WarehouseManagement.BackendServer.Data.Enums;
 using WarehouseManagement.ViewModels.Contents.StockTransactions;
+using WarehouseManagement.ViewModels.Enums;
 using WarehouseManagement.ViewModels.Systems;
 
 namespace WarehouseManagement.BackendServer.Controllers
@@ -19,7 +20,6 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// <summary>
         /// Get all stock transactions in the system
         /// </summary>
-        /// <returns>List stock transactions</returns>
         [HttpGet]
         public async Task<IActionResult> GetAllStockTransactions()
         {
@@ -37,8 +37,6 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// <summary>
         /// Get stock transaction by id
         /// </summary>
-        /// <param name="id">Stock transaction id</param>
-        /// <returns>The stock transaction or not found</returns>
         [HttpGet("{id}")]
         public async Task<IActionResult> GetStockTransactionById(int id)
         {
@@ -51,7 +49,6 @@ namespace WarehouseManagement.BackendServer.Controllers
             if (stockTransaction == null)
             {
                 _logger.LogError("Not found the stock transaction by id = {id}", id);
-
                 return NotFound();
             }
 
@@ -63,10 +60,8 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// <summary>
         /// Create stock transactions with create model
         /// </summary>
-        /// <param name="request">Stock transaction model</param>
-        /// <returns>Result of create process</returns>
         [HttpPost]
-        public async Task<IActionResult> PostStockTransaction(StockTransactionCreateRequest request)
+        public async Task<IActionResult> PostStockTransaction([FromBody] StockTransactionCreateRequest request)
         {
             _logger.LogInformation("Begin PostStockTransaction API");
 
@@ -76,12 +71,13 @@ namespace WarehouseManagement.BackendServer.Controllers
                 ProductVariantId = request.ProductVariantId,
                 WarehouseId = request.WarehouseId,
                 QuantityChange = request.QuantityChange,
-                TransactionType = (StockTransactionType)request.TransactionType,
-                ReferenceType = (ReferenceType)request.ReferenceType,
+                TransactionType = (Data.Enums.StockTransactionType)request.TransactionType,
+                ReferenceType = (Data.Enums.ReferenceType)request.ReferenceType,
                 ReferenceId = request.ReferenceId,
                 Note = request.Note,
                 CreateDate = DateTime.UtcNow,
-                LastModifiedDate = DateTime.UtcNow
+                LastModifiedDate = DateTime.UtcNow,
+                IsCanceled = false
             };
 
             var lastBalance = await _context.StockTransactions
@@ -102,12 +98,10 @@ namespace WarehouseManagement.BackendServer.Controllers
             if (result > 0)
             {
                 _logger.LogInformation("PostStockTransaction success with id = {id}", stockTransaction.Id);
-
                 return CreatedAtAction(nameof(GetStockTransactionById), new { id = stockTransaction.Id }, stockTransaction);
             }
 
             _logger.LogWarning("PostStockTransaction failed to save changes");
-
             return BadRequest();
         }
 
@@ -128,12 +122,13 @@ namespace WarehouseManagement.BackendServer.Controllers
                 ProductVariantId = request.ProductVariantId,
                 WarehouseId = request.WarehouseId,
                 QuantityChange = request.QuantityChange,
-                TransactionType = (StockTransactionType)request.TransactionType,
-                ReferenceType = (ReferenceType)request.ReferenceType,
+                TransactionType = (Data.Enums.StockTransactionType)request.TransactionType,
+                ReferenceType = (Data.Enums.ReferenceType)request.ReferenceType,
                 ReferenceId = request.ReferenceId,
                 Note = request.Note,
                 CreateDate = DateTime.UtcNow,
-                LastModifiedDate = DateTime.UtcNow
+                LastModifiedDate = DateTime.UtcNow,
+                IsCanceled = false
             };
 
             var lastBalance = await _context.StockTransactions
@@ -191,13 +186,14 @@ namespace WarehouseManagement.BackendServer.Controllers
                 ProductVariantId = request.ProductVariantId,
                 WarehouseId = request.WarehouseId,
                 QuantityChange = request.QuantityChange,
-                TransactionType = (StockTransactionType)request.TransactionType,
-                ReferenceType = (ReferenceType)request.ReferenceType,
+                TransactionType = (Data.Enums.StockTransactionType)request.TransactionType,
+                ReferenceType = (Data.Enums.ReferenceType)request.ReferenceType,
                 ReferenceId = request.ReferenceId,
                 Note = request.Note,
                 CreateDate = DateTime.UtcNow,
                 LastModifiedDate = DateTime.UtcNow,
-                BalanceAfter = lastBalance + request.QuantityChange
+                BalanceAfter = lastBalance + request.QuantityChange,
+                IsCanceled = false
             };
 
             _context.StockTransactions.Add(stockTransaction);
@@ -222,37 +218,93 @@ namespace WarehouseManagement.BackendServer.Controllers
         }
 
         /// <summary>
+        /// Hủy giao dịch kho (Hoàn tác số lượng) bằng LINQ Join
+        /// </summary>
+        [HttpPut("{id}/cancel")]
+        public async Task<IActionResult> CancelStockTransaction(int id, [FromBody] StockTransactionCancelRequest request)
+        {
+            _logger.LogInformation("Begin CancelStockTransaction API with id = {id}", id);
+
+            // Dùng LINQ Join để lấy StockTransaction và ProductVariant cùng lúc trong 1 Query
+            var query = from st in _context.StockTransactions
+                        join pv in _context.ProductVariants on st.ProductVariantId equals pv.Id
+                        where st.Id == id
+                        select new { StockTransaction = st, ProductVariant = pv };
+
+            var data = await query.FirstOrDefaultAsync();
+
+            if (data == null)
+                return NotFound($"Không tìm thấy giao dịch kho có ID = {id} hoặc biến thể sản phẩm không tồn tại.");
+
+            var transactionToCancel = data.StockTransaction;
+            var productVariant = data.ProductVariant;
+
+            if (transactionToCancel.IsCanceled)
+                return BadRequest("Giao dịch này đã được hủy trước đó.");
+
+            using var dbTransaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // 1. Cập nhật trạng thái hủy cho StockTransaction
+                transactionToCancel.IsCanceled = true;
+                transactionToCancel.CancelReason = request.CancelReason;
+                transactionToCancel.CanceledDate = DateTime.UtcNow;
+                transactionToCancel.CanceledBy = request.CanceledBy;
+                transactionToCancel.LastModifiedDate = DateTime.UtcNow;
+
+                _context.StockTransactions.Update(transactionToCancel);
+
+                // 2. Hoàn tác số lượng tồn kho thực tế trong ProductVariant
+                // (Nếu nhập: trừ đi; Nếu xuất: trừ đi số âm thành cộng)
+                productVariant.StockQuantity -= transactionToCancel.QuantityChange;
+                _context.ProductVariants.Update(productVariant);
+
+                var result = await _context.SaveChangesAsync();
+                await dbTransaction.CommitAsync();
+
+                if (result > 0)
+                {
+                    _logger.LogInformation("CancelStockTransaction success for id = {id}", id);
+                    return Ok(CreateStockTransactionViewModel(transactionToCancel));
+                }
+
+                return BadRequest("Lỗi khi lưu dữ liệu hủy giao dịch.");
+            }
+            catch (Exception ex)
+            {
+                await dbTransaction.RollbackAsync();
+                _logger.LogError(ex, "CancelStockTransaction failed for id = {id}", id);
+                return StatusCode(500, "Lỗi hệ thống khi hủy giao dịch kho.");
+            }
+        }
+
+        /// <summary>
         /// Get stock transaction by filter and paging
         /// </summary>
-        /// <param name="productName">Product name</param>
-        /// <param name="warehouseEmail">Warehouse email</param>
-        /// <param name="pageIndex">Page index</param>
-        /// <param name="pageSize">Page Size</param>
-        /// <returns>List stock transactions by filter</returns>
         [HttpGet("filter")]
         public async Task<IActionResult> GetStockTransactions
         (
             [FromQuery] string? productName,
             [FromQuery] string? warehouseEmail,
+            [FromQuery] bool? isCanceled, // THÊM PARAM LỌC THEO TRẠNG THÁI HỦY
             int pageIndex = 1,
             int pageSize = 10
         )
         {
-            _logger.LogInformation("Begin GetStockTransactions API with " +
-                "product name = {productName}, warehouseEmail = {warehouseEmail}, pageIndex = {pageIndex}, pageSize = {pageSize}",
-                productName, warehouseEmail, pageIndex, pageSize);
+            _logger.LogInformation("Begin GetStockTransactions API");
 
             pageIndex = pageIndex <= 0 ? 1 : pageIndex;
-
             pageSize = pageSize <= 0 ? 10 : pageSize;
 
             var query = _context.StockTransactions.AsQueryable();
 
-            // Filter by product name
+            if (isCanceled.HasValue)
+            {
+                query = query.Where(st => st.IsCanceled == isCanceled.Value);
+            }
+
             if (!string.IsNullOrEmpty(productName))
             {
-                _logger.LogInformation("Begin get stock transactions by the product name = {productName}", productName);
-
                 var productIds = await _context.Products
                     .Where(p => p.Name.Contains(productName))
                     .Select(p => p.Id)
@@ -261,11 +313,8 @@ namespace WarehouseManagement.BackendServer.Controllers
                 query = query.Where(st => productIds.Contains(st.ProductId));
             }
 
-            // Filter by warehouse name
             if (!string.IsNullOrEmpty(warehouseEmail))
             {
-                _logger.LogInformation("Begin get stock transactions by the warehouse email = {warehouseEmail}", warehouseEmail);
-
                 var warehouseIds = await _context.Warehouses
                     .Where(w => w.Email.Contains(warehouseEmail))
                     .Select(w => w.Id)
@@ -289,48 +338,27 @@ namespace WarehouseManagement.BackendServer.Controllers
                 TotalRecords = totalRecords
             };
 
-            _logger.LogInformation("GetStockTransactions success. Total records = {TotalRecords}, items = {items}", totalRecords, items);
-
             return Ok(result);
         }
 
-        /// <summary>
-        /// Get stock transactions by warehouse id
-        /// </summary>
-        /// <param name="warehouseId">Warehouse id</param>
-        /// <returns>The stock transaction or not found</returns>
         [HttpGet("warehouse/{warehouseId}")]
         public async Task<IActionResult> GetStockTransactionsByWarehouseId(int warehouseId)
         {
-            _logger.LogInformation("Begin GetStockTransactionsByWarehouseId API");
-
             var stockTransactions = await _context.StockTransactions
                 .Where(x => x.WarehouseId == warehouseId)
                 .Select(x => CreateStockTransactionViewModel(x))
                 .ToListAsync();
 
-            _logger.LogInformation("GetStockTransactionsByWarehouseId success");
-
             return Ok(stockTransactions);
         }
 
-        /// <summary>
-        /// Get stock transaction by reference id and reference type
-        /// </summary>
-        /// <param name="referenceType">Reference type</param>
-        /// <param name="referenceId">Reference id</param>
-        /// <returns>The stock transactions by reference</returns>
         [HttpGet("reference/{referenceType}/{referenceId}")]
-        public async Task<IActionResult> GetStockTransactionsByReference(ReferenceType referenceType, int referenceId)
+        public async Task<IActionResult> GetStockTransactionsByReference(Data.Enums.ReferenceType referenceType, int referenceId)
         {
-            _logger.LogInformation("Begin GetStockTransactionsByReference API");
-
             var stockTransactions = await _context.StockTransactions
                 .Where(x => x.ReferenceType == referenceType && x.ReferenceId == referenceId)
                 .Select(x => CreateStockTransactionViewModel(x))
                 .ToListAsync();
-
-            _logger.LogInformation("GetStockTransactionsByReference success");
 
             return Ok(stockTransactions);
         }
@@ -338,13 +366,7 @@ namespace WarehouseManagement.BackendServer.Controllers
         [HttpPost("importData")]
         public async Task<IActionResult> ImportData([FromBody] List<StockTransactionCreateRequest>? requests)
         {
-            _logger.LogInformation("Begin ImportData API");
-
-            if (requests == null || requests.Count == 0)
-            {
-                _logger.LogWarning("ImportData called with no requests");
-                return BadRequest("No stock transaction requests provided.");
-            }
+            if (requests == null || requests.Count == 0) return BadRequest("No stock transaction requests provided.");
 
             var now = DateTime.UtcNow;
 
@@ -353,14 +375,15 @@ namespace WarehouseManagement.BackendServer.Controllers
                 ProductId = r.ProductId,
                 WarehouseId = r.WarehouseId,
                 QuantityChange = r.QuantityChange,
-                TransactionType = (StockTransactionType)r.TransactionType,
-                ReferenceType = (ReferenceType)r.ReferenceType,
+                TransactionType = (Data.Enums.StockTransactionType)r.TransactionType,
+                ReferenceType = (Data.Enums.ReferenceType)r.ReferenceType,
                 ProductVariantId = r.ProductVariantId,
                 Note = r.Note,
                 ReferenceId = r.ReferenceId,
                 BalanceAfter = r.BalanceAfter,
                 CreateDate = now,
-                LastModifiedDate = now
+                LastModifiedDate = now,
+                IsCanceled = false
             }).ToList();
 
             try
@@ -369,19 +392,9 @@ namespace WarehouseManagement.BackendServer.Controllers
                 var saved = await _context.SaveChangesAsync();
 
                 if (saved > 0)
-                {
-                    _logger.LogInformation("ImportData success with {count} stock transactions", stockTransactions.Count);
-                    var createdIds = stockTransactions.Select(s => s.Id).ToList();
-                    return Ok(new { Count = stockTransactions.Count, Ids = createdIds });
-                }
+                    return Ok(new { Count = stockTransactions.Count, Ids = stockTransactions.Select(s => s.Id).ToList() });
 
-                _logger.LogWarning("ImportData failed to save changes");
                 return BadRequest("No changes were saved to the database.");
-            }
-            catch (DbUpdateException dbEx)
-            {
-                _logger.LogError(dbEx, "ImportData database update error");
-                return StatusCode(500, "Database update error occurred while importing stock transactions.");
             }
             catch (Exception ex)
             {
@@ -393,30 +406,23 @@ namespace WarehouseManagement.BackendServer.Controllers
         [HttpPost("exportData")]
         public async Task<IActionResult> ExportData([FromBody] List<int>? ids, [FromQuery] bool idsAreProductIds = false)
         {
-            _logger.LogInformation("Begin ExportData API. ids provided = {count}, idsAreProductIds = {idsAreProductIds}", ids?.Count ?? 0, idsAreProductIds);
-
             try
             {
                 var query = _context.StockTransactions.AsQueryable();
 
                 if (ids != null && ids.Count > 0)
                 {
-                    // If idsAreProductIds == false treat ids as StockTransaction.Id; otherwise filter by ProductId
                     query = idsAreProductIds
                         ? query.Where(st => ids.Contains(st.ProductId))
                         : query.Where(st => ids.Contains(st.Id));
                 }
 
-                var transactions = await query
-                    .OrderByDescending(st => st.Id)
-                    .ToListAsync();
-
-                _logger.LogInformation("Queried stock transactions. Count = {count}", transactions.Count);
+                var transactions = await query.OrderByDescending(st => st.Id).ToListAsync();
 
                 System.Text.StringBuilder sb = new();
 
-                // include product info columns
-                sb.AppendLine("Id,ProductId,ProductName,ProductCode,WarehouseId,QuantityChange,TransactionType,ReferenceType,ReferenceId,BalanceAfter,CreateDate,LastModifiedDate");
+                // Đã thêm các cột liên quan đến Hủy vào file xuất CSV
+                sb.AppendLine("Id,ProductId,ProductName,ProductCode,WarehouseId,QuantityChange,TransactionType,ReferenceType,ReferenceId,BalanceAfter,CreateDate,LastModifiedDate,IsCanceled,CancelReason,CanceledDate,CanceledBy");
 
                 static string EscapeCsv(object? value)
                 {
@@ -429,7 +435,6 @@ namespace WarehouseManagement.BackendServer.Controllers
 
                 if (transactions.Count > 0)
                 {
-                    // Load product cache for names/codes to avoid per-row DB calls
                     var productIds = transactions.Select(t => t.ProductId).Distinct().ToList();
                     var products = await _context.Products
                         .Where(p => productIds.Contains(p.Id))
@@ -452,7 +457,11 @@ namespace WarehouseManagement.BackendServer.Controllers
                             EscapeCsv(t.ReferenceId),
                             EscapeCsv(t.BalanceAfter),
                             EscapeCsv(t.CreateDate.ToString("o")),
-                            EscapeCsv(t.LastModifiedDate?.ToString("o"))
+                            EscapeCsv(t.LastModifiedDate?.ToString("o")),
+                            EscapeCsv(t.IsCanceled),
+                            EscapeCsv(t.CancelReason),
+                            EscapeCsv(t.CanceledDate?.ToString("o")),
+                            EscapeCsv(t.CanceledBy)
                         );
 
                         sb.AppendLine(line);
@@ -460,8 +469,6 @@ namespace WarehouseManagement.BackendServer.Controllers
                 }
                 else if (idsAreProductIds && ids != null && ids.Count > 0)
                 {
-                    // No transactions found but caller requested export by product IDs:
-                    // export product rows so client still gets meaningful data.
                     var products = await _context.Products
                         .Where(p => ids.Contains(p.Id))
                         .OrderBy(p => p.Id)
@@ -471,33 +478,21 @@ namespace WarehouseManagement.BackendServer.Controllers
                     foreach (var p in products)
                     {
                         var line = string.Join(",",
-                            EscapeCsv(string.Empty), // Id (no transaction)
-                            EscapeCsv(p.Id),
-                            EscapeCsv(p.Name),
-                            EscapeCsv(p.Code),
-                            EscapeCsv(string.Empty), // WarehouseId
-                            EscapeCsv(0),            // QuantityChange
-                            EscapeCsv(string.Empty), // TransactionType
-                            EscapeCsv(string.Empty), // ReferenceType
-                            EscapeCsv(string.Empty), // ReferenceId
-                            EscapeCsv(0),            // BalanceAfter
-                            EscapeCsv(string.Empty), // CreateDate
-                            EscapeCsv(string.Empty)  // LastModifiedDate
+                            EscapeCsv(string.Empty), EscapeCsv(p.Id), EscapeCsv(p.Name), EscapeCsv(p.Code),
+                            EscapeCsv(string.Empty), EscapeCsv(0), EscapeCsv(string.Empty), EscapeCsv(string.Empty),
+                            EscapeCsv(string.Empty), EscapeCsv(0), EscapeCsv(string.Empty), EscapeCsv(string.Empty),
+                            EscapeCsv(false), EscapeCsv(string.Empty), EscapeCsv(string.Empty), EscapeCsv(string.Empty)
                         );
-
                         sb.AppendLine(line);
                     }
                 }
 
                 var fileName = $"stock_transactions_{DateTime.UtcNow:yyyyMMddHHmmss}.csv";
-
                 var bom = System.Text.Encoding.UTF8.GetPreamble();
                 var contentBytes = System.Text.Encoding.UTF8.GetBytes(sb.ToString());
                 var bytes = new byte[bom.Length + contentBytes.Length];
                 Buffer.BlockCopy(bom, 0, bytes, 0, bom.Length);
                 Buffer.BlockCopy(contentBytes, 0, bytes, bom.Length, contentBytes.Length);
-
-                _logger.LogInformation("ExportData success. Exported {count} records.", transactions.Count);
 
                 return File(bytes, "text/csv; charset=utf-8", fileName);
             }
@@ -511,14 +506,10 @@ namespace WarehouseManagement.BackendServer.Controllers
         [HttpGet("by-product/{productId}")]
         public async Task<IActionResult> GetStockTransactionsByProductId(int productId)
         {
-            _logger.LogInformation("Begin GetStockTransactionsByProductId API");
-
             var stockTransactions = await _context.StockTransactions
                 .Where(x => x.ProductId == productId)
                 .Select(x => CreateStockTransactionViewModel(x))
                 .ToListAsync();
-
-            _logger.LogInformation("GetStockTransactionsByProductId success");
 
             return Ok(stockTransactions);
         }
@@ -530,21 +521,9 @@ namespace WarehouseManagement.BackendServer.Controllers
                 .Where(st => st.Id == id)
                 .Select(st => new
                 {
-                    Product = _context.Products
-            .Where(p => p.Id == st.ProductId)
-            .Select(p => new { p.Id, p.Name, p.Code, p.Description })
-            .FirstOrDefault(),
-
-                    ProductVariant = _context.ProductVariants
-            .Where(pv => pv.Id == st.ProductVariantId)
-            .Select(pv => new { pv.Id, pv.Name, pv.SKU, pv.SellingPrice, pv.StockQuantity })
-            .FirstOrDefault(),
-
-                    Warehouse = _context.Warehouses
-            .Where(w => w.Id == st.WarehouseId)
-            .Select(w => new { w.Id, w.Email })
-            .FirstOrDefault(),
-
+                    Product = _context.Products.Where(p => p.Id == st.ProductId).Select(p => new { p.Id, p.Name, p.Code, p.Description }).FirstOrDefault(),
+                    ProductVariant = _context.ProductVariants.Where(pv => pv.Id == st.ProductVariantId).Select(pv => new { pv.Id, pv.Name, pv.SKU, pv.SellingPrice, pv.StockQuantity }).FirstOrDefault(),
+                    Warehouse = _context.Warehouses.Where(w => w.Id == st.WarehouseId).Select(w => new { w.Id, w.Email }).FirstOrDefault(),
                     StockTransaction = new
                     {
                         st.Id,
@@ -554,19 +533,18 @@ namespace WarehouseManagement.BackendServer.Controllers
                         st.ReferenceId,
                         st.BalanceAfter,
                         st.CreateDate,
-                        st.LastModifiedDate
+                        st.LastModifiedDate,
+                        st.IsCanceled,       // THÊM: hiển thị trường hủy
+                        st.CancelReason,
+                        st.CanceledDate,
+                        st.CanceledBy
                     }
                 })
-            .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync();
 
             return Ok(data);
         }
 
-        /// <summary>
-        /// Create stock transaction view model
-        /// </summary>
-        /// <param name="x">Stock transaction request</param>
-        /// <returns>Stock transaction view model</returns>
         private static StockTransactionViewModel CreateStockTransactionViewModel(StockTransaction x)
         {
             return new StockTransactionViewModel
@@ -581,20 +559,19 @@ namespace WarehouseManagement.BackendServer.Controllers
                 ReferenceId = x.ReferenceId,
                 BalanceAfter = x.BalanceAfter,
                 CreateDate = x.CreateDate,
-                LastModifiedDate = x.LastModifiedDate
+                LastModifiedDate = x.LastModifiedDate,
+                // THÊM 4 TRƯỜNG DƯỚI ĐÂY (nhớ thêm properties vào class StockTransactionViewModel nhé)
+                IsCanceled = x.IsCanceled,
+                CancelReason = x.CancelReason,
+                CanceledDate = x.CanceledDate,
+                CanceledBy = x.CanceledBy
             };
         }
 
-        /// <summary>
-        /// Nhập kho hàng loạt (Bulk Import stock)
-        /// </summary>
         [HttpPost("bulk-import-stock")]
         public async Task<IActionResult> BulkImportStock([FromBody] List<StockTransactionCreateRequest> requests)
         {
-            _logger.LogInformation("Begin BulkImportStock API with {count} items", requests.Count);
-
-            if (requests == null || !requests.Any())
-                return BadRequest("Danh sách nhập kho không được để trống.");
+            if (requests == null || !requests.Any()) return BadRequest("Danh sách nhập kho không được để trống.");
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -625,13 +602,14 @@ namespace WarehouseManagement.BackendServer.Controllers
                         ProductVariantId = request.ProductVariantId,
                         WarehouseId = request.WarehouseId,
                         QuantityChange = request.QuantityChange,
-                        TransactionType = (StockTransactionType)request.TransactionType,
-                        ReferenceType = (ReferenceType)request.ReferenceType,
+                        TransactionType = (Data.Enums.StockTransactionType)request.TransactionType,
+                        ReferenceType = (Data.Enums.ReferenceType)request.ReferenceType,
                         ReferenceId = request.ReferenceId,
                         Note = request.Note,
                         CreateDate = now,
                         LastModifiedDate = now,
-                        BalanceAfter = newBalance
+                        BalanceAfter = newBalance,
+                        IsCanceled = false
                     };
 
                     productVariant.StockQuantity += request.QuantityChange;
@@ -645,7 +623,6 @@ namespace WarehouseManagement.BackendServer.Controllers
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                _logger.LogInformation("BulkImportStock success with {count} items", requests.Count);
                 return Ok(results.Select(x => CreateStockTransactionViewModel(x)));
             }
             catch (Exception ex)
@@ -656,16 +633,10 @@ namespace WarehouseManagement.BackendServer.Controllers
             }
         }
 
-        /// <summary>
-        /// Xuất kho hàng loạt (Bulk Export stock)
-        /// </summary>
         [HttpPost("bulk-export-stock")]
         public async Task<IActionResult> BulkExportStock([FromBody] List<StockTransactionCreateRequest> requests)
         {
-            _logger.LogInformation("Begin BulkExportStock API with {count} items", requests.Count);
-
-            if (requests == null || !requests.Any())
-                return BadRequest("Danh sách xuất kho không được để trống.");
+            if (requests == null || !requests.Any()) return BadRequest("Danh sách xuất kho không được để trống.");
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -676,7 +647,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                 foreach (var request in requests)
                 {
                     if (request.QuantityChange >= 0)
-                        return BadRequest($"Sản phẩm (ID: {request.ProductId}) có QuantityChange phải nhỏ hơn 0 (ví dụ: -5).");
+                        return BadRequest($"Sản phẩm (ID: {request.ProductId}) có QuantityChange phải nhỏ hơn 0.");
 
                     var productVariant = await _context.ProductVariants.FindAsync(request.ProductVariantId);
                     if (productVariant == null)
@@ -699,16 +670,17 @@ namespace WarehouseManagement.BackendServer.Controllers
                         ProductVariantId = request.ProductVariantId,
                         WarehouseId = request.WarehouseId,
                         QuantityChange = request.QuantityChange,
-                        TransactionType = (StockTransactionType)request.TransactionType,
-                        ReferenceType = (ReferenceType)request.ReferenceType,
+                        TransactionType = (Data.Enums.StockTransactionType)request.TransactionType,
+                        ReferenceType = (Data.Enums.ReferenceType)request.ReferenceType,
                         ReferenceId = request.ReferenceId,
                         Note = request.Note,
                         CreateDate = now,
                         LastModifiedDate = now,
-                        BalanceAfter = newBalance
+                        BalanceAfter = newBalance,
+                        IsCanceled = false
                     };
 
-                    productVariant.StockQuantity += request.QuantityChange; // Cộng số âm
+                    productVariant.StockQuantity += request.QuantityChange;
 
                     _context.StockTransactions.Add(stockTransaction);
                     _context.ProductVariants.Update(productVariant);
@@ -719,7 +691,6 @@ namespace WarehouseManagement.BackendServer.Controllers
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                _logger.LogInformation("BulkExportStock success with {count} items", requests.Count);
                 return Ok(results.Select(x => CreateStockTransactionViewModel(x)));
             }
             catch (Exception ex)
@@ -727,6 +698,128 @@ namespace WarehouseManagement.BackendServer.Controllers
                 await transaction.RollbackAsync();
                 _logger.LogError(ex, "BulkExportStock failed");
                 return StatusCode(500, "Lỗi hệ thống khi xuất kho hàng loạt.");
+            }
+        }
+
+        /// <summary>
+        /// Xử lý một Phiếu Nhập / Xuất kho bằng cách phân loại dựa trên StockTransactionType
+        /// </summary>
+        [HttpPost("process-document")]
+        public async Task<IActionResult> ProcessStockDocument([FromBody] StockDocumentRequest request)
+        {
+            _logger.LogInformation("Begin ProcessStockDocument API - TransactionType: {Type}", request.TransactionType);
+
+            if (request.Items == null || !request.Items.Any())
+                return BadRequest("Danh sách sản phẩm (items) không được để trống.");
+
+            bool isImport = true;
+            switch (request.TransactionType)
+            {
+                case ViewModels.Enums.StockTransactionType.PurchaseReceipt:
+                case ViewModels.Enums.StockTransactionType.CustomerReturn:
+                case ViewModels.Enums.StockTransactionType.TransferIn:
+                case ViewModels.Enums.StockTransactionType.AdjustmentIncrease:
+                    isImport = true; // Nhập kho -> Cộng
+                    break;
+
+                case ViewModels.Enums.StockTransactionType.SalesIssue:
+                case ViewModels.Enums.StockTransactionType.SupplierReturn:
+                case ViewModels.Enums.StockTransactionType.TransferOut:
+                case ViewModels.Enums.StockTransactionType.AdjustmentDecrease:
+                case ViewModels.Enums.StockTransactionType.Damaged:
+                    isImport = false; // Xuất kho -> Trừ
+                    break;
+
+                default:
+                    return BadRequest("Loại giao dịch (TransactionType) không hợp lệ để thực hiện phiếu này.");
+            }
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var now = DateTime.UtcNow;
+
+                foreach (var item in request.Items)
+                {
+                    if (item.Quantity <= 0)
+                        return BadRequest($"Sản phẩm (ID: {item.ProductId}) phải có số lượng lớn hơn 0.");
+
+                    var productVariant = await _context.ProductVariants.FindAsync(item.ProductVariantId);
+                    if (productVariant == null)
+                        return BadRequest($"Không tìm thấy biến thể sản phẩm ID: {item.ProductVariantId}");
+
+                    int actualQuantityChange = isImport ? item.Quantity : -item.Quantity;
+
+                    if (!isImport && productVariant.StockQuantity + actualQuantityChange < 0)
+                        return BadRequest($"Sản phẩm (ID: {item.ProductId}) không đủ tồn kho để xuất. Hiện có: {productVariant.StockQuantity}");
+
+                    var lastBalance = await _context.StockTransactions
+                        .Where(x => x.ProductId == item.ProductId && x.WarehouseId == request.WarehouseId)
+                        .OrderByDescending(x => x.Id)
+                        .Select(x => x.BalanceAfter)
+                        .FirstOrDefaultAsync();
+
+                    var newBalance = lastBalance + actualQuantityChange;
+
+                    var stockTransaction = new StockTransaction
+                    {
+                        ProductId = item.ProductId,
+                        ProductVariantId = item.ProductVariantId,
+                        WarehouseId = request.WarehouseId,
+                        QuantityChange = actualQuantityChange,
+
+                        TransactionType = (WarehouseManagement.BackendServer.Data.Enums.StockTransactionType)(int)request.TransactionType,
+
+                        ReferenceType = Data.Enums.ReferenceType.Other,
+                        ReferenceId = 0,
+                        Note = $"{request.ReferenceCode} - {request.Note}",
+                        CreateDate = now,
+                        LastModifiedDate = now,
+                        BalanceAfter = newBalance,
+                        IsCanceled = false
+                    };
+
+                    productVariant.StockQuantity += actualQuantityChange;
+
+                    _context.StockTransactions.Add(stockTransaction);
+                    _context.ProductVariants.Update(productVariant);
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                var response = new
+                {
+                    supplierId = request.SupplierId,
+                    supplierName = request.SupplierName,
+                    receiptDate = request.ReceiptDate,
+                    referenceCode = request.ReferenceCode,
+                    note = request.Note,
+                    totalAmount = request.TotalAmount,
+                    createDate = now,
+                    lastModifiedDate = now,
+                    isCanceled = false,
+                    cancelReason = (string?)null,
+                    canceledDate = (DateTime?)null,
+                    canceledBy = (string?)null,
+                    items = request.Items.Select(i => new
+                    {
+                        productId = i.ProductId,
+                        productVariantId = i.ProductVariantId,
+                        quantity = i.Quantity, // Trả lại số nguyên dương như lúc gọi API
+                        unitPrice = i.UnitPrice,
+                        totalPrice = i.TotalPrice
+                    }).ToList()
+                };
+
+                _logger.LogInformation("ProcessStockDocument success.");
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "ProcessStockDocument failed");
+                return StatusCode(500, "Lỗi hệ thống khi xử lý chứng từ kho.");
             }
         }
     }

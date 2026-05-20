@@ -1,5 +1,5 @@
 ﻿namespace WarehouseManagement.ViewModels.Enums
-{ 
+{
     public enum StockTransactionType
     {
         // ===== NHẬP KHO =====
