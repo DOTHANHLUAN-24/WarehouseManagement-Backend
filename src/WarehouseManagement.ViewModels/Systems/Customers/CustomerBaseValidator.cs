@@ -13,6 +13,9 @@ namespace WarehouseManagement.ViewModels.Systems.Customers
             RuleFor(x => x.PhoneNumber)
                 .NotEmpty().WithMessage("Phone number is required")
                .Matches("^(\\+84|0)\\d{9,10}$").WithMessage("Phone number format is not valid");
+
+            RuleFor(x => x.Email)
+                .EmailAddress().When(x => !string.IsNullOrWhiteSpace(x.Email)).WithMessage("Email format is not valid");
         }
     }
 }

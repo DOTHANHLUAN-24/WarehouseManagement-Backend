@@ -139,6 +139,11 @@ internal class Program
 
             try
             {
+                // Apply any pending EF Core migrations before seeding
+                Log.Information("Applying database migrations (if any)...");
+                var db = services.GetRequiredService<ApplicationDbContext>();
+                await db.Database.MigrateAsync();
+
                 Log.Information("Seeding data...");
                 var dbInitializer = services.GetRequiredService<DbInitializer>();
                 await dbInitializer.Seed();

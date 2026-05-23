@@ -125,6 +125,17 @@ namespace WarehouseManagement.BackendServer.Controllers
         public async Task<IActionResult> PostPurchase([FromBody] PurchaseCreateRequest request)
         {
             _logger.LogInformation("Begin PostPurchase API");
+            if (request == null)
+            {
+                _logger.LogWarning("PostPurchase called with null request");
+                return BadRequest();
+            }
+
+            if (!ModelState.IsValid)
+            {
+                _logger.LogWarning("Invalid model state for PostPurchase");
+                return BadRequest(ModelState);
+            }
 
             var purchase = new Purchase
             {
@@ -136,18 +147,23 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             _context.Purchases.Add(purchase);
 
-            var result = await _context.SaveChangesAsync();
-            if (result > 0)
+            try
             {
-                _logger.LogInformation("Success PostPurchase API with id = {id}", purchase.Id);
+                var result = await _context.SaveChangesAsync();
+                if (result > 0)
+                {
+                    _logger.LogInformation("Success PostPurchase API with id = {id}", purchase.Id);
 
-                return CreatedAtAction(nameof(GetPurchaseById), new { id = purchase.Id }, purchase);
-            }
-            else
-            {
-                _logger.LogError("Failed to create Purchase API");
+                    return CreatedAtAction(nameof(GetPurchaseById), new { id = purchase.Id }, purchase);
+                }
 
+                _logger.LogWarning("PostPurchase did not persist changes");
                 return BadRequest();
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Database error while creating purchase");
+                return StatusCode(500, "An error occurred while saving the purchase.");
             }
         }
 
@@ -162,14 +178,25 @@ namespace WarehouseManagement.BackendServer.Controllers
         public async Task<IActionResult> UpdatePurchase(int id, [FromBody] PurchaseUpdateRequest request)
         {
             _logger.LogInformation("Begin UpdatePurchase API");
+            if (request == null)
+            {
+                _logger.LogWarning("UpdatePurchase called with null request. Id = {id}", id);
+                return BadRequest();
+            }
+
+            if (!ModelState.IsValid)
+            {
+                _logger.LogWarning("Invalid model state for UpdatePurchase. Id = {id}", id);
+                return BadRequest(ModelState);
+            }
 
             var purchase = await _context.Purchases.FindAsync(id);
             if (purchase == null)
             {
-                _logger.LogError("Not found the purchase with id = {id}", id);
-
+                _logger.LogWarning("Not found the purchase with id = {id}", id);
                 return NotFound();
             }
+
             purchase.SupplierId = request.SupplierId;
             purchase.PurchaseDate = request.PurchaseDate;
             purchase.TotalCost = request.TotalCost; // Sử dụng hàm phương thức tính toán ...
@@ -177,18 +204,23 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             _context.Purchases.Update(purchase);
 
-            var result = await _context.SaveChangesAsync();
-            if (result > 0)
+            try
             {
-                _logger.LogInformation("Success to update the purchase with id = {id}", id);
+                var result = await _context.SaveChangesAsync();
+                if (result > 0)
+                {
+                    _logger.LogInformation("Success to update the purchase with id = {id}", id);
 
-                return NoContent();
-            }
-            else
-            {
-                _logger.LogError("Fail to update purchase with id = {id}", id);
+                    return NoContent();
+                }
 
+                _logger.LogWarning("Fail to update purchase with id = {id}", id);
                 return BadRequest();
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Database error while updating purchase with id = {id}", id);
+                return StatusCode(500, "An error occurred while updating the purchase.");
             }
         }
 
@@ -223,19 +255,16 @@ namespace WarehouseManagement.BackendServer.Controllers
         public async Task<IActionResult> SoftDeletePurchase(int id)
         {
             _logger.LogInformation("Begin SoftDeletePurchase API");
-
             var purchase = await _context.Purchases.FindAsync(id);
             if (purchase == null)
             {
-                _logger.LogError("Not found the purchase with id = {id}", id);
-
+                _logger.LogWarning("Not found the purchase with id = {id}", id);
                 return NotFound();
             }
 
             if (purchase.IsDeleted)
             {
-                _logger.LogError("Purchase already in the trash");
-
+                _logger.LogWarning("Purchase already in the trash. Id = {id}", id);
                 return BadRequest("Purchase already in trash");
             }
 
@@ -250,17 +279,24 @@ namespace WarehouseManagement.BackendServer.Controllers
                 purchaseItem.IsDeleted = true;
             }
 
-            var result = await _context.SaveChangesAsync();
-            if (result > 0)
+            try
             {
-                _logger.LogInformation("SoftDeletePurchase success. Id = {id}", id);
+                var result = await _context.SaveChangesAsync();
+                if (result > 0)
+                {
+                    _logger.LogInformation("SoftDeletePurchase success. Id = {id}", id);
 
-                return Ok(result);
+                    return Ok(result);
+                }
+
+                _logger.LogWarning("SoftDeletePurchase failed to save changes. Id = {id}", id);
+                return BadRequest();
             }
-
-            _logger.LogWarning("SoftDeletePurchase failed to save changes");
-
-            return BadRequest();
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Database error during soft delete for purchase id = {id}", id);
+                return StatusCode(500, "An error occurred while soft-deleting the purchase.");
+            }
         }
 
         /// <summary>
@@ -272,20 +308,17 @@ namespace WarehouseManagement.BackendServer.Controllers
         public async Task<IActionResult> RestorePurchase(int id)
         {
             _logger.LogInformation("Begin RestorePurchase API");
-
             var purchase = await _context.Purchases.FindAsync(id);
             if (purchase == null)
             {
-                _logger.LogError("Not found the purchase with id = {id}", id);
-
+                _logger.LogWarning("Not found the purchase with id = {id}", id);
                 return NotFound();
             }
 
             if (!purchase.IsDeleted)
             {
-                _logger.LogError("Not found the purchase in trash. Purchase id = {id}", id);
-
-                return BadRequest();
+                _logger.LogWarning("Purchase not in trash. Purchase id = {id}", id);
+                return BadRequest("Purchase is not in trash");
             }
 
             purchase.IsDeleted = false;
@@ -299,17 +332,24 @@ namespace WarehouseManagement.BackendServer.Controllers
                 purchaseItem.IsDeleted = false;
             }
 
-            var result = await _context.SaveChangesAsync();
-            if (result > 0)
+            try
             {
-                _logger.LogInformation("RestorePurchase success. Purchase id = {id}", id);
+                var result = await _context.SaveChangesAsync();
+                if (result > 0)
+                {
+                    _logger.LogInformation("RestorePurchase success. Purchase id = {id}", id);
 
-                return Ok(result);
+                    return Ok(result);
+                }
+
+                _logger.LogWarning("RestorePurchase failed to save changes. Purchase id = {id}", id);
+                return BadRequest();
             }
-
-            _logger.LogWarning("RestorePurchase failed to save changes. Purchase id = {id}", id);
-
-            return BadRequest();
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Database error during restore for purchase id = {id}", id);
+                return StatusCode(500, "An error occurred while restoring the purchase.");
+            }
         }
 
         /// <summary>
@@ -321,18 +361,16 @@ namespace WarehouseManagement.BackendServer.Controllers
         public async Task<IActionResult> PermanentDeletePurchase(int id)
         {
             _logger.LogInformation("Begin PermanentDeletePurchase API");
-
             var purchase = await _context.Purchases.FindAsync(id);
             if (purchase == null)
             {
-                _logger.LogError("Not found the purchase with id = {id}", id);
-
+                _logger.LogWarning("Not found the purchase with id = {id}", id);
                 return NotFound();
             }
 
             if (!purchase.IsDeleted)
             {
-                _logger.LogError("Purchase must be soft-deleted before permanent deletion");
+                _logger.LogWarning("Purchase must be soft-deleted before permanent deletion. Id = {id}", id);
 
                 return BadRequest("Purchase must be soft-deleted before permanent deletion");
             }
@@ -348,17 +386,24 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             _context.Purchases.Remove(purchase);
 
-            var result = await _context.SaveChangesAsync();
-            if (result > 0)
+            try
             {
-                _logger.LogInformation("PermanentDeletePurchase success. Id = {id}", id);
+                var result = await _context.SaveChangesAsync();
+                if (result > 0)
+                {
+                    _logger.LogInformation("PermanentDeletePurchase success. Id = {id}", id);
 
-                return NoContent();
+                    return NoContent();
+                }
+
+                _logger.LogWarning("PermanentDeletePurchase failed to save changes. Id = {id}", id);
+                return BadRequest();
             }
-
-            _logger.LogWarning("PermanentDeletePurchase failed to save changes. Id = {id}", id);
-
-            return BadRequest();
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Database error during permanent delete for purchase id = {id}", id);
+                return StatusCode(500, "An error occurred while permanently deleting the purchase.");
+            }
         }
 
         /// <summary>
@@ -381,6 +426,11 @@ namespace WarehouseManagement.BackendServer.Controllers
             var listPurchaseItem = await _context.PurchaseItems
                 .Where(x => x.PurchaseId == id && !x.IsDeleted)
                 .ToListAsync();
+            if (listPurchaseItem == null || listPurchaseItem.Count == 0)
+            {
+                _logger.LogWarning("No purchase items found to confirm for purchase id = {id}", id);
+                return BadRequest("No purchase items to confirm");
+            }
 
             var totalPrice = 0;
             foreach (var item in listPurchaseItem)
@@ -391,9 +441,20 @@ namespace WarehouseManagement.BackendServer.Controllers
                     .Where(x => x.Id == item.ProductVariantId)
                     .FirstOrDefaultAsync();
 
+                if (product == null)
+                {
+                    _logger.LogWarning(
+                        "ProductVariant not found. ProductVariantId = {productVariantId} for purchase id = {purchaseId}",
+                        item.ProductVariantId,
+                        id
+                    );
+
+                    return BadRequest($"ProductVariant not found. Id = {item.ProductVariantId}");
+                }
+
                 var stockTransaction = new StockTransaction
                 {
-                    ProductId = product!.ProductId,
+                    ProductId = product.ProductId,
                     ReferenceId = id,
                     ReferenceType = Data.Enums.ReferenceType.Purchase,
                     WarehouseId = 1, // Fake
@@ -412,17 +473,24 @@ namespace WarehouseManagement.BackendServer.Controllers
                 existPurchase.TotalCost = totalPrice;
             }
 
-            var result = await _context.SaveChangesAsync();
-            if (result > 0)
+            try
             {
-                _logger.LogInformation("Success ConfirmPurchase API");
+                var result = await _context.SaveChangesAsync();
+                if (result > 0)
+                {
+                    _logger.LogInformation("Success ConfirmPurchase API for id = {id}", id);
 
-                return Ok();
+                    return Ok();
+                }
+
+                _logger.LogWarning("Failed to save changes during ConfirmPurchase for id = {id}", id);
+                return BadRequest();
             }
-
-            _logger.LogWarning("Failed to save changes");
-
-            return BadRequest();
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Database error while confirming purchase id = {id}", id);
+                return StatusCode(500, "An error occurred while confirming the purchase.");
+            }
         }
 
         #endregion
@@ -442,13 +510,25 @@ namespace WarehouseManagement.BackendServer.Controllers
         [HttpPost("{id}/items")]
         public async Task<IActionResult> AddItemToPurchase(int id, PurchaseItemCreateRequest request)
         {
+            if (request == null)
+            {
+                _logger.LogWarning("AddItemToPurchase called with null request. PurchaseId = {id}", id);
+                return BadRequest();
+            }
+
+            if (!ModelState.IsValid)
+            {
+                _logger.LogWarning("Invalid model state for AddItemToPurchase. PurchaseId = {id}", id);
+                return BadRequest(ModelState);
+            }
+
             var existPurchase = await _context.Purchases.FindAsync(id);
             if (existPurchase == null)
                 return NotFound();
 
             var purchaseItem = new PurchaseItem
             {
-                PurchaseId = request.PurchaseId,
+                PurchaseId = id,
                 ProductVariantId = request.ProductVariantId,
                 Quantity = request.Quantity,
                 UnitCost = request.UnitCost,
@@ -458,11 +538,19 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             _context.PurchaseItems.Add(purchaseItem);
 
-            var result = await _context.SaveChangesAsync();
-            if (result > 0)
-                return CreatedAtAction(nameof(GetItemsByPurchaseId), new { id = purchaseItem.Id }, purchaseItem);
+            try
+            {
+                var result = await _context.SaveChangesAsync();
+                if (result > 0)
+                    return CreatedAtAction(nameof(GetItemsByPurchaseId), new { id = id }, purchaseItem);
 
-            return BadRequest();
+                return BadRequest();
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Database error while adding purchase item to purchase id = {id}", id);
+                return StatusCode(500, "An error occurred while adding the purchase item.");
+            }
         }
 
         [HttpDelete("{id}/items/{itemId}/soft-delete")]
@@ -475,18 +563,30 @@ namespace WarehouseManagement.BackendServer.Controllers
             var existPurchaseItem = await _context.PurchaseItems.FindAsync(itemId);
             if (existPurchaseItem == null)
                 return NotFound();
+            if (existPurchase.IsDeleted)
+                return BadRequest("Purchase is deleted");
 
-            if (existPurchaseItem.IsDeleted || existPurchase.IsDeleted)
-                return BadRequest();
+            if (existPurchaseItem.PurchaseId != id)
+                return BadRequest("Item does not belong to the given purchase");
+
+            if (existPurchaseItem.IsDeleted)
+                return BadRequest("Item already deleted");
 
             existPurchaseItem.IsDeleted = true;
 
-            // Xử lý phần cost
+            try
+            {
+                var result = await _context.SaveChangesAsync();
+                if (result > 0)
+                    return Ok(existPurchaseItem);
 
-            var result = await _context.SaveChangesAsync();
-            if (result > 0)
-                return Ok(existPurchaseItem);
-            return BadRequest();
+                return BadRequest();
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Database error while soft-deleting purchase item id = {itemId} for purchase id = {id}", itemId, id);
+                return StatusCode(500, "An error occurred while soft-deleting the purchase item.");
+            }
         }
 
         [HttpPut("{id}/items/{itemId}/restore")]
@@ -499,18 +599,27 @@ namespace WarehouseManagement.BackendServer.Controllers
             var existPurchaseItem = await _context.PurchaseItems.FindAsync(itemId);
             if (existPurchaseItem == null)
                 return NotFound();
+            if (existPurchaseItem.PurchaseId != id)
+                return BadRequest("Item does not belong to the given purchase");
 
             if (!existPurchaseItem.IsDeleted)
-                return BadRequest();
+                return BadRequest("Item is not deleted");
 
             existPurchaseItem.IsDeleted = false;
 
-            // Xử lý phần cost
+            try
+            {
+                var result = await _context.SaveChangesAsync();
+                if (result > 0)
+                    return Ok(existPurchaseItem);
 
-            var result = await _context.SaveChangesAsync();
-            if (result > 0)
-                return Ok(existPurchaseItem);
-            return BadRequest();
+                return BadRequest();
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Database error while restoring purchase item id = {itemId} for purchase id = {id}", itemId, id);
+                return StatusCode(500, "An error occurred while restoring the purchase item.");
+            }
         }
 
         [HttpDelete("{id}/items/{itemId}/permanent-delete")]
@@ -523,16 +632,27 @@ namespace WarehouseManagement.BackendServer.Controllers
             var existPurchaseItem = await _context.PurchaseItems.FindAsync(itemId);
             if (existPurchaseItem == null)
                 return NotFound();
+            if (existPurchaseItem.PurchaseId != id)
+                return BadRequest("Item does not belong to the given purchase");
 
             if (!existPurchaseItem.IsDeleted)
-                return BadRequest();
+                return BadRequest("Item must be soft-deleted before permanent deletion");
 
             _context.PurchaseItems.Remove(existPurchaseItem);
 
-            var result = await _context.SaveChangesAsync();
-            if (result > 0)
-                return Ok(existPurchaseItem);
-            return BadRequest();
+            try
+            {
+                var result = await _context.SaveChangesAsync();
+                if (result > 0)
+                    return Ok(existPurchaseItem);
+
+                return BadRequest();
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Database error while permanently deleting purchase item id = {itemId} for purchase id = {id}", itemId, id);
+                return StatusCode(500, "An error occurred while permanently deleting the purchase item.");
+            }
         }
 
         #endregion

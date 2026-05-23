@@ -11,6 +11,11 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         [Key]
         public int Id { get; set; }
 
+        // JSON-friendly alias used by APIs. This is derived from the primary key to avoid
+        // changing the database primary key shape (keeps compatibility with existing migrations).
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public int CustomerId => Id;
+
         public CustomerStatus status = CustomerStatus.Active;
 
         [Required]
@@ -24,6 +29,14 @@ namespace WarehouseManagement.BackendServer.Data.Entities
 
         [MaxLength(20)]
         public string PhoneNumber { get; set; } = string.Empty;
+
+        [MaxLength(200)]
+        public string Address { get; set; } = string.Empty;
+
+        [MaxLength(200)]
+        public string Email { get; set; } = string.Empty;
+
+        public bool IsDeleted { get; set; } = false;
 
         public DateTime CreateDate { get; set; }
 

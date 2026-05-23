@@ -25,29 +25,44 @@ namespace WarehouseManagement.BackendServer.Controllers
         public async Task<IActionResult> PostCustomer([FromBody] CustomerCreateRequest request)
         {
             _logger.LogInformation("Begin PostCustomer API");
-
             var customer = new Customer
             {
                 UserId = String.Empty, // Todo: Get user id
                 FullName = request.FullName,
                 PhoneNumber = request.PhoneNumber,
+                Address = request.Address,
+                Email = request.Email,
+                IsDeleted = false,
                 CreateDate = DateTime.Now
             };
 
             _context.Customers.Add(customer);
 
-            var result = await _context.SaveChangesAsync();
-            if (result > 0)
+            try
             {
-                _logger.LogInformation("PostCustomer API success. Id={Id}", customer.Id);
+                var result = await _context.SaveChangesAsync();
+                if (result > 0)
+                {
+                    _logger.LogInformation("PostCustomer API success. Id={Id}", customer.Id);
 
-                return CreatedAtAction(nameof(GetById), new { id = customer.Id }, customer);
-            }
-            else
-            {
+                    var vm = CreateCustomerViewModel(customer);
+                    return CreatedAtAction(nameof(GetById), new { id = customer.Id }, vm);
+                }
+
                 _logger.LogError("PostCustomer API failed to save changes. Id={Id}", customer.Id);
-
                 return BadRequest();
+            }
+            catch (DbUpdateException dbEx)
+            {
+                _logger.LogError(dbEx, "Database update error in PostCustomer");
+
+                var inner = dbEx.InnerException?.Message ?? dbEx.Message;
+                if (inner.Contains("Invalid column name", StringComparison.OrdinalIgnoreCase))
+                {
+                    return StatusCode(500, new { Message = "Database schema mismatch: missing columns. Run EF migrations (dotnet ef database update) or restart the app to apply migrations." , Details = inner });
+                }
+
+                return StatusCode(500, new { Message = "An error occurred while saving the entity changes. See inner exception for details.", Details = inner });
             }
         }
 
@@ -158,6 +173,8 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             customer.FullName = request.FullName;
             customer.PhoneNumber = request.PhoneNumber;
+            customer.Address = request.Address;
+            customer.Email = request.Email;
             customer.LastModifiedDate = DateTime.Now;
 
             _context.Customers.Update(customer);
@@ -464,8 +481,12 @@ namespace WarehouseManagement.BackendServer.Controllers
         {
             return new CustomerViewModel
             {
+                Id = customer.Id,
                 FullName = customer.FullName,
                 PhoneNumber = customer.PhoneNumber,
+                Address = customer.Address,
+                Email = customer.Email,
+                IsDeleted = customer.IsDeleted,
             };
         }
     }
