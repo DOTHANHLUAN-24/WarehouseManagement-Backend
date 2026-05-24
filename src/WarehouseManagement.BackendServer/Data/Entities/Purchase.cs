@@ -44,6 +44,10 @@ namespace WarehouseManagement.BackendServer.Data.Entities
 
         public DateTime CreateDate { get; set; }
 
+        // Identity user id who created the purchase
+        [MaxLength(450)]
+        public string? CreatedBy { get; set; }
+
         public DateTime? LastModifiedDate { get; set; }
 
         public bool IsDeleted { get; set; } = false;

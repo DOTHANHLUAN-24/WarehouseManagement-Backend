@@ -81,12 +81,9 @@ internal class Program
             {
         { jwtSecurityScheme, Array.Empty<string>() }
             });
-            // Add example operation filter for purchase receipt request bodies
+            // Add example operation filter for purchase request bodies
             options.OperationFilter<PurchaseRequestExampleOperationFilter>();
         });
-
-        // register services
-        builder.Services.AddScoped<WarehouseManagement.BackendServer.Services.IPurchaseReceiptService, WarehouseManagement.BackendServer.Services.PurchaseReceiptService>();
 
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))

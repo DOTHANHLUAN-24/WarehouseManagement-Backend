@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using WarehouseManagement.BackendServer.Data;
 using WarehouseManagement.BackendServer.Data.Entities;
 using WarehouseManagement.ViewModels.Contents.PurchaseItems;
@@ -10,6 +12,7 @@ namespace WarehouseManagement.BackendServer.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize] // Thêm Authorize để bắt buộc đăng nhập mới lấy được User ID
     public class PurchasesController
     (
         ApplicationDbContext _context,
@@ -21,37 +24,43 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// <summary>
         /// Get list purchase in the system
         /// </summary>
-        /// <returns>Return list purchase</returns>
+        /// <returns>Return list purchase with items</returns>
         [HttpGet]
         public async Task<IActionResult> GetAllPurchase()
         {
             _logger.LogInformation("Begin GetAllPurchase API");
 
             var purchases = await _context.Purchases
-                .Select(x => CreatePurchaseViewModel(x))
+                .Where(p => !p.IsDeleted)
+                .Include(p => p.PurchaseItems)
                 .ToListAsync();
 
-            _logger.LogInformation("Success GetAllPurchase API");
-
-            return Ok(purchases);
-        }
-
-        private static PurchaseViewModel CreatePurchaseViewModel(Purchase x)
-        {
-            return new PurchaseViewModel
+            var response = purchases.Select(x => new
             {
-                Id = x.Id,
-                SupplierId = x.SupplierId,
-                SupplierName = x.SupplierName,
-                ReceiptCode = x.ReceiptCode,
-                ReferenceCode = x.ReferenceCode,
-                Note = x.Note,
-                PurchaseDate = x.PurchaseDate,
-                TotalCost = x.TotalCost,
-                CreateDate = x.CreateDate,
-                LastModifiedDate = x.LastModifiedDate,
-                Status = (ViewModels.Enums.PurchaseStatus)x.Status
-            };
+                x.Id,
+                x.ReceiptCode,
+                x.ReferenceCode,
+                x.Note,
+                x.SupplierId,
+                x.SupplierName,
+                x.PurchaseDate,
+                TotalAmount = x.TotalCost,
+                x.CreateDate,
+                x.LastModifiedDate,
+                Status = (int)x.Status,
+                x.IsCanceled,
+                Items = x.PurchaseItems.Where(i => !i.IsDeleted).Select(pi => new
+                {
+                    pi.ProductId,
+                    pi.ProductVariantId,
+                    pi.Quantity,
+                    UnitCost = pi.UnitCost,
+                    TotalPrice = pi.TotalPrice
+                }).ToList()
+            }).ToList();
+
+            _logger.LogInformation("Success GetAllPurchase API");
+            return Ok(response);
         }
 
         [HttpGet("filter")]
@@ -66,58 +75,106 @@ namespace WarehouseManagement.BackendServer.Controllers
             pageIndex = pageIndex <= 0 ? 1 : pageIndex;
             pageSize = pageSize <= 0 ? 10 : pageSize;
 
-            var query = _context.Purchases.AsQueryable();
+            var query = _context.Purchases.Where(p => !p.IsDeleted).AsQueryable();
 
             if (fromDate != null)
             {
-                query = query.Where(x => x.CreateDate >= fromDate);
+                query = query.Where(x => x.CreateDate.Date >= fromDate.Value.Date);
             }
 
             if (toDate != null)
             {
-                query = query.Where(x => x.CreateDate <= toDate);
+                query = query.Where(x => x.CreateDate.Date <= toDate.Value.Date);
             }
 
             var totalRecords = await query.CountAsync();
-
-            var items = await query.Skip((pageIndex - 1) * pageSize)
+            var items = await query
+                .Include(p => p.PurchaseItems)
+                .Skip((pageIndex - 1) * pageSize)
                 .Take(pageSize).ToListAsync();
 
-            var data = items.Select(x => CreatePurchaseViewModel(x)).ToList();
+            var data = items.Select(x => new
+            {
+                x.Id,
+                x.ReceiptCode,
+                x.ReferenceCode,
+                x.Note,
+                x.SupplierId,
+                x.SupplierName,
+                x.PurchaseDate,
+                TotalAmount = x.TotalCost,
+                x.CreateDate,
+                x.LastModifiedDate,
+                Status = (int)x.Status,
+                x.IsCanceled,
+                Items = x.PurchaseItems.Where(i => !i.IsDeleted).Select(pi => new
+                {
+                    pi.ProductId,
+                    pi.ProductVariantId,
+                    pi.Quantity,
+                    UnitCost = pi.UnitCost,
+                    TotalPrice = pi.TotalPrice
+                }).ToList()
+            }).ToList();
 
-            var pagination = new Pagination<PurchaseViewModel>
+            var pagination = new
             {
                 Items = data,
                 TotalRecords = totalRecords,
             };
-
             return Ok(pagination);
         }
 
         /// <summary>
-        /// Get purchase by id
+        /// Get purchase by id with items
         /// </summary>
         /// <param name="id">Purchase id</param>
-        /// <returns>The purchase or not found</returns>
+        /// <returns>The purchase with items or not found</returns>
         [HttpGet("{id}")]
         public async Task<IActionResult> GetPurchaseById(int id)
         {
             _logger.LogInformation("Begin GetPurchaseById API");
 
             var purchase = await _context.Purchases
-                .Where(x => x.Id == id)
-                .Select(x => CreatePurchaseViewModel(x))
+                .Where(x => x.Id == id && !x.IsDeleted)
+                .Include(x => x.PurchaseItems)
                 .FirstOrDefaultAsync();
+
             if (purchase == null)
             {
                 _logger.LogError("Not found the purchase with id = {id}", id);
-
                 return NotFound();
             }
 
-            _logger.LogInformation("Return the purchase with id = {id}", id);
+            var response = new
+            {
+                purchase.Id,
+                purchase.ReceiptCode,
+                purchase.ReferenceCode,
+                purchase.Note,
+                purchase.SupplierId,
+                purchase.SupplierName,
+                purchase.PurchaseDate,
+                TotalAmount = purchase.TotalCost,
+                CreateDate = purchase.CreateDate,
+                LastModifiedDate = purchase.LastModifiedDate,
+                Status = (int)purchase.Status,
+                IsCanceled = purchase.IsCanceled,
+                CancelReason = purchase.CancelReason,
+                CanceledDate = purchase.CanceledDate,
+                CanceledBy = purchase.CanceledBy,
+                Items = purchase.PurchaseItems.Where(i => !i.IsDeleted).Select(x => new
+                {
+                    x.ProductId,
+                    x.ProductVariantId,
+                    x.Quantity,
+                    UnitCost = x.UnitCost,
+                    TotalPrice = x.TotalPrice
+                }).ToList()
+            };
 
-            return Ok(purchase);
+            _logger.LogInformation("Return the purchase with id = {id}", id);
+            return Ok(response);
         }
 
         /// <summary>
@@ -155,11 +212,16 @@ namespace WarehouseManagement.BackendServer.Controllers
                 return BadRequest("Purchase must contain at least one item");
             }
 
-            // Generate receipt code by year+month sequence
-            var now = DateTime.UtcNow;
-            var ym = now.ToString("yyyyMM");
-            var sequence = await _context.Purchases.CountAsync(p => p.CreateDate.Year == now.Year && p.CreateDate.Month == now.Month) + 1;
+            // XỬ LÝ SỬA: Đồng bộ múi giờ Việt Nam để sinh chuỗi hiển thị 'yyyyMM' chính xác
+            var utcNow = DateTime.UtcNow;
+            var localTime = TimeZoneInfo.ConvertTimeFromUtc(utcNow, TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time"));
+            var ym = localTime.ToString("yyyyMM");
+
+            var sequence = await _context.Purchases.CountAsync(p => p.CreateDate.Year == utcNow.Year && p.CreateDate.Month == utcNow.Month) + 1;
             var receiptCode = $"PO-{ym}-{sequence:000}";
+
+            // THÊM MỚI: Lấy thông tin User ID từ tài khoản đang đăng nhập
+            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             var purchase = new Purchase
             {
@@ -169,7 +231,8 @@ namespace WarehouseManagement.BackendServer.Controllers
                 ReceiptCode = receiptCode,
                 ReferenceCode = request.ReferenceCode,
                 Note = request.Note,
-                CreateDate = DateTime.UtcNow,
+                CreateDate = utcNow,
+                CreatedBy = currentUserId, // GÁN THÔNG TIN USER ĐĂNG NHẬP
                 IsCanceled = false
             };
 
@@ -188,7 +251,6 @@ namespace WarehouseManagement.BackendServer.Controllers
                     .Where(v => v.ProductId == item.ProductId && v.IsActive)
                     .OrderBy(v => v.Id)
                     .FirstOrDefaultAsync();
-
                 if (variant == null)
                 {
                     _logger.LogWarning("No active variant found for productId = {ProductId}", item.ProductId);
@@ -201,17 +263,15 @@ namespace WarehouseManagement.BackendServer.Controllers
                     ProductId = item.ProductId,
                     Quantity = item.Quantity,
                     UnitCost = item.UnitCost,
-                    CreateDate = DateTime.UtcNow,
+                    CreateDate = utcNow,
                     TotalPrice = item.UnitCost * item.Quantity
                 };
-
                 purchase.PurchaseItems.Add(pi);
 
                 totalCost += pi.TotalPrice ?? 0m;
             }
 
             purchase.TotalCost = totalCost;
-
             _context.Purchases.Add(purchase);
 
             try
@@ -221,7 +281,6 @@ namespace WarehouseManagement.BackendServer.Controllers
                 {
                     _logger.LogInformation("Success PostPurchase API with id = {id}", purchase.Id);
 
-                    // Return created resource summary
                     var response = new
                     {
                         purchase.Id,
@@ -232,16 +291,16 @@ namespace WarehouseManagement.BackendServer.Controllers
                         purchase.SupplierName,
                         purchase.PurchaseDate,
                         TotalAmount = purchase.TotalCost,
-                    Items = purchase.PurchaseItems.Select(x => new
-                    {
-                        x.ProductId,
-                        x.ProductVariantId,
-                        x.Quantity,
-                        UnitCost = x.UnitCost,
-                        TotalPrice = x.TotalPrice
-                    })
+                        purchase.CreatedBy, // Trả thêm CreatedBy ở phản hồi tạo mới thành công
+                        Items = purchase.PurchaseItems.Select(x => new
+                        {
+                            x.ProductId,
+                            x.ProductVariantId,
+                            x.Quantity,
+                            UnitCost = x.UnitCost,
+                            TotalPrice = x.TotalPrice
+                        })
                     };
-
                     return CreatedAtAction(nameof(GetPurchaseById), new { id = purchase.Id }, response);
                 }
 
@@ -254,7 +313,6 @@ namespace WarehouseManagement.BackendServer.Controllers
                 return StatusCode(500, "An error occurred while saving the purchase.");
             }
         }
-
 
         /// <summary>
         /// Update the purchase by id
@@ -281,6 +339,7 @@ namespace WarehouseManagement.BackendServer.Controllers
             var purchase = await _context.Purchases
                 .Include(p => p.PurchaseItems)
                 .FirstOrDefaultAsync(p => p.Id == id);
+
             if (purchase == null)
             {
                 _logger.LogWarning("Not found the purchase with id = {id}", id);
@@ -299,25 +358,21 @@ namespace WarehouseManagement.BackendServer.Controllers
                 return BadRequest("Supplier not found");
             }
 
-            // Mark existing items as deleted
-            foreach (var existingItem in purchase.PurchaseItems)
-            {
-                existingItem.IsDeleted = true;
-            }
+            // SỬA: Xóa bỏ hoàn toàn các PurchaseItem cũ khỏi danh sách đang theo dõi của Purchase
+            // Việc này giải phóng bộ nhớ tracking của EF Core để tránh lỗi trùng Key
+            purchase.PurchaseItems.Clear();
 
             purchase.SupplierId = request.SupplierId;
             purchase.SupplierName = supplier.SupplierName;
-            // prefer ReceiptDate (client's receiptDate) if provided, otherwise fall back to PurchaseDate
             purchase.PurchaseDate = request.ReceiptDate == default ? request.PurchaseDate : request.ReceiptDate;
             purchase.ReferenceCode = request.ReferenceCode;
             purchase.Note = request.Note;
             purchase.LastModifiedDate = DateTime.UtcNow;
 
             decimal totalCost = 0m;
-
-            if (request is PurchaseCreateRequest createReq && createReq.Items != null)
+            if (request.Items != null)
             {
-                foreach (var item in createReq.Items)
+                foreach (var item in request.Items)
                 {
                     if (item.Quantity <= 0)
                     {
@@ -338,7 +393,6 @@ namespace WarehouseManagement.BackendServer.Controllers
 
                     var pi = new PurchaseItem
                     {
-                        PurchaseId = purchase.Id,
                         ProductVariantId = variant.Id,
                         ProductId = item.ProductId,
                         Quantity = item.Quantity,
@@ -347,21 +401,20 @@ namespace WarehouseManagement.BackendServer.Controllers
                         TotalPrice = item.UnitCost * item.Quantity
                     };
 
-                    _context.PurchaseItems.Add(pi);
+                    // SỬA: Thêm trực tiếp vào danh sách của purchase thay vì gọi _context.PurchaseItems.Add(pi)
+                    purchase.PurchaseItems.Add(pi);
 
                     totalCost += pi.TotalPrice ?? 0m;
                 }
             }
 
             purchase.TotalCost = totalCost;
-
             try
             {
                 var result = await _context.SaveChangesAsync();
                 if (result > 0)
                 {
                     _logger.LogInformation("Success to update the purchase with id = {id}", id);
-
                     return NoContent();
                 }
 
@@ -387,7 +440,6 @@ namespace WarehouseManagement.BackendServer.Controllers
             var purchases = await _context.Purchases
                 .Where(x => x.IsDeleted)
                 .ToListAsync();
-
             _logger.LogInformation("Success GetAllPurchaseInTrash API and return list purchase");
 
             return Ok(new
@@ -420,11 +472,9 @@ namespace WarehouseManagement.BackendServer.Controllers
             }
 
             purchase.IsDeleted = true;
-
             var purchaseItemInPurchase = await _context.PurchaseItems
                 .Where(x => x.PurchaseId == id)
                 .ToListAsync();
-
             foreach (var purchaseItem in purchaseItemInPurchase)
             {
                 purchaseItem.IsDeleted = true;
@@ -436,7 +486,6 @@ namespace WarehouseManagement.BackendServer.Controllers
                 if (result > 0)
                 {
                     _logger.LogInformation("SoftDeletePurchase success. Id = {id}", id);
-
                     return Ok(result);
                 }
 
@@ -473,11 +522,9 @@ namespace WarehouseManagement.BackendServer.Controllers
             }
 
             purchase.IsDeleted = false;
-
             var purchaseItemInPurchase = await _context.PurchaseItems
                .Where(x => x.PurchaseId == id)
                .ToListAsync();
-
             foreach (var purchaseItem in purchaseItemInPurchase)
             {
                 purchaseItem.IsDeleted = false;
@@ -489,7 +536,6 @@ namespace WarehouseManagement.BackendServer.Controllers
                 if (result > 0)
                 {
                     _logger.LogInformation("RestorePurchase success. Purchase id = {id}", id);
-
                     return Ok(result);
                 }
 
@@ -522,28 +568,24 @@ namespace WarehouseManagement.BackendServer.Controllers
             if (!purchase.IsDeleted)
             {
                 _logger.LogWarning("Purchase must be soft-deleted before permanent deletion. Id = {id}", id);
-
                 return BadRequest("Purchase must be soft-deleted before permanent deletion");
             }
 
             var purchaseItemInPurchase = await _context.PurchaseItems
                .Where(x => x.PurchaseId == id)
                .ToListAsync();
-
             foreach (var purchaseItem in purchaseItemInPurchase)
             {
                 _context.PurchaseItems.Remove(purchaseItem);
             }
 
             _context.Purchases.Remove(purchase);
-
             try
             {
                 var result = await _context.SaveChangesAsync();
                 if (result > 0)
                 {
                     _logger.LogInformation("PermanentDeletePurchase success. Id = {id}", id);
-
                     return NoContent();
                 }
 
@@ -591,7 +633,6 @@ namespace WarehouseManagement.BackendServer.Controllers
                 var product = await _context.ProductVariants
                     .Where(x => x.Id == item.ProductVariantId)
                     .FirstOrDefaultAsync();
-
                 if (product == null)
                 {
                     _logger.LogWarning(
@@ -599,7 +640,6 @@ namespace WarehouseManagement.BackendServer.Controllers
                         item.ProductVariantId,
                         id
                     );
-
                     return BadRequest($"ProductVariant not found. Id = {item.ProductVariantId}");
                 }
 
@@ -620,7 +660,6 @@ namespace WarehouseManagement.BackendServer.Controllers
             if (totalPrice != existPurchase.TotalCost)
             {
                 _logger.LogInformation("Change total price with new total price = {totalPrice}", totalPrice);
-
                 existPurchase.TotalCost = totalPrice;
             }
 
@@ -630,7 +669,6 @@ namespace WarehouseManagement.BackendServer.Controllers
                 if (result > 0)
                 {
                     _logger.LogInformation("Success ConfirmPurchase API for id = {id}", id);
-
                     return Ok();
                 }
 
@@ -686,7 +724,6 @@ namespace WarehouseManagement.BackendServer.Controllers
                 CreateDate = request.CreateDate,
                 LastModifiedDate = request.LastModifiedDate,
             };
-
             _context.PurchaseItems.Add(purchaseItem);
 
             try
@@ -694,7 +731,6 @@ namespace WarehouseManagement.BackendServer.Controllers
                 var result = await _context.SaveChangesAsync();
                 if (result > 0)
                     return CreatedAtAction(nameof(GetItemsByPurchaseId), new { id = id }, purchaseItem);
-
                 return BadRequest();
             }
             catch (DbUpdateException ex)
@@ -714,12 +750,11 @@ namespace WarehouseManagement.BackendServer.Controllers
             var existPurchaseItem = await _context.PurchaseItems.FindAsync(itemId);
             if (existPurchaseItem == null)
                 return NotFound();
+
             if (existPurchase.IsDeleted)
                 return BadRequest("Purchase is deleted");
-
             if (existPurchaseItem.PurchaseId != id)
                 return BadRequest("Item does not belong to the given purchase");
-
             if (existPurchaseItem.IsDeleted)
                 return BadRequest("Item already deleted");
 
@@ -730,7 +765,6 @@ namespace WarehouseManagement.BackendServer.Controllers
                 var result = await _context.SaveChangesAsync();
                 if (result > 0)
                     return Ok(existPurchaseItem);
-
                 return BadRequest();
             }
             catch (DbUpdateException ex)
@@ -750,9 +784,9 @@ namespace WarehouseManagement.BackendServer.Controllers
             var existPurchaseItem = await _context.PurchaseItems.FindAsync(itemId);
             if (existPurchaseItem == null)
                 return NotFound();
+
             if (existPurchaseItem.PurchaseId != id)
                 return BadRequest("Item does not belong to the given purchase");
-
             if (!existPurchaseItem.IsDeleted)
                 return BadRequest("Item is not deleted");
 
@@ -763,7 +797,6 @@ namespace WarehouseManagement.BackendServer.Controllers
                 var result = await _context.SaveChangesAsync();
                 if (result > 0)
                     return Ok(existPurchaseItem);
-
                 return BadRequest();
             }
             catch (DbUpdateException ex)
@@ -783,9 +816,9 @@ namespace WarehouseManagement.BackendServer.Controllers
             var existPurchaseItem = await _context.PurchaseItems.FindAsync(itemId);
             if (existPurchaseItem == null)
                 return NotFound();
+
             if (existPurchaseItem.PurchaseId != id)
                 return BadRequest("Item does not belong to the given purchase");
-
             if (!existPurchaseItem.IsDeleted)
                 return BadRequest("Item must be soft-deleted before permanent deletion");
 
@@ -796,7 +829,6 @@ namespace WarehouseManagement.BackendServer.Controllers
                 var result = await _context.SaveChangesAsync();
                 if (result > 0)
                     return Ok(existPurchaseItem);
-
                 return BadRequest();
             }
             catch (DbUpdateException ex)
