@@ -12,6 +12,7 @@ using Serilog;
 using WarehouseManagement.BackendServer.Data;
 using WarehouseManagement.BackendServer.Data.Entities;
 using WarehouseManagement.BackendServer.DependencyInjection;
+using WarehouseManagement.BackendServer.Swagger;
 using WarehouseManagement.BackendServer.Helpers;
 using WarehouseManagement.ViewModels.Systems.Roles;
 
@@ -80,7 +81,12 @@ internal class Program
             {
         { jwtSecurityScheme, Array.Empty<string>() }
             });
+            // Add example operation filter for purchase receipt request bodies
+            options.OperationFilter<PurchaseRequestExampleOperationFilter>();
         });
+
+        // register services
+        builder.Services.AddScoped<WarehouseManagement.BackendServer.Services.IPurchaseReceiptService, WarehouseManagement.BackendServer.Services.PurchaseReceiptService>();
 
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))

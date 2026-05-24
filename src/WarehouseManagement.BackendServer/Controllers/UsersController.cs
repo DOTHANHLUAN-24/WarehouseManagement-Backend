@@ -297,5 +297,29 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             return Ok("Roles assigned successfully.");
         }
+
+        /// <summary>
+        /// Get roles of a user by user id
+        /// </summary>
+        /// <param name="id">User id</param>
+        /// <returns>List of role names</returns>
+        [HttpGet("{id}/roles")]
+        public async Task<IActionResult> GetUserRoles(string id)
+        {
+            _logger.LogInformation("Getting roles for user id: {UserId}", id);
+
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                _logger.LogWarning("User with id {UserId} not found when getting roles", id);
+                return NotFound("User not found");
+            }
+
+            var roles = await _userManager.GetRolesAsync(user);
+
+            _logger.LogInformation("Retrieved {RoleCount} roles for user id: {UserId}", roles.Count, id);
+
+            return Ok(roles);
+        }
     }
 }

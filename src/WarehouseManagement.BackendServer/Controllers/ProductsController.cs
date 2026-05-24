@@ -393,7 +393,8 @@ namespace WarehouseManagement.BackendServer.Controllers
                 SKU = request.SKU,
                 SellingPrice = request.SellingPrice,
                 OriginalPrice = request.OriginalPrice,
-                StockQuantity = request.InitialStock,
+                // Initial stock should be 0 on product creation. Stock increases only when processing purchase receipts.
+                StockQuantity = 0,
                 IsActive = true,
                 Status = ProductVariantStatus.Active,
                 CreateDate = DateTime.UtcNow
@@ -418,7 +419,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                         IsActive = product.IsActive,
                         SellingPrice = request.SellingPrice,
                         OriginalPrice = request.OriginalPrice,
-                        Quantity = request.InitialStock
+                        Quantity = variant.StockQuantity
                     });
                 }
                 else

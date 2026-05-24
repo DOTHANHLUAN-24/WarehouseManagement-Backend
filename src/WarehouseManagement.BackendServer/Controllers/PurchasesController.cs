@@ -42,6 +42,10 @@ namespace WarehouseManagement.BackendServer.Controllers
             {
                 Id = x.Id,
                 SupplierId = x.SupplierId,
+                SupplierName = x.SupplierName,
+                ReceiptCode = x.ReceiptCode,
+                ReferenceCode = x.ReferenceCode,
+                Note = x.Note,
                 PurchaseDate = x.PurchaseDate,
                 TotalCost = x.TotalCost,
                 CreateDate = x.CreateDate,
@@ -137,13 +141,76 @@ namespace WarehouseManagement.BackendServer.Controllers
                 return BadRequest(ModelState);
             }
 
+            // Validate supplier
+            var supplier = await _context.Suppliers.FindAsync(request.SupplierId);
+            if (supplier == null || supplier.IsDeleted)
+            {
+                _logger.LogWarning("Supplier not found or deleted. SupplierId = {SupplierId}", request.SupplierId);
+                return BadRequest("Supplier not found");
+            }
+
+            if (request.Items == null || !request.Items.Any())
+            {
+                _logger.LogWarning("No items provided for purchase");
+                return BadRequest("Purchase must contain at least one item");
+            }
+
+            // Generate receipt code by year+month sequence
+            var now = DateTime.UtcNow;
+            var ym = now.ToString("yyyyMM");
+            var sequence = await _context.Purchases.CountAsync(p => p.CreateDate.Year == now.Year && p.CreateDate.Month == now.Month) + 1;
+            var receiptCode = $"PO-{ym}-{sequence:000}";
+
             var purchase = new Purchase
             {
                 SupplierId = request.SupplierId,
-                PurchaseDate = request.PurchaseDate,
-                TotalCost = request.TotalCost, // Sử dụng hàm phương thức tính toán ...
-                CreateDate = DateTime.UtcNow
+                SupplierName = supplier.SupplierName,
+                PurchaseDate = request.ReceiptDate == default ? request.PurchaseDate : request.ReceiptDate,
+                ReceiptCode = receiptCode,
+                ReferenceCode = request.ReferenceCode,
+                Note = request.Note,
+                CreateDate = DateTime.UtcNow,
+                IsCanceled = false
             };
+
+            decimal totalCost = 0m;
+
+            foreach (var item in request.Items)
+            {
+                if (item.Quantity <= 0)
+                {
+                    _logger.LogWarning("Invalid quantity for productId = {ProductId}", item.ProductId);
+                    return BadRequest($"Invalid quantity for product {item.ProductId}");
+                }
+
+                // find a product variant for the given product id
+                var variant = await _context.ProductVariants
+                    .Where(v => v.ProductId == item.ProductId && v.IsActive)
+                    .OrderBy(v => v.Id)
+                    .FirstOrDefaultAsync();
+
+                if (variant == null)
+                {
+                    _logger.LogWarning("No active variant found for productId = {ProductId}", item.ProductId);
+                    return BadRequest($"No product variant found for product {item.ProductId}");
+                }
+
+                var pi = new PurchaseItem
+                {
+                    ProductVariantId = variant.Id,
+                    ProductId = item.ProductId,
+                    Quantity = item.Quantity,
+                    UnitCost = item.UnitCost,
+                    CreateDate = DateTime.UtcNow,
+                    TotalPrice = item.UnitCost * item.Quantity
+                };
+
+                purchase.PurchaseItems.Add(pi);
+
+                totalCost += pi.TotalPrice ?? 0m;
+            }
+
+            purchase.TotalCost = totalCost;
 
             _context.Purchases.Add(purchase);
 
@@ -154,7 +221,28 @@ namespace WarehouseManagement.BackendServer.Controllers
                 {
                     _logger.LogInformation("Success PostPurchase API with id = {id}", purchase.Id);
 
-                    return CreatedAtAction(nameof(GetPurchaseById), new { id = purchase.Id }, purchase);
+                    // Return created resource summary
+                    var response = new
+                    {
+                        purchase.Id,
+                        purchase.ReceiptCode,
+                        purchase.ReferenceCode,
+                        purchase.Note,
+                        purchase.SupplierId,
+                        purchase.SupplierName,
+                        purchase.PurchaseDate,
+                        TotalAmount = purchase.TotalCost,
+                    Items = purchase.PurchaseItems.Select(x => new
+                    {
+                        x.ProductId,
+                        x.ProductVariantId,
+                        x.Quantity,
+                        UnitCost = x.UnitCost,
+                        TotalPrice = x.TotalPrice
+                    })
+                    };
+
+                    return CreatedAtAction(nameof(GetPurchaseById), new { id = purchase.Id }, response);
                 }
 
                 _logger.LogWarning("PostPurchase did not persist changes");
@@ -175,7 +263,7 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// <param name="request">Purchase model</param>
         /// <returns>Result of update process</returns>
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdatePurchase(int id, [FromBody] PurchaseUpdateRequest request)
+        public async Task<IActionResult> UpdatePurchase(int id, [FromBody] PurchaseCreateRequest request)
         {
             _logger.LogInformation("Begin UpdatePurchase API");
             if (request == null)
@@ -190,19 +278,82 @@ namespace WarehouseManagement.BackendServer.Controllers
                 return BadRequest(ModelState);
             }
 
-            var purchase = await _context.Purchases.FindAsync(id);
+            var purchase = await _context.Purchases
+                .Include(p => p.PurchaseItems)
+                .FirstOrDefaultAsync(p => p.Id == id);
             if (purchase == null)
             {
                 _logger.LogWarning("Not found the purchase with id = {id}", id);
                 return NotFound();
             }
+            if (purchase.IsCanceled)
+            {
+                _logger.LogWarning("Attempt to update a canceled purchase. Id = {id}", id);
+                return BadRequest("Cannot update a canceled purchase");
+            }
+
+            var supplier = await _context.Suppliers.FindAsync(request.SupplierId);
+            if (supplier == null || supplier.IsDeleted)
+            {
+                _logger.LogWarning("Supplier not found for update. SupplierId = {SupplierId}", request.SupplierId);
+                return BadRequest("Supplier not found");
+            }
+
+            // Mark existing items as deleted
+            foreach (var existingItem in purchase.PurchaseItems)
+            {
+                existingItem.IsDeleted = true;
+            }
 
             purchase.SupplierId = request.SupplierId;
-            purchase.PurchaseDate = request.PurchaseDate;
-            purchase.TotalCost = request.TotalCost; // Sử dụng hàm phương thức tính toán ...
+            purchase.SupplierName = supplier.SupplierName;
+            // prefer ReceiptDate (client's receiptDate) if provided, otherwise fall back to PurchaseDate
+            purchase.PurchaseDate = request.ReceiptDate == default ? request.PurchaseDate : request.ReceiptDate;
+            purchase.ReferenceCode = request.ReferenceCode;
+            purchase.Note = request.Note;
             purchase.LastModifiedDate = DateTime.UtcNow;
 
-            _context.Purchases.Update(purchase);
+            decimal totalCost = 0m;
+
+            if (request is PurchaseCreateRequest createReq && createReq.Items != null)
+            {
+                foreach (var item in createReq.Items)
+                {
+                    if (item.Quantity <= 0)
+                    {
+                        _logger.LogWarning("Invalid quantity for productId = {ProductId} during update", item.ProductId);
+                        return BadRequest($"Invalid quantity for product {item.ProductId}");
+                    }
+
+                    var variant = await _context.ProductVariants
+                        .Where(v => v.ProductId == item.ProductId && v.IsActive)
+                        .OrderBy(v => v.Id)
+                        .FirstOrDefaultAsync();
+
+                    if (variant == null)
+                    {
+                        _logger.LogWarning("No active variant found for productId = {ProductId} during update", item.ProductId);
+                        return BadRequest($"No product variant found for product {item.ProductId}");
+                    }
+
+                    var pi = new PurchaseItem
+                    {
+                        PurchaseId = purchase.Id,
+                        ProductVariantId = variant.Id,
+                        ProductId = item.ProductId,
+                        Quantity = item.Quantity,
+                        UnitCost = item.UnitCost,
+                        CreateDate = DateTime.UtcNow,
+                        TotalPrice = item.UnitCost * item.Quantity
+                    };
+
+                    _context.PurchaseItems.Add(pi);
+
+                    totalCost += pi.TotalPrice ?? 0m;
+                }
+            }
+
+            purchase.TotalCost = totalCost;
 
             try
             {
