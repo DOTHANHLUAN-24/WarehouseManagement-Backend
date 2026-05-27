@@ -17,6 +17,9 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         [Required]
         public int ProductVariantId { get; set; }
 
+        // Keep original variant link but also store product id sent from client for convenience
+        public int? ProductId { get; set; }
+
         [Required]
         public int Quantity { get; set; }
 
@@ -29,6 +32,9 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         public DateTime? LastModifiedDate { get; set; }
 
         public bool IsDeleted { get; set; } = false;
+
+        [Precision(18,2)]
+        public decimal? TotalPrice { get; set; }
     }
 
 }

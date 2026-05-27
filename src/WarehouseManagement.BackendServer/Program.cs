@@ -12,6 +12,7 @@ using Serilog;
 using WarehouseManagement.BackendServer.Data;
 using WarehouseManagement.BackendServer.Data.Entities;
 using WarehouseManagement.BackendServer.DependencyInjection;
+using WarehouseManagement.BackendServer.Swagger;
 using WarehouseManagement.BackendServer.Helpers;
 using WarehouseManagement.ViewModels.Systems.Roles;
 
@@ -80,6 +81,8 @@ internal class Program
             {
         { jwtSecurityScheme, Array.Empty<string>() }
             });
+            // Add example operation filter for purchase request bodies
+            options.OperationFilter<PurchaseRequestExampleOperationFilter>();
         });
 
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -139,6 +142,11 @@ internal class Program
 
             try
             {
+                // Apply any pending EF Core migrations before seeding
+                Log.Information("Applying database migrations (if any)...");
+                var db = services.GetRequiredService<ApplicationDbContext>();
+                await db.Database.MigrateAsync();
+
                 Log.Information("Seeding data...");
                 var dbInitializer = services.GetRequiredService<DbInitializer>();
                 await dbInitializer.Seed();

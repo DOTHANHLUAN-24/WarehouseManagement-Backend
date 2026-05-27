@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WarehouseManagement.BackendServer.Data;
 
@@ -11,9 +12,11 @@ using WarehouseManagement.BackendServer.Data;
 namespace WarehouseManagement.BackendServer.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260523084354_AddMissingColumns")]
+    partial class AddMissingColumns
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -700,24 +703,8 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("CancelReason")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CanceledBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("CanceledDate")
-                        .HasColumnType("datetime2");
-
                     b.Property<DateTime>("CreateDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<bool>("IsCanceled")
-                        .HasColumnType("bit");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -725,28 +712,14 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
                     b.Property<DateTime?>("LastModifiedDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Note")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<DateTime?>("PurchaseDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("ReceiptCode")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("ReferenceCode")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
                     b.Property<int>("SupplierId")
                         .HasColumnType("int");
-
-                    b.Property<string>("SupplierName")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("TotalCost")
                         .HasPrecision(18, 2)
@@ -784,10 +757,6 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
 
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
-
-                    b.Property<decimal?>("TotalPrice")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("UnitCost")
                         .HasPrecision(18, 2)
