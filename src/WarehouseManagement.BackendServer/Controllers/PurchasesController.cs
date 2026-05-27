@@ -232,6 +232,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                 ReferenceCode = request.ReferenceCode,
                 Note = request.Note,
                 CreateDate = utcNow,
+                Status = Data.Enums.PurchaseStatus.Pending,
                 CreatedBy = currentUserId, // GÁN THÔNG TIN USER ĐĂNG NHẬP
                 IsCanceled = false
             };
