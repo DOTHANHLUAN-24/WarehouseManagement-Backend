@@ -42,6 +42,10 @@ namespace WarehouseManagement.BackendServer.Data.Entities
 
         public string? CanceledBy { get; set; }
 
+        public string? ApprovedBy { get; set; }
+
+        public DateTime? ApprovedDate { get; set; }
+
         public DateTime CreateDate { get; set; }
 
         // Identity user id who created the purchase

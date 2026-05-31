@@ -13,5 +13,7 @@
         public int Quantity { get; set; }
 
         public string ImageUrl { get; set; } = string.Empty;
+
+        public string? WarehouseLocation { get; set; }
     }
 }
