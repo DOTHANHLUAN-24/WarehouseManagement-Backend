@@ -55,7 +55,16 @@ namespace WarehouseManagement.BackendServer.Controllers
                         .Where(i => i.ProductId == p.Id)
                         .OrderBy(i => i.Id)
                         .Select(i => i.ImageUrl)
-                        .FirstOrDefault()!
+                        .FirstOrDefault()!,
+
+                    WarehouseLocation = _context.Warehouses
+                        .Join(_context.StockTransactions,
+                            w => w.Id,
+                            st => st.WarehouseId,
+                            (w, st) => new { Warehouse = w, StockTransaction = st })
+                        .Where(x => x.StockTransaction.ProductId == p.Id)
+                        .Select(x => x.Warehouse.Location)
+                        .FirstOrDefault()
                 }
             ).FirstOrDefaultAsync();
 
@@ -203,7 +212,15 @@ namespace WarehouseManagement.BackendServer.Controllers
                 SellingPrice = x.SellingPrice,
                 OriginalPrice = x.OriginalPrice,
                 ImageUrl = x.ImageUrl,
-                Quantity = x.Quantity
+                Quantity = x.Quantity,
+                WarehouseLocation = _context.Warehouses
+                    .Join(_context.StockTransactions,
+                        w => w.Id,
+                        st => st.WarehouseId,
+                        (w, st) => new { Warehouse = w, StockTransaction = st })
+                    .Where(z => z.StockTransaction.ProductId == x.ProductId)
+                    .Select(z => z.Warehouse.Location)
+                    .FirstOrDefault()
             }).ToList();
 
 
@@ -253,6 +270,18 @@ namespace WarehouseManagement.BackendServer.Controllers
                     Quantity = pv.StockQuantity
                 }
             ).ToListAsync();
+
+            foreach (var product in productList)
+            {
+                product.WarehouseLocation = await _context.Warehouses
+                    .Join(_context.StockTransactions,
+                        w => w.Id,
+                        st => st.WarehouseId,
+                        (w, st) => new { Warehouse = w, StockTransaction = st })
+                    .Where(x => x.StockTransaction.ProductId == product.Id)
+                    .Select(x => x.Warehouse.Location)
+                    .FirstOrDefaultAsync();
+            }
 
             _logger.LogInformation("GetProducts API success to get all categories in system.");
 

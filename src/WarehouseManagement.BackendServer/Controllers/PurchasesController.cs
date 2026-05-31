@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using ClosedXML.Excel;
 using WarehouseManagement.BackendServer.Data;
 using WarehouseManagement.BackendServer.Data.Entities;
 using WarehouseManagement.ViewModels.Contents.PurchaseItems;
@@ -126,6 +127,88 @@ namespace WarehouseManagement.BackendServer.Controllers
         }
 
         /// <summary>
+        /// Export purchases to Excel file
+        /// </summary>
+        /// <param name="fromDate">Start date for filter</param>
+        /// <param name="toDate">End date for filter</param>
+        /// <returns>Excel file with purchase data</returns>
+        [HttpGet("export")]
+        public async Task<IActionResult> ExportPurchasesToExcel(DateTime? fromDate, DateTime? toDate)
+        {
+            _logger.LogInformation("Begin ExportPurchasesToExcel API. FromDate={FromDate}, ToDate={ToDate}", fromDate, toDate);
+
+            var query = _context.Purchases
+                .Where(p => !p.IsDeleted)
+                .Include(p => p.PurchaseItems)
+                .AsQueryable();
+
+            if (fromDate != null)
+            {
+                query = query.Where(x => x.CreateDate.Date >= fromDate.Value.Date);
+            }
+
+            if (toDate != null)
+            {
+                query = query.Where(x => x.CreateDate.Date <= toDate.Value.Date);
+            }
+
+            var purchases = await query.OrderByDescending(x => x.CreateDate).ToListAsync();
+
+            using (var workbook = new XLWorkbook())
+            {
+                var worksheet = workbook.Worksheets.Add("Purchases");
+
+                worksheet.Cell(1, 1).Value = "Receipt Code";
+                worksheet.Cell(1, 2).Value = "Reference Code";
+                worksheet.Cell(1, 3).Value = "Supplier Name";
+                worksheet.Cell(1, 4).Value = "Purchase Date";
+                worksheet.Cell(1, 5).Value = "Total Cost";
+                worksheet.Cell(1, 6).Value = "Status";
+                worksheet.Cell(1, 7).Value = "Created Date";
+                worksheet.Cell(1, 8).Value = "Items Count";
+                worksheet.Cell(1, 9).Value = "Items Details";
+
+                var headerRow = worksheet.Row(1);
+                headerRow.Style.Fill.BackgroundColor = XLColor.LightGray;
+                headerRow.Style.Font.Bold = true;
+
+                int row = 2;
+                foreach (var purchase in purchases)
+                {
+                    var itemsCount = purchase.PurchaseItems.Count(i => !i.IsDeleted);
+                    var itemsDetails = string.Join("; ", purchase.PurchaseItems
+                        .Where(i => !i.IsDeleted)
+                        .Select(i => $"ProductVariantId: {i.ProductVariantId}, Qty: {i.Quantity}, Cost: {i.UnitCost}"));
+
+                    worksheet.Cell(row, 1).Value = purchase.ReceiptCode;
+                    worksheet.Cell(row, 2).Value = purchase.ReferenceCode;
+                    worksheet.Cell(row, 3).Value = purchase.SupplierName;
+                    worksheet.Cell(row, 4).Value = purchase.PurchaseDate?.ToString("yyyy-MM-dd");
+                    worksheet.Cell(row, 5).Value = purchase.TotalCost;
+                    worksheet.Cell(row, 6).Value = purchase.Status.ToString();
+                    worksheet.Cell(row, 7).Value = purchase.CreateDate.ToString("yyyy-MM-dd HH:mm:ss");
+                    worksheet.Cell(row, 8).Value = itemsCount;
+                    worksheet.Cell(row, 9).Value = itemsDetails;
+
+                    row++;
+                }
+
+                worksheet.Columns().AdjustToContents();
+
+                using (var stream = new MemoryStream())
+                {
+                    workbook.SaveAs(stream);
+                    var fileBytes = stream.ToArray();
+
+                    var fileName = $"Purchases_Export_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                    _logger.LogInformation("ExportPurchasesToExcel success. FileName={FileName}", fileName);
+
+                    return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+                }
+            }
+        }
+
+        /// <summary>
         /// Get purchase by id with items
         /// </summary>
         /// <param name="id">Purchase id</param>
@@ -163,6 +246,9 @@ namespace WarehouseManagement.BackendServer.Controllers
                 CancelReason = purchase.CancelReason,
                 CanceledDate = purchase.CanceledDate,
                 CanceledBy = purchase.CanceledBy,
+                CreatedBy = purchase.CreatedBy,
+                ApprovedBy = purchase.ApprovedBy,
+                ApprovedDate = purchase.ApprovedDate,
                 Items = purchase.PurchaseItems.Where(i => !i.IsDeleted).Select(x => new
                 {
                     x.ProductId,
@@ -473,6 +559,7 @@ namespace WarehouseManagement.BackendServer.Controllers
             }
 
             purchase.IsDeleted = true;
+            purchase.LastModifiedDate = DateTime.UtcNow;
             var purchaseItemInPurchase = await _context.PurchaseItems
                 .Where(x => x.PurchaseId == id)
                 .ToListAsync();
@@ -523,6 +610,7 @@ namespace WarehouseManagement.BackendServer.Controllers
             }
 
             purchase.IsDeleted = false;
+            purchase.LastModifiedDate = DateTime.UtcNow;
             var purchaseItemInPurchase = await _context.PurchaseItems
                .Where(x => x.PurchaseId == id)
                .ToListAsync();
@@ -680,6 +768,59 @@ namespace WarehouseManagement.BackendServer.Controllers
             {
                 _logger.LogError(ex, "Database error while confirming purchase id = {id}", id);
                 return StatusCode(500, "An error occurred while confirming the purchase.");
+            }
+        }
+
+        /// <summary>
+        /// Approve the purchase by id
+        /// </summary>
+        /// <param name="id">Purchase id</param>
+        /// <returns>Result of approve process</returns>
+        [HttpPost("{id}/approve")]
+        public async Task<IActionResult> ApprovePurchase(int id)
+        {
+            _logger.LogInformation("Begin ApprovePurchase API");
+
+            var purchase = await _context.Purchases.FindAsync(id);
+            if (purchase == null)
+            {
+                _logger.LogWarning("Cannot find the purchase with id = {id}", id);
+                return NotFound();
+            }
+
+            if (purchase.IsCanceled)
+            {
+                _logger.LogWarning("Cannot approve a canceled purchase. Id = {id}", id);
+                return BadRequest("Cannot approve a canceled purchase");
+            }
+
+            if (purchase.ApprovedDate != null)
+            {
+                _logger.LogWarning("Purchase is already approved. Id = {id}", id);
+                return BadRequest("Purchase is already approved");
+            }
+
+            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            purchase.ApprovedBy = currentUserId;
+            purchase.ApprovedDate = DateTime.UtcNow;
+            purchase.LastModifiedDate = DateTime.UtcNow;
+
+            try
+            {
+                var result = await _context.SaveChangesAsync();
+                if (result > 0)
+                {
+                    _logger.LogInformation("ApprovePurchase success. Id = {id}", id);
+                    return NoContent();
+                }
+
+                _logger.LogWarning("ApprovePurchase failed to save changes. Id = {id}", id);
+                return BadRequest();
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Database error while approving purchase id = {id}", id);
+                return StatusCode(500, "An error occurred while approving the purchase.");
             }
         }
 

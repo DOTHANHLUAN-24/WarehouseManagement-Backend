@@ -7,5 +7,12 @@
         public string? ReceiptCode { get; set; }
         public string? ReferenceCode { get; set; }
         public string? Note { get; set; }
+        public bool IsCanceled { get; set; }
+        public string? CancelReason { get; set; }
+        public DateTime? CanceledDate { get; set; }
+        public string? CanceledBy { get; set; }
+        public string? CreatedBy { get; set; }
+        public string? ApprovedBy { get; set; }
+        public DateTime? ApprovedDate { get; set; }
     }
 }

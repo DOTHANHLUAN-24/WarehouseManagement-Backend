@@ -76,7 +76,7 @@ namespace WarehouseManagement.BackendServer.Controllers
         {
             _logger.LogInformation("Begin GetCustomerById. Id={id}", id);
 
-            var customer = await _context.Customers.FindAsync(id);
+            var customer = await _context.Customers.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
             if (customer == null)
             {
                 _logger.LogWarning("Get Customer not found. Id={id}", id);
@@ -100,7 +100,7 @@ namespace WarehouseManagement.BackendServer.Controllers
         {
             _logger.LogInformation("Begin GetCustomers API");
 
-            var customers = _context.Customers;
+            var customers = _context.Customers.Where(x => !x.IsDeleted);
             var customerViewModels = await customers
                 .Select(customer => CreateCustomerViewModel(customer))
                 .ToListAsync();
@@ -125,7 +125,7 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             pageSize = pageSize <= 0 ? 10 : pageSize;
 
-            var query = _context.Customers.AsQueryable();
+            var query = _context.Customers.Where(x => !x.IsDeleted).AsQueryable();
 
             if (!string.IsNullOrEmpty(filter))
             {
@@ -357,6 +357,7 @@ namespace WarehouseManagement.BackendServer.Controllers
             pageSize = pageSize <= 0 ? 10 : pageSize;
 
             var query = _context.Customers
+                .Where(x => !x.IsDeleted)
                 .AsNoTracking()
                 .AsQueryable();
 
@@ -432,6 +433,7 @@ namespace WarehouseManagement.BackendServer.Controllers
             pageSize = pageSize <= 0 ? 10 : pageSize;
 
             var query = _context.Customers
+                .Where(x => !x.IsDeleted)
                 .AsNoTracking()
                 .Where(x => x.Status == status);
 
@@ -464,6 +466,7 @@ namespace WarehouseManagement.BackendServer.Controllers
             _logger.LogInformation("Begin CheckPhoneExists API. Phone={Phone}", phone);
 
             var exists = await _context.Customers
+                .Where(x => !x.IsDeleted)
                 .AsNoTracking()
                 .AnyAsync(x => x.PhoneNumber == phone);
 
