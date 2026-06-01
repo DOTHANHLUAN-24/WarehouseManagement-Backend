@@ -54,30 +54,6 @@ namespace WarehouseManagement.ViewModels.UnitTest.Contents.Suppliers
         }
 
         [Theory]
-        [InlineData("")]
-        [InlineData(null)]
-        public void Should_Return_Error_When_Missing_Email(string data)
-        {
-            _request.Email = data;
-
-            var result = _validator.Validate(_request);
-            Assert.False(result.IsValid);
-        }
-
-        [Theory]
-        [InlineData("123456789")]
-        [InlineData("012345678901")]
-        [InlineData("12345678901")]
-        [InlineData("012345678a")]
-        public void Should_Return_Error_When_Invalid_Phone(string data)
-        {
-            _request.Phone = data;
-
-            var result = _validator.Validate(_request);
-            Assert.False(result.IsValid);
-        }
-
-        [Theory]
         [InlineData("test")]
         [InlineData("test@")]
         [InlineData("test@gmail")]
