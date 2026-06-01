@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
@@ -44,6 +44,10 @@ namespace WarehouseManagement.BackendServer.Controllers
                 x.Note,
                 x.SupplierId,
                 x.SupplierName,
+                x.CustomerId,
+                x.CustomerName,
+                x.IsExport,
+                x.Type,
                 x.PurchaseDate,
                 TotalAmount = x.TotalCost,
                 x.CreateDate,
@@ -69,6 +73,7 @@ namespace WarehouseManagement.BackendServer.Controllers
         (
             DateTime? fromDate,
             DateTime? toDate,
+            Data.Enums.PurchaseStatus? status,
             int pageIndex = 1,
             int pageSize = 10
         )
@@ -77,6 +82,11 @@ namespace WarehouseManagement.BackendServer.Controllers
             pageSize = pageSize <= 0 ? 10 : pageSize;
 
             var query = _context.Purchases.Where(p => !p.IsDeleted).AsQueryable();
+
+            if (status.HasValue)
+            {
+                query = query.Where(x => x.Status == status.Value);
+            }
 
             if (fromDate != null)
             {
@@ -102,6 +112,10 @@ namespace WarehouseManagement.BackendServer.Controllers
                 x.Note,
                 x.SupplierId,
                 x.SupplierName,
+                x.CustomerId,
+                x.CustomerName,
+                x.IsExport,
+                x.Type,
                 x.PurchaseDate,
                 TotalAmount = x.TotalCost,
                 x.CreateDate,
@@ -133,14 +147,19 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// <param name="toDate">End date for filter</param>
         /// <returns>Excel file with purchase data</returns>
         [HttpGet("export")]
-        public async Task<IActionResult> ExportPurchasesToExcel(DateTime? fromDate, DateTime? toDate)
+        public async Task<IActionResult> ExportPurchasesToExcel(DateTime? fromDate, DateTime? toDate, Data.Enums.PurchaseStatus? status)
         {
-            _logger.LogInformation("Begin ExportPurchasesToExcel API. FromDate={FromDate}, ToDate={ToDate}", fromDate, toDate);
+            _logger.LogInformation("Begin ExportPurchasesToExcel API. FromDate={FromDate}, ToDate={ToDate}, Status={Status}", fromDate, toDate, status);
 
             var query = _context.Purchases
                 .Where(p => !p.IsDeleted)
                 .Include(p => p.PurchaseItems)
                 .AsQueryable();
+
+            if (status.HasValue)
+            {
+                query = query.Where(x => x.Status == status.Value);
+            }
 
             if (fromDate != null)
             {
@@ -237,6 +256,10 @@ namespace WarehouseManagement.BackendServer.Controllers
                 purchase.Note,
                 purchase.SupplierId,
                 purchase.SupplierName,
+                purchase.CustomerId,
+                purchase.CustomerName,
+                purchase.IsExport,
+                purchase.Type,
                 purchase.PurchaseDate,
                 TotalAmount = purchase.TotalCost,
                 CreateDate = purchase.CreateDate,
@@ -284,12 +307,37 @@ namespace WarehouseManagement.BackendServer.Controllers
                 return BadRequest(ModelState);
             }
 
-            // Validate supplier
-            var supplier = await _context.Suppliers.FindAsync(request.SupplierId);
-            if (supplier == null || supplier.IsDeleted)
+            string? supplierName = null;
+            string? customerName = null;
+            bool isExport = request.Type == 2;
+
+            if (isExport)
             {
-                _logger.LogWarning("Supplier not found or deleted. SupplierId = {SupplierId}", request.SupplierId);
-                return BadRequest("Supplier not found");
+                if (!request.CustomerId.HasValue)
+                {
+                    return BadRequest("CustomerId is required for export voucher");
+                }
+                var customer = await _context.Customers.FindAsync(request.CustomerId.Value);
+                if (customer == null || customer.IsDeleted)
+                {
+                    _logger.LogWarning("Customer not found or deleted. CustomerId = {CustomerId}", request.CustomerId);
+                    return BadRequest("Customer not found");
+                }
+                customerName = customer.FullName;
+            }
+            else
+            {
+                if (!request.SupplierId.HasValue)
+                {
+                    return BadRequest("SupplierId is required for import voucher");
+                }
+                var supplier = await _context.Suppliers.FindAsync(request.SupplierId.Value);
+                if (supplier == null || supplier.IsDeleted)
+                {
+                    _logger.LogWarning("Supplier not found or deleted. SupplierId = {SupplierId}", request.SupplierId);
+                    return BadRequest("Supplier not found");
+                }
+                supplierName = supplier.SupplierName;
             }
 
             if (request.Items == null || !request.Items.Any())
@@ -298,28 +346,31 @@ namespace WarehouseManagement.BackendServer.Controllers
                 return BadRequest("Purchase must contain at least one item");
             }
 
-            // XỬ LÝ SỬA: Đồng bộ múi giờ Việt Nam để sinh chuỗi hiển thị 'yyyyMM' chính xác
             var utcNow = DateTime.UtcNow;
             var localTime = TimeZoneInfo.ConvertTimeFromUtc(utcNow, TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time"));
             var ym = localTime.ToString("yyyyMM");
 
             var sequence = await _context.Purchases.CountAsync(p => p.CreateDate.Year == utcNow.Year && p.CreateDate.Month == utcNow.Month) + 1;
-            var receiptCode = $"PO-{ym}-{sequence:000}";
+            var prefix = isExport ? "SO" : "PO";
+            var receiptCode = $"{prefix}-{ym}-{sequence:000}";
 
-            // THÊM MỚI: Lấy thông tin User ID từ tài khoản đang đăng nhập
             var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             var purchase = new Purchase
             {
-                SupplierId = request.SupplierId,
-                SupplierName = supplier.SupplierName,
+                SupplierId = isExport ? null : request.SupplierId,
+                SupplierName = supplierName,
+                CustomerId = isExport ? request.CustomerId : null,
+                CustomerName = customerName,
+                IsExport = isExport,
+                Type = request.Type,
                 PurchaseDate = request.ReceiptDate == default ? request.PurchaseDate : request.ReceiptDate,
                 ReceiptCode = receiptCode,
                 ReferenceCode = request.ReferenceCode,
                 Note = request.Note,
                 CreateDate = utcNow,
                 Status = Data.Enums.PurchaseStatus.Pending,
-                CreatedBy = currentUserId, // GÁN THÔNG TIN USER ĐĂNG NHẬP
+                CreatedBy = currentUserId,
                 IsCanceled = false
             };
 
@@ -333,7 +384,6 @@ namespace WarehouseManagement.BackendServer.Controllers
                     return BadRequest($"Invalid quantity for product {item.ProductId}");
                 }
 
-                // find a product variant for the given product id
                 var variant = await _context.ProductVariants
                     .Where(v => v.ProductId == item.ProductId && v.IsActive)
                     .OrderBy(v => v.Id)
@@ -376,9 +426,13 @@ namespace WarehouseManagement.BackendServer.Controllers
                         purchase.Note,
                         purchase.SupplierId,
                         purchase.SupplierName,
+                        purchase.CustomerId,
+                        purchase.CustomerName,
+                        purchase.IsExport,
+                        purchase.Type,
                         purchase.PurchaseDate,
                         TotalAmount = purchase.TotalCost,
-                        purchase.CreatedBy, // Trả thêm CreatedBy ở phản hồi tạo mới thành công
+                        purchase.CreatedBy,
                         Items = purchase.PurchaseItems.Select(x => new
                         {
                             x.ProductId,
@@ -438,19 +492,49 @@ namespace WarehouseManagement.BackendServer.Controllers
                 return BadRequest("Cannot update a canceled purchase");
             }
 
-            var supplier = await _context.Suppliers.FindAsync(request.SupplierId);
-            if (supplier == null || supplier.IsDeleted)
+            string? supplierName = null;
+            string? customerName = null;
+            bool isExport = request.Type == 2;
+
+            if (isExport)
             {
-                _logger.LogWarning("Supplier not found for update. SupplierId = {SupplierId}", request.SupplierId);
-                return BadRequest("Supplier not found");
+                if (!request.CustomerId.HasValue)
+                {
+                    return BadRequest("CustomerId is required for export voucher");
+                }
+                var customer = await _context.Customers.FindAsync(request.CustomerId.Value);
+                if (customer == null || customer.IsDeleted)
+                {
+                    _logger.LogWarning("Customer not found or deleted. CustomerId = {CustomerId}", request.CustomerId);
+                    return BadRequest("Customer not found");
+                }
+                customerName = customer.FullName;
+            }
+            else
+            {
+                if (!request.SupplierId.HasValue)
+                {
+                    return BadRequest("SupplierId is required for import voucher");
+                }
+                var supplier = await _context.Suppliers.FindAsync(request.SupplierId.Value);
+                if (supplier == null || supplier.IsDeleted)
+                {
+                    _logger.LogWarning("Supplier not found or deleted. SupplierId = {SupplierId}", request.SupplierId);
+                    return BadRequest("Supplier not found");
+                }
+                supplierName = supplier.SupplierName;
             }
 
             // SỬA: Xóa bỏ hoàn toàn các PurchaseItem cũ khỏi danh sách đang theo dõi của Purchase
             // Việc này giải phóng bộ nhớ tracking của EF Core để tránh lỗi trùng Key
             purchase.PurchaseItems.Clear();
 
-            purchase.SupplierId = request.SupplierId;
-            purchase.SupplierName = supplier.SupplierName;
+            purchase.SupplierId = isExport ? null : request.SupplierId;
+            purchase.SupplierName = supplierName;
+            purchase.CustomerId = isExport ? request.CustomerId : null;
+            purchase.CustomerName = customerName;
+            purchase.IsExport = isExport;
+            purchase.Type = request.Type;
             purchase.PurchaseDate = request.ReceiptDate == default ? request.PurchaseDate : request.ReceiptDate;
             purchase.ReferenceCode = request.ReferenceCode;
             purchase.Note = request.Note;
@@ -691,8 +775,6 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// <summary>
         /// Confirm the purchase and save into stock transactions        
         /// </summary>
-        /// <param name="id">Purchase id</param>
-        /// <returns>Result of process</returns>
         [HttpPost("{id}/confirm")]
         public async Task<IActionResult> ConfirmPurchase(int id)
         {
@@ -719,31 +801,6 @@ namespace WarehouseManagement.BackendServer.Controllers
             {
                 var price = ((int)item.UnitCost * item.Quantity);
                 totalPrice += price;
-                var product = await _context.ProductVariants
-                    .Where(x => x.Id == item.ProductVariantId)
-                    .FirstOrDefaultAsync();
-                if (product == null)
-                {
-                    _logger.LogWarning(
-                        "ProductVariant not found. ProductVariantId = {productVariantId} for purchase id = {purchaseId}",
-                        item.ProductVariantId,
-                        id
-                    );
-                    return BadRequest($"ProductVariant not found. Id = {item.ProductVariantId}");
-                }
-
-                var stockTransaction = new StockTransaction
-                {
-                    ProductId = product.ProductId,
-                    ReferenceId = id,
-                    ReferenceType = Data.Enums.ReferenceType.Purchase,
-                    WarehouseId = 1, // Fake
-                    QuantityChange = item.Quantity,
-                    BalanceAfter = price,
-                    CreateDate = DateTime.UtcNow,
-                };
-
-                _context.StockTransactions.Add(stockTransaction);
             }
 
             if (totalPrice != existPurchase.TotalCost)
@@ -755,14 +812,8 @@ namespace WarehouseManagement.BackendServer.Controllers
             try
             {
                 var result = await _context.SaveChangesAsync();
-                if (result > 0)
-                {
-                    _logger.LogInformation("Success ConfirmPurchase API for id = {id}", id);
-                    return Ok();
-                }
-
-                _logger.LogWarning("Failed to save changes during ConfirmPurchase for id = {id}", id);
-                return BadRequest();
+                _logger.LogInformation("Success ConfirmPurchase API for id = {id}", id);
+                return Ok();
             }
             catch (DbUpdateException ex)
             {
@@ -794,7 +845,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                 return BadRequest("Cannot approve a canceled purchase");
             }
 
-            if (purchase.ApprovedDate != null)
+            if (purchase.ApprovedDate != null || purchase.Status == Data.Enums.PurchaseStatus.Completed)
             {
                 _logger.LogWarning("Purchase is already approved. Id = {id}", id);
                 return BadRequest("Purchase is already approved");
@@ -804,21 +855,82 @@ namespace WarehouseManagement.BackendServer.Controllers
             purchase.ApprovedBy = currentUserId;
             purchase.ApprovedDate = DateTime.UtcNow;
             purchase.LastModifiedDate = DateTime.UtcNow;
+            purchase.Status = Data.Enums.PurchaseStatus.Completed; // status = 2
 
+            var listPurchaseItems = await _context.PurchaseItems
+                .Where(x => x.PurchaseId == id && !x.IsDeleted)
+                .ToListAsync();
+
+            if (listPurchaseItems == null || listPurchaseItems.Count == 0)
+            {
+                return BadRequest("Phiếu không có sản phẩm nào để duyệt.");
+            }
+
+            using var dbTransaction = await _context.Database.BeginTransactionAsync();
             try
             {
+                foreach (var item in listPurchaseItems)
+                {
+                    var productVariant = await _context.ProductVariants.FindAsync(item.ProductVariantId);
+                    if (productVariant == null)
+                    {
+                        return BadRequest($"Không tìm thấy biến thể sản phẩm ID: {item.ProductVariantId}");
+                    }
+
+                    int actualQuantityChange = purchase.IsExport ? -item.Quantity : item.Quantity;
+
+                    if (purchase.IsExport && productVariant.StockQuantity + actualQuantityChange < 0)
+                    {
+                        return BadRequest($"Sản phẩm (ID biến thể: {productVariant.Id}) không đủ tồn kho để xuất. Hiện có: {productVariant.StockQuantity}, yêu cầu xuất: {item.Quantity}");
+                    }
+
+                    productVariant.StockQuantity += actualQuantityChange;
+                    _context.ProductVariants.Update(productVariant);
+
+                    var lastBalance = await _context.StockTransactions
+                        .Where(x => x.ProductId == productVariant.ProductId && x.WarehouseId == 1)
+                        .OrderByDescending(x => x.Id)
+                        .Select(x => x.BalanceAfter)
+                        .FirstOrDefaultAsync();
+
+                    var stockTransaction = new StockTransaction
+                    {
+                        ProductId = productVariant.ProductId,
+                        ProductVariantId = productVariant.Id,
+                        WarehouseId = 1,
+                        QuantityChange = actualQuantityChange,
+                        BalanceAfter = lastBalance + actualQuantityChange,
+                        TransactionType = purchase.IsExport 
+                            ? Data.Enums.StockTransactionType.SalesIssue 
+                            : Data.Enums.StockTransactionType.PurchaseReceipt,
+                        ReferenceType = purchase.IsExport 
+                            ? Data.Enums.ReferenceType.Order 
+                            : Data.Enums.ReferenceType.Purchase,
+                        ReferenceId = id,
+                        Note = purchase.Note ?? (purchase.IsExport ? "Xuất kho bán hàng" : "Nhập kho mua hàng"),
+                        CreateDate = DateTime.UtcNow,
+                        LastModifiedDate = DateTime.UtcNow,
+                        IsCanceled = false
+                    };
+
+                    _context.StockTransactions.Add(stockTransaction);
+                }
+
                 var result = await _context.SaveChangesAsync();
+                await dbTransaction.CommitAsync();
+
                 if (result > 0)
                 {
                     _logger.LogInformation("ApprovePurchase success. Id = {id}", id);
-                    return NoContent();
+                    return Ok(new { Message = "Phê duyệt phiếu thành công, kho đã được cập nhật.", Status = 2 });
                 }
 
                 _logger.LogWarning("ApprovePurchase failed to save changes. Id = {id}", id);
-                return BadRequest();
+                return BadRequest("Không thể lưu thay đổi khi phê duyệt phiếu.");
             }
-            catch (DbUpdateException ex)
+            catch (Exception ex)
             {
+                await dbTransaction.RollbackAsync();
                 _logger.LogError(ex, "Database error while approving purchase id = {id}", id);
                 return StatusCode(500, "An error occurred while approving the purchase.");
             }

@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.BackendServer.Data.Enums;
@@ -12,10 +12,17 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         [Key]
         public int Id { get; set; }
 
-        [Required]
-        public int SupplierId { get; set; }
+        public int? SupplierId { get; set; }
 
         public string? SupplierName { get; set; }
+
+        public int? CustomerId { get; set; }
+
+        public string? CustomerName { get; set; }
+
+        public bool IsExport { get; set; }
+
+        public int Type { get; set; } // 1: Nhập, 2: Xuất
 
         public DateTime? PurchaseDate { get; set; }
 

@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using ClosedXML.Excel;
 using WarehouseManagement.BackendServer.Data;
 using WarehouseManagement.BackendServer.Data.Entities;
 using WarehouseManagement.BackendServer.Data.Enums;
@@ -419,82 +420,191 @@ namespace WarehouseManagement.BackendServer.Controllers
 
                 var transactions = await query.OrderByDescending(st => st.Id).ToListAsync();
 
-                System.Text.StringBuilder sb = new();
-
-                // Đã thêm các cột liên quan đến Hủy vào file xuất CSV
-                sb.AppendLine("Id,ProductId,ProductName,ProductCode,WarehouseId,QuantityChange,TransactionType,ReferenceType,ReferenceId,BalanceAfter,CreateDate,LastModifiedDate,IsCanceled,CancelReason,CanceledDate,CanceledBy");
-
-                static string EscapeCsv(object? value)
+                using (var workbook = new XLWorkbook())
                 {
-                    if (value == null) return string.Empty;
-                    var s = value.ToString() ?? string.Empty;
-                    if (s.Contains('"')) s = s.Replace("\"", "\"\"");
-                    if (s.Contains(',') || s.Contains('\n') || s.Contains('\r') || s.Contains('"')) return "\"" + s + "\"";
-                    return s;
-                }
+                    var worksheet = workbook.Worksheets.Add("Stock Transactions");
+                    worksheet.ShowGridLines = true;
 
-                if (transactions.Count > 0)
-                {
-                    var productIds = transactions.Select(t => t.ProductId).Distinct().ToList();
-                    var products = await _context.Products
-                        .Where(p => productIds.Contains(p.Id))
-                        .Select(p => new { p.Id, p.Name, p.Code })
-                        .ToDictionaryAsync(p => p.Id);
+                    // Set headers
+                    worksheet.Cell(1, 1).Value = "Transaction ID";
+                    worksheet.Cell(1, 2).Value = "Product ID";
+                    worksheet.Cell(1, 3).Value = "Product Name";
+                    worksheet.Cell(1, 4).Value = "Product Code";
+                    worksheet.Cell(1, 5).Value = "Warehouse ID";
+                    worksheet.Cell(1, 6).Value = "Quantity Change";
+                    worksheet.Cell(1, 7).Value = "Transaction Type";
+                    worksheet.Cell(1, 8).Value = "Reference Type";
+                    worksheet.Cell(1, 9).Value = "Reference ID";
+                    worksheet.Cell(1, 10).Value = "Balance After";
+                    worksheet.Cell(1, 11).Value = "Create Date";
+                    worksheet.Cell(1, 12).Value = "Last Modified Date";
+                    worksheet.Cell(1, 13).Value = "Is Canceled";
+                    worksheet.Cell(1, 14).Value = "Cancel Reason";
+                    worksheet.Cell(1, 15).Value = "Canceled Date";
+                    worksheet.Cell(1, 16).Value = "Canceled By";
 
-                    foreach (var t in transactions)
+                    var headerRow = worksheet.Row(1);
+                    headerRow.Style.Fill.BackgroundColor = XLColor.FromHtml("#1F4E78");
+                    headerRow.Style.Font.Bold = true;
+                    headerRow.Style.Font.FontColor = XLColor.White;
+                    headerRow.Style.Font.FontSize = 11;
+                    headerRow.Height = 25;
+
+                    for (int col = 1; col <= 16; col++)
                     {
-                        products.TryGetValue(t.ProductId, out var prod);
+                        var cell = worksheet.Cell(1, col);
+                        cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                        cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                        cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                        cell.Style.Border.OutsideBorderColor = XLColor.FromHtml("#D3D3D3");
+                    }
 
-                        var line = string.Join(",",
-                            EscapeCsv(t.Id),
-                            EscapeCsv(t.ProductId),
-                            EscapeCsv(prod?.Name),
-                            EscapeCsv(prod?.Code),
-                            EscapeCsv(t.WarehouseId),
-                            EscapeCsv(t.QuantityChange),
-                            EscapeCsv(t.TransactionType.ToString()),
-                            EscapeCsv(t.ReferenceType.ToString()),
-                            EscapeCsv(t.ReferenceId),
-                            EscapeCsv(t.BalanceAfter),
-                            EscapeCsv(t.CreateDate.ToString("o")),
-                            EscapeCsv(t.LastModifiedDate?.ToString("o")),
-                            EscapeCsv(t.IsCanceled),
-                            EscapeCsv(t.CancelReason),
-                            EscapeCsv(t.CanceledDate?.ToString("o")),
-                            EscapeCsv(t.CanceledBy)
-                        );
+                    int row = 2;
+                    if (transactions.Count > 0)
+                    {
+                        var productIds = transactions.Select(t => t.ProductId).Distinct().ToList();
+                        var products = await _context.Products
+                            .Where(p => productIds.Contains(p.Id))
+                            .Select(p => new { p.Id, p.Name, p.Code })
+                            .ToDictionaryAsync(p => p.Id);
 
-                        sb.AppendLine(line);
+                        foreach (var t in transactions)
+                        {
+                            products.TryGetValue(t.ProductId, out var prod);
+
+                            worksheet.Cell(row, 1).Value = t.Id;
+                            worksheet.Cell(row, 2).Value = t.ProductId;
+                            worksheet.Cell(row, 3).Value = prod?.Name ?? string.Empty;
+                            worksheet.Cell(row, 4).Value = prod?.Code ?? string.Empty;
+                            worksheet.Cell(row, 5).Value = t.WarehouseId;
+                            worksheet.Cell(row, 6).Value = t.QuantityChange;
+                            worksheet.Cell(row, 6).Style.NumberFormat.Format = "#,##0;[Red]-#,##0";
+                            worksheet.Cell(row, 7).Value = t.TransactionType.ToString();
+                            worksheet.Cell(row, 8).Value = t.ReferenceType.ToString();
+                            worksheet.Cell(row, 9).Value = t.ReferenceId;
+                            worksheet.Cell(row, 10).Value = t.BalanceAfter;
+                            worksheet.Cell(row, 10).Style.NumberFormat.Format = "#,##0";
+
+                            worksheet.Cell(row, 11).Value = t.CreateDate;
+                            worksheet.Cell(row, 11).Style.DateFormat.Format = "yyyy-MM-dd HH:mm:ss";
+
+                            if (t.LastModifiedDate.HasValue)
+                            {
+                                worksheet.Cell(row, 12).Value = t.LastModifiedDate.Value;
+                                worksheet.Cell(row, 12).Style.DateFormat.Format = "yyyy-MM-dd HH:mm:ss";
+                            }
+                            else
+                            {
+                                worksheet.Cell(row, 12).Value = string.Empty;
+                            }
+
+                            worksheet.Cell(row, 13).Value = t.IsCanceled ? "Yes" : "No";
+                            worksheet.Cell(row, 14).Value = t.CancelReason ?? string.Empty;
+
+                            if (t.CanceledDate.HasValue)
+                            {
+                                worksheet.Cell(row, 15).Value = t.CanceledDate.Value;
+                                worksheet.Cell(row, 15).Style.DateFormat.Format = "yyyy-MM-dd HH:mm:ss";
+                            }
+                            else
+                            {
+                                worksheet.Cell(row, 15).Value = string.Empty;
+                            }
+
+                            worksheet.Cell(row, 16).Value = t.CanceledBy ?? string.Empty;
+
+                            var bg = (row % 2 == 0) ? XLColor.FromHtml("#F8F9FA") : XLColor.White;
+                            for (int col = 1; col <= 16; col++)
+                            {
+                                var cell = worksheet.Cell(row, col);
+                                cell.Style.Fill.BackgroundColor = bg;
+                                cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                                cell.Style.Border.OutsideBorderColor = XLColor.FromHtml("#E2E8F0");
+                                cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+
+                                if (col == 3 || col == 4 || col == 14 || col == 16)
+                                {
+                                    cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Left;
+                                }
+                                else if (col == 6 || col == 10)
+                                {
+                                    cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+                                }
+                                else
+                                {
+                                    cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                                }
+                            }
+
+                            row++;
+                        }
+                    }
+                    else if (idsAreProductIds && ids != null && ids.Count > 0)
+                    {
+                        var products = await _context.Products
+                            .Where(p => ids.Contains(p.Id))
+                            .OrderBy(p => p.Id)
+                            .Select(p => new { p.Id, p.Name, p.Code })
+                            .ToListAsync();
+
+                        foreach (var p in products)
+                        {
+                            worksheet.Cell(row, 1).Value = string.Empty;
+                            worksheet.Cell(row, 2).Value = p.Id;
+                            worksheet.Cell(row, 3).Value = p.Name;
+                            worksheet.Cell(row, 4).Value = p.Code;
+                            worksheet.Cell(row, 5).Value = string.Empty;
+                            worksheet.Cell(row, 6).Value = 0;
+                            worksheet.Cell(row, 6).Style.NumberFormat.Format = "#,##0;[Red]-#,##0";
+                            worksheet.Cell(row, 7).Value = string.Empty;
+                            worksheet.Cell(row, 8).Value = string.Empty;
+                            worksheet.Cell(row, 9).Value = string.Empty;
+                            worksheet.Cell(row, 10).Value = 0;
+                            worksheet.Cell(row, 10).Style.NumberFormat.Format = "#,##0";
+                            worksheet.Cell(row, 11).Value = string.Empty;
+                            worksheet.Cell(row, 12).Value = string.Empty;
+                            worksheet.Cell(row, 13).Value = "No";
+                            worksheet.Cell(row, 14).Value = string.Empty;
+                            worksheet.Cell(row, 15).Value = string.Empty;
+                            worksheet.Cell(row, 16).Value = string.Empty;
+
+                            var bg = (row % 2 == 0) ? XLColor.FromHtml("#F8F9FA") : XLColor.White;
+                            for (int col = 1; col <= 16; col++)
+                            {
+                                var cell = worksheet.Cell(row, col);
+                                cell.Style.Fill.BackgroundColor = bg;
+                                cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                                cell.Style.Border.OutsideBorderColor = XLColor.FromHtml("#E2E8F0");
+                                cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+
+                                if (col == 3 || col == 4 || col == 14 || col == 16)
+                                {
+                                    cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Left;
+                                }
+                                else if (col == 6 || col == 10)
+                                {
+                                    cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+                                }
+                                else
+                                {
+                                    cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                                }
+                            }
+
+                            row++;
+                        }
+                    }
+
+                    worksheet.Columns().AdjustToContents();
+
+                    using (var stream = new MemoryStream())
+                    {
+                        workbook.SaveAs(stream);
+                        var fileBytes = stream.ToArray();
+                        var fileName = $"stock_transactions_{DateTime.UtcNow:yyyyMMddHHmmss}.xlsx";
+                        return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
                     }
                 }
-                else if (idsAreProductIds && ids != null && ids.Count > 0)
-                {
-                    var products = await _context.Products
-                        .Where(p => ids.Contains(p.Id))
-                        .OrderBy(p => p.Id)
-                        .Select(p => new { p.Id, p.Name, p.Code })
-                        .ToListAsync();
-
-                    foreach (var p in products)
-                    {
-                        var line = string.Join(",",
-                            EscapeCsv(string.Empty), EscapeCsv(p.Id), EscapeCsv(p.Name), EscapeCsv(p.Code),
-                            EscapeCsv(string.Empty), EscapeCsv(0), EscapeCsv(string.Empty), EscapeCsv(string.Empty),
-                            EscapeCsv(string.Empty), EscapeCsv(0), EscapeCsv(string.Empty), EscapeCsv(string.Empty),
-                            EscapeCsv(false), EscapeCsv(string.Empty), EscapeCsv(string.Empty), EscapeCsv(string.Empty)
-                        );
-                        sb.AppendLine(line);
-                    }
-                }
-
-                var fileName = $"stock_transactions_{DateTime.UtcNow:yyyyMMddHHmmss}.csv";
-                var bom = System.Text.Encoding.UTF8.GetPreamble();
-                var contentBytes = System.Text.Encoding.UTF8.GetBytes(sb.ToString());
-                var bytes = new byte[bom.Length + contentBytes.Length];
-                Buffer.BlockCopy(bom, 0, bytes, 0, bom.Length);
-                Buffer.BlockCopy(contentBytes, 0, bytes, bom.Length, contentBytes.Length);
-
-                return File(bytes, "text/csv; charset=utf-8", fileName);
             }
             catch (Exception ex)
             {

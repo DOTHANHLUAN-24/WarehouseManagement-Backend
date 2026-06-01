@@ -1,4 +1,4 @@
-﻿using WarehouseManagement.ViewModels.Contents.PurchaseItems;
+using WarehouseManagement.ViewModels.Contents.PurchaseItems;
 
 namespace WarehouseManagement.ViewModels.Contents.Purchases
 {
@@ -7,6 +7,8 @@ namespace WarehouseManagement.ViewModels.Contents.Purchases
         public int WarehouseId { get; set; }
 
         public string? SupplierName { get; set; }
+
+        public string? CustomerName { get; set; }
 
         public DateTime ReceiptDate { get; set; }
 

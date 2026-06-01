@@ -27,9 +27,12 @@ namespace WarehouseManagement.BackendServer.Swagger
             // Request example: only include fields client should send. Remove system-generated fields.
             var example = new OpenApiObject
             {
-                ["supplierId"] = new OpenApiInteger(0),
+                ["type"] = new OpenApiInteger(1), // 1: Nhập, 2: Xuất
+                ["supplierId"] = new OpenApiInteger(0), // Required if type == 1
+                ["customerId"] = new OpenApiInteger(0), // Required if type == 2
                 ["warehouseId"] = new OpenApiInteger(0),
                 ["supplierName"] = new OpenApiString("string"),
+                ["customerName"] = new OpenApiString("string"),
                 ["receiptDate"] = new OpenApiString("2026-05-19T15:30:00.000Z"),
                 ["referenceCode"] = new OpenApiString("string"),
                 ["note"] = new OpenApiString("string"),
@@ -49,28 +52,25 @@ namespace WarehouseManagement.BackendServer.Swagger
             // Prepare response example object (what API returns)
             var responseExample = new OpenApiObject
             {
-                ["purchaseId"] = new OpenApiInteger(123),
-                ["supplierId"] = new OpenApiInteger(101),
-                ["warehouseId"] = new OpenApiInteger(1),
-                ["supplierName"] = new OpenApiString("Công ty TNHH ABC"),
-                ["receiptDate"] = new OpenApiString("2026-05-19T15:30:00.000Z"),
+                ["id"] = new OpenApiInteger(123),
                 ["receiptCode"] = new OpenApiString("PO-20260519-001"),
                 ["referenceCode"] = new OpenApiString("HD-12345"),
                 ["note"] = new OpenApiString("Nhập hàng đợt 1 tháng 5"),
-                ["totalCost"] = new OpenApiDouble(15000000),
-                ["createDate"] = new OpenApiString("2026-05-19T15:37:03.436Z"),
-                ["lastModifiedDate"] = new OpenApiString("2026-05-19T15:37:03.436Z"),
-                ["status"] = new OpenApiInteger(1),
-                ["isCanceled"] = new OpenApiBoolean(false),
-                ["cancelReason"] = new OpenApiNull(),
-                ["canceledDate"] = new OpenApiNull(),
-                ["canceledBy"] = new OpenApiNull(),
+                ["supplierId"] = new OpenApiInteger(101),
+                ["supplierName"] = new OpenApiString("Công ty TNHH ABC"),
+                ["customerId"] = new OpenApiNull(),
+                ["customerName"] = new OpenApiNull(),
+                ["isExport"] = new OpenApiBoolean(false),
+                ["type"] = new OpenApiInteger(1),
+                ["purchaseDate"] = new OpenApiString("2026-05-19T15:30:00.000Z"),
+                ["totalAmount"] = new OpenApiDouble(15000000),
+                ["createdBy"] = new OpenApiString("802f1afd-89f3-45bd-b785-19346929326b"),
                 ["items"] = new OpenApiArray
                 {
                     new OpenApiObject
                     {
-                        ["purchaseId"] = new OpenApiInteger(123),
                         ["productId"] = new OpenApiInteger(12),
+                        ["productVariantId"] = new OpenApiInteger(12),
                         ["quantity"] = new OpenApiInteger(20),
                         ["unitCost"] = new OpenApiDouble(500000),
                         ["totalPrice"] = new OpenApiDouble(10000000)

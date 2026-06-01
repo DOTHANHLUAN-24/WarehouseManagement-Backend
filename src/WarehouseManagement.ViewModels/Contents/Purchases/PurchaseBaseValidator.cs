@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 
 namespace WarehouseManagement.ViewModels.Contents.Purchases
 {
@@ -7,8 +7,16 @@ namespace WarehouseManagement.ViewModels.Contents.Purchases
     {
         public PurchaseBaseValidator()
         {
+            RuleFor(x => x.Type)
+                .Must(x => x == 1 || x == 2).WithMessage("Type must be 1 (Import) or 2 (Export)");
+
             RuleFor(x => x.SupplierId)
-                .NotEmpty().WithMessage("Supplier id is required");
+                .NotEmpty().WithMessage("Supplier id is required")
+                .When(x => x.Type == 1);
+
+            RuleFor(x => x.CustomerId)
+                .NotEmpty().WithMessage("Customer id is required")
+                .When(x => x.Type == 2);
 
             RuleFor(x => x.TotalCost)
                 .GreaterThanOrEqualTo(0).WithMessage("Total cost is must be greater or equal than 0")
