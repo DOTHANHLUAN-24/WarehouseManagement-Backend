@@ -54,6 +54,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                 x.LastModifiedDate,
                 Status = (int)x.Status,
                 x.IsCanceled,
+                NoteCancel = x.Status == Data.Enums.PurchaseStatus.Canceled ? x.NoteCancel : null,
                 Items = x.PurchaseItems.Where(i => !i.IsDeleted).Select(pi => new
                 {
                     pi.ProductId,
@@ -122,6 +123,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                 x.LastModifiedDate,
                 Status = (int)x.Status,
                 x.IsCanceled,
+                NoteCancel = x.Status == Data.Enums.PurchaseStatus.Canceled ? x.NoteCancel : null,
                 Items = x.PurchaseItems.Where(i => !i.IsDeleted).Select(pi => new
                 {
                     pi.ProductId,
@@ -266,7 +268,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                 LastModifiedDate = purchase.LastModifiedDate,
                 Status = (int)purchase.Status,
                 IsCanceled = purchase.IsCanceled,
-                CancelReason = purchase.CancelReason,
+                NoteCancel = purchase.Status == Data.Enums.PurchaseStatus.Canceled ? purchase.NoteCancel : null,
                 CanceledDate = purchase.CanceledDate,
                 CanceledBy = purchase.CanceledBy,
                 CreatedBy = purchase.CreatedBy,
@@ -369,7 +371,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                 ReferenceCode = request.ReferenceCode,
                 Note = request.Note,
                 CreateDate = utcNow,
-                Status = Data.Enums.PurchaseStatus.Pending,
+                Status = Data.Enums.PurchaseStatus.None,
                 CreatedBy = currentUserId,
                 IsCanceled = false
             };
@@ -462,7 +464,7 @@ namespace WarehouseManagement.BackendServer.Controllers
         /// <param name="request">Purchase model</param>
         /// <returns>Result of update process</returns>
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdatePurchase(int id, [FromBody] PurchaseCreateRequest request)
+        public async Task<IActionResult> UpdatePurchase(int id, [FromBody] PurchaseUpdateRequest request)
         {
             _logger.LogInformation("Begin UpdatePurchase API");
             if (request == null)
@@ -490,6 +492,11 @@ namespace WarehouseManagement.BackendServer.Controllers
             {
                 _logger.LogWarning("Attempt to update a canceled purchase. Id = {id}", id);
                 return BadRequest("Cannot update a canceled purchase");
+            }
+            if (purchase.Status == Data.Enums.PurchaseStatus.Completed || purchase.ApprovedDate != null)
+            {
+                _logger.LogWarning("Attempt to update an approved/completed purchase. Id = {id}", id);
+                return BadRequest("Cannot update an approved/completed purchase");
             }
 
             string? supplierName = null;
@@ -523,6 +530,21 @@ namespace WarehouseManagement.BackendServer.Controllers
                     return BadRequest("Supplier not found");
                 }
                 supplierName = supplier.SupplierName;
+            }
+
+            // Synchronize ReceiptCode prefix if the type changed
+            if (purchase.IsExport != isExport && !string.IsNullOrEmpty(purchase.ReceiptCode))
+            {
+                var newPrefix = isExport ? "SO" : "PO";
+                var oldPrefix = purchase.IsExport ? "SO" : "PO";
+                if (purchase.ReceiptCode.StartsWith(oldPrefix))
+                {
+                    purchase.ReceiptCode = newPrefix + purchase.ReceiptCode.Substring(oldPrefix.Length);
+                }
+                else
+                {
+                    purchase.ReceiptCode = purchase.ReceiptCode.Replace(oldPrefix, newPrefix);
+                }
             }
 
             // SỬA: Xóa bỏ hoàn toàn các PurchaseItem cũ khỏi danh sách đang theo dõi của Purchase
@@ -787,6 +809,23 @@ namespace WarehouseManagement.BackendServer.Controllers
                 return NotFound();
             }
 
+            if (existPurchase.IsDeleted)
+            {
+                return BadRequest("Purchase is deleted");
+            }
+            if (existPurchase.IsCanceled || existPurchase.Status == Data.Enums.PurchaseStatus.Canceled)
+            {
+                return BadRequest("Cannot confirm a canceled purchase");
+            }
+            if (existPurchase.Status == Data.Enums.PurchaseStatus.Completed || existPurchase.ApprovedDate != null)
+            {
+                return BadRequest("Cannot confirm an already completed purchase");
+            }
+            if (existPurchase.Status != Data.Enums.PurchaseStatus.None)
+            {
+                return BadRequest("Phiếu phải ở trạng thái Mới tạo (None/0) để xác nhận duyệt.");
+            }
+
             var listPurchaseItem = await _context.PurchaseItems
                 .Where(x => x.PurchaseId == id && !x.IsDeleted)
                 .ToListAsync();
@@ -808,6 +847,9 @@ namespace WarehouseManagement.BackendServer.Controllers
                 _logger.LogInformation("Change total price with new total price = {totalPrice}", totalPrice);
                 existPurchase.TotalCost = totalPrice;
             }
+
+            existPurchase.Status = Data.Enums.PurchaseStatus.Pending; // status = 1
+            existPurchase.LastModifiedDate = DateTime.UtcNow;
 
             try
             {
@@ -839,16 +881,16 @@ namespace WarehouseManagement.BackendServer.Controllers
                 return NotFound();
             }
 
-            if (purchase.IsCanceled)
+            if (purchase.IsCanceled || purchase.Status == Data.Enums.PurchaseStatus.Canceled)
             {
                 _logger.LogWarning("Cannot approve a canceled purchase. Id = {id}", id);
                 return BadRequest("Cannot approve a canceled purchase");
             }
 
-            if (purchase.ApprovedDate != null || purchase.Status == Data.Enums.PurchaseStatus.Completed)
+            if (purchase.Status != Data.Enums.PurchaseStatus.Pending)
             {
-                _logger.LogWarning("Purchase is already approved. Id = {id}", id);
-                return BadRequest("Purchase is already approved");
+                _logger.LogWarning("Purchase is not in Pending status. Id = {id}, Status = {status}", id, purchase.Status);
+                return BadRequest("Phiếu phải ở trạng thái Chờ duyệt (Pending/1) mới có thể phê duyệt.");
             }
 
             var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -900,11 +942,11 @@ namespace WarehouseManagement.BackendServer.Controllers
                         WarehouseId = 1,
                         QuantityChange = actualQuantityChange,
                         BalanceAfter = lastBalance + actualQuantityChange,
-                        TransactionType = purchase.IsExport 
-                            ? Data.Enums.StockTransactionType.SalesIssue 
+                        TransactionType = purchase.IsExport
+                            ? Data.Enums.StockTransactionType.SalesIssue
                             : Data.Enums.StockTransactionType.PurchaseReceipt,
-                        ReferenceType = purchase.IsExport 
-                            ? Data.Enums.ReferenceType.Order 
+                        ReferenceType = purchase.IsExport
+                            ? Data.Enums.ReferenceType.Order
                             : Data.Enums.ReferenceType.Purchase,
                         ReferenceId = id,
                         Note = purchase.Note ?? (purchase.IsExport ? "Xuất kho bán hàng" : "Nhập kho mua hàng"),
@@ -933,6 +975,192 @@ namespace WarehouseManagement.BackendServer.Controllers
                 await dbTransaction.RollbackAsync();
                 _logger.LogError(ex, "Database error while approving purchase id = {id}", id);
                 return StatusCode(500, "An error occurred while approving the purchase.");
+            }
+        }
+
+        /// <summary>
+        /// Convert/switch the type of a purchase (Import <-> Export)
+        /// </summary>
+        [HttpPut("{id}/convert-type")]
+        public async Task<IActionResult> ConvertPurchaseType(int id, [FromBody] PurchaseConvertTypeRequest request)
+        {
+            _logger.LogInformation("Begin ConvertPurchaseType API for id = {id}", id);
+
+            if (request == null)
+            {
+                _logger.LogWarning("ConvertPurchaseType called with null request. Id = {id}", id);
+                return BadRequest();
+            }
+
+            var purchase = await _context.Purchases.FindAsync(id);
+            if (purchase == null)
+            {
+                _logger.LogWarning("Not found the purchase with id = {id}", id);
+                return NotFound();
+            }
+
+            if (purchase.IsDeleted)
+            {
+                _logger.LogWarning("Cannot convert type of a deleted purchase. Id = {id}", id);
+                return BadRequest("Cannot convert type of a deleted purchase");
+            }
+
+            if (purchase.IsCanceled)
+            {
+                _logger.LogWarning("Cannot convert type of a canceled purchase. Id = {id}", id);
+                return BadRequest("Cannot convert type of a canceled purchase");
+            }
+
+            if (purchase.Status == Data.Enums.PurchaseStatus.Completed || purchase.ApprovedDate != null)
+            {
+                _logger.LogWarning("Cannot convert type of an approved/completed purchase. Id = {id}", id);
+                return BadRequest("Cannot convert type of an approved/completed purchase");
+            }
+
+            bool currentIsExport = purchase.IsExport;
+            bool targetIsExport = !currentIsExport;
+            int targetType = targetIsExport ? 2 : 1;
+
+            if (targetIsExport)
+            {
+                if (!request.CustomerId.HasValue)
+                {
+                    return BadRequest("CustomerId is required when converting to export");
+                }
+                var customer = await _context.Customers.FindAsync(request.CustomerId.Value);
+                if (customer == null || customer.IsDeleted)
+                {
+                    _logger.LogWarning("Customer not found or deleted. CustomerId = {CustomerId}", request.CustomerId);
+                    return BadRequest("Customer not found");
+                }
+
+                purchase.CustomerId = request.CustomerId;
+                purchase.CustomerName = customer.FullName;
+                purchase.SupplierId = null;
+                purchase.SupplierName = null;
+            }
+            else
+            {
+                if (!request.SupplierId.HasValue)
+                {
+                    return BadRequest("SupplierId is required when converting to import");
+                }
+                var supplier = await _context.Suppliers.FindAsync(request.SupplierId.Value);
+                if (supplier == null || supplier.IsDeleted)
+                {
+                    _logger.LogWarning("Supplier not found or deleted. SupplierId = {SupplierId}", request.SupplierId);
+                    return BadRequest("Supplier not found");
+                }
+
+                purchase.SupplierId = request.SupplierId;
+                purchase.SupplierName = supplier.SupplierName;
+                purchase.CustomerId = null;
+                purchase.CustomerName = null;
+            }
+
+            purchase.IsExport = targetIsExport;
+            purchase.Type = targetType;
+            purchase.LastModifiedDate = DateTime.UtcNow;
+
+            // Synchronize ReceiptCode prefix (e.g. PO-xxxxxx to SO-xxxxxx and vice versa)
+            if (!string.IsNullOrEmpty(purchase.ReceiptCode))
+            {
+                var newPrefix = targetIsExport ? "SO" : "PO";
+                var oldPrefix = currentIsExport ? "SO" : "PO";
+                if (purchase.ReceiptCode.StartsWith(oldPrefix))
+                {
+                    purchase.ReceiptCode = newPrefix + purchase.ReceiptCode.Substring(oldPrefix.Length);
+                }
+                else
+                {
+                    purchase.ReceiptCode = purchase.ReceiptCode.Replace(oldPrefix, newPrefix);
+                }
+            }
+
+            try
+            {
+                var result = await _context.SaveChangesAsync();
+                _logger.LogInformation("Success to convert type of purchase with id = {id} to {targetType}", id, targetType);
+                return Ok(new
+                {
+                    purchase.Id,
+                    purchase.ReceiptCode,
+                    purchase.Type,
+                    purchase.IsExport,
+                    purchase.SupplierId,
+                    purchase.SupplierName,
+                    purchase.CustomerId,
+                    purchase.CustomerName,
+                    purchase.LastModifiedDate
+                });
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Database error while converting type of purchase with id = {id}", id);
+                return StatusCode(500, "An error occurred while converting the purchase type.");
+            }
+        }
+
+        /// <summary>
+        /// Cancel the purchase by id
+        /// </summary>
+        [HttpPost("{id}/cancel")]
+        public async Task<IActionResult> CancelPurchase(int id, [FromQuery] string? reason)
+        {
+            _logger.LogInformation("Begin CancelPurchase API for id = {id}", id);
+
+            var purchase = await _context.Purchases.FindAsync(id);
+            if (purchase == null)
+            {
+                _logger.LogWarning("Cannot find the purchase with id = {id}", id);
+                return NotFound();
+            }
+
+            if (purchase.IsDeleted)
+            {
+                _logger.LogWarning("Cannot cancel a deleted purchase. Id = {id}", id);
+                return BadRequest("Cannot cancel a deleted purchase");
+            }
+
+            if (purchase.IsCanceled || purchase.Status == Data.Enums.PurchaseStatus.Canceled)
+            {
+                _logger.LogWarning("Purchase is already canceled. Id = {id}", id);
+                return BadRequest("Purchase is already canceled");
+            }
+
+            if (purchase.Status == Data.Enums.PurchaseStatus.Completed || purchase.ApprovedDate != null)
+            {
+                _logger.LogWarning("Cannot cancel an approved/completed purchase. Id = {id}", id);
+                return BadRequest("Cannot cancel an approved/completed purchase");
+            }
+
+            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            purchase.IsCanceled = true;
+            purchase.Status = Data.Enums.PurchaseStatus.Canceled; // status = 3
+            purchase.NoteCancel = reason;
+            purchase.CanceledDate = DateTime.UtcNow;
+            purchase.CanceledBy = currentUserId;
+            purchase.LastModifiedDate = DateTime.UtcNow;
+
+            try
+            {
+                var result = await _context.SaveChangesAsync();
+                _logger.LogInformation("Success CancelPurchase API for id = {id}", id);
+                return Ok(new
+                {
+                    purchase.Id,
+                    purchase.ReceiptCode,
+                    Status = (int)purchase.Status,
+                    purchase.IsCanceled,
+                    NoteCancel = purchase.Status == Data.Enums.PurchaseStatus.Canceled ? purchase.NoteCancel : null,
+                    purchase.CanceledDate,
+                    purchase.CanceledBy
+                });
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Database error while canceling purchase id = {id}", id);
+                return StatusCode(500, "An error occurred while canceling the purchase.");
             }
         }
 

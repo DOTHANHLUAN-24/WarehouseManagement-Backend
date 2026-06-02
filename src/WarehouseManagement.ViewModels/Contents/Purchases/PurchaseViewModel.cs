@@ -1,4 +1,4 @@
-﻿namespace WarehouseManagement.ViewModels.Contents.Purchases
+namespace WarehouseManagement.ViewModels.Contents.Purchases
 {
     public class PurchaseViewModel : PurchaseBase
     {
@@ -8,7 +8,7 @@
         public string? ReferenceCode { get; set; }
         public string? Note { get; set; }
         public bool IsCanceled { get; set; }
-        public string? CancelReason { get; set; }
+        public string? NoteCancel { get; set; }
         public DateTime? CanceledDate { get; set; }
         public string? CanceledBy { get; set; }
         public string? CreatedBy { get; set; }

@@ -43,7 +43,7 @@ namespace WarehouseManagement.BackendServer.Data.Entities
 
         public bool IsCanceled { get; set; }
 
-        public string? CancelReason { get; set; }
+        public string? NoteCancel { get; set; }
 
         public DateTime? CanceledDate { get; set; }
 
