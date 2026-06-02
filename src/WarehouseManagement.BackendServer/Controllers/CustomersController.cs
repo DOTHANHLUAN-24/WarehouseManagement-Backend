@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.BackendServer.Data;
 using WarehouseManagement.BackendServer.Data.Entities;
@@ -25,6 +25,11 @@ namespace WarehouseManagement.BackendServer.Controllers
         public async Task<IActionResult> PostCustomer([FromBody] CustomerCreateRequest request)
         {
             _logger.LogInformation("Begin PostCustomer API");
+
+            if (!string.IsNullOrWhiteSpace(request.PhoneNumber) && await _context.Customers.AnyAsync(c => c.PhoneNumber == request.PhoneNumber))
+            {
+                return BadRequest(new { Message = "Số điện thoại khách hàng đã tồn tại." });
+            }
             var customer = new Customer
             {
                 UserId = String.Empty, // Todo: Get user id
@@ -169,6 +174,11 @@ namespace WarehouseManagement.BackendServer.Controllers
                 _logger.LogWarning("PutCustomer API failed. Customer not found. Id={Id}", id);
 
                 return NotFound();
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.PhoneNumber) && await _context.Customers.AnyAsync(c => c.PhoneNumber == request.PhoneNumber && c.Id != id))
+            {
+                return BadRequest(new { Message = "Số điện thoại khách hàng đã tồn tại." });
             }
 
             customer.FullName = request.FullName;
@@ -384,7 +394,8 @@ namespace WarehouseManagement.BackendServer.Controllers
         }
 
         /// <summary>
-        /// Permanently delete a customer. Customer must be soft-deleted first and have no related orders.
+        /// Permanently delete a customer. Customer must be soft-deleted first and must have
+        /// no related Orders, Purchases (export receipts) or CustomerAddresses.
         /// </summary>
         [HttpDelete("{id}/permanent-delete")]
         public async Task<IActionResult> PermanentDeleteCustomer(int id)
@@ -401,14 +412,31 @@ namespace WarehouseManagement.BackendServer.Controllers
             if (!customer.IsDeleted)
             {
                 _logger.LogWarning("PermanentDeleteCustomer rejected. Customer is not soft-deleted. Id={Id}", id);
-                return BadRequest("Customer must be soft-deleted before permanent deletion.");
+                return BadRequest(new { Message = "Khách hàng phải được xóa mềm trước khi xóa vĩnh viễn." });
             }
 
+            // Check Orders (đơn hàng bán)
             var hasOrders = await _context.Orders.AnyAsync(o => o.CustomerId == id);
             if (hasOrders)
             {
                 _logger.LogWarning("PermanentDeleteCustomer rejected. Customer has related orders. Id={Id}", id);
-                return BadRequest("Cannot permanently delete customer: existing related orders.");
+                return BadRequest(new { Message = "Không thể xóa vĩnh viễn: khách hàng đã có đơn hàng liên quan." });
+            }
+
+            // Check Purchases (phiếu xuất kho gắn với khách hàng)
+            var hasPurchases = await _context.Purchases.AnyAsync(p => p.CustomerId == id);
+            if (hasPurchases)
+            {
+                _logger.LogWarning("PermanentDeleteCustomer rejected. Customer has related purchase/export receipts. Id={Id}", id);
+                return BadRequest(new { Message = "Không thể xóa vĩnh viễn: khách hàng đã có phiếu xuất kho liên quan." });
+            }
+
+            // Check CustomerAddresses
+            var hasAddresses = await _context.CustomerAddresses.AnyAsync(a => a.CustomerId == id);
+            if (hasAddresses)
+            {
+                _logger.LogWarning("PermanentDeleteCustomer rejected. Customer has saved addresses. Id={Id}", id);
+                return BadRequest(new { Message = "Không thể xóa vĩnh viễn: khách hàng còn địa chỉ lưu trữ. Vui lòng xóa địa chỉ trước." });
             }
 
             _context.Customers.Remove(customer);

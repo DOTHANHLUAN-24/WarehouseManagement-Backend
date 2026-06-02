@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.BackendServer.Data;
 using WarehouseManagement.BackendServer.Data.Entities;
@@ -26,6 +26,11 @@ namespace WarehouseManagement.BackendServer.Controllers
         public async Task<IActionResult> PostSupplier([FromBody] SupplierCreateRequest request)
         {
             _logger.LogInformation("Creating new supplier with name: {SupplierName}", request.SupplierName);
+
+            if (!string.IsNullOrWhiteSpace(request.Phone) && await _context.Suppliers.AnyAsync(s => s.Phone == request.Phone))
+            {
+                return BadRequest(new { Message = "Số điện thoại nhà cung cấp đã tồn tại." });
+            }
 
             var supplier = new Supplier
             {
@@ -255,6 +260,11 @@ namespace WarehouseManagement.BackendServer.Controllers
                 return NotFound();
             }
 
+            if (!string.IsNullOrWhiteSpace(request.Phone) && await _context.Suppliers.AnyAsync(s => s.Phone == request.Phone && s.Id != id))
+            {
+                return BadRequest(new { Message = "Số điện thoại nhà cung cấp đã tồn tại." });
+            }
+
             _logger.LogInformation("Updating properties of supplier with ID: {SupplierId}", id);
 
             supplier.SupplierName = request.SupplierName;
@@ -424,7 +434,14 @@ namespace WarehouseManagement.BackendServer.Controllers
             {
                 _logger.LogWarning("Supplier with ID: {SupplierId} is not in trash, cannot permanently delete", id);
 
-                return BadRequest("Supplier must be in trash before permanent delete");
+                return BadRequest(new { Message = "Nhà cung cấp phải được xóa mềm trước khi xóa vĩnh viễn." });
+            }
+
+            var hasPurchases = await _context.Purchases.AnyAsync(p => p.SupplierId == id);
+            if (hasPurchases)
+            {
+                _logger.LogWarning("PermanentDeleteSupplier rejected. Supplier has related purchases. Id={Id}", id);
+                return BadRequest(new { Message = "Không thể xóa nhà cung cấp vì đã có phiếu nhập liên quan." });
             }
 
             _logger.LogInformation("Removing supplier with ID: {SupplierId} from database context", id);
