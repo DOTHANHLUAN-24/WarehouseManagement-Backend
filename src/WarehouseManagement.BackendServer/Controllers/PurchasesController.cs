@@ -60,7 +60,8 @@ namespace WarehouseManagement.BackendServer.Controllers
                     pi.ProductVariantId,
                     pi.Quantity,
                     UnitCost = pi.UnitCost,
-                    TotalPrice = pi.TotalPrice
+                    TotalPrice = pi.TotalPrice,
+                    WarehouseLocation = pi.WarehouseLocation
                 }).ToList()
             }).ToList();
 
@@ -128,7 +129,8 @@ namespace WarehouseManagement.BackendServer.Controllers
                     pi.ProductVariantId,
                     pi.Quantity,
                     UnitCost = pi.UnitCost,
-                    TotalPrice = pi.TotalPrice
+                    TotalPrice = pi.TotalPrice,
+                    WarehouseLocation = pi.WarehouseLocation
                 }).ToList()
             }).ToList();
 
@@ -278,7 +280,8 @@ namespace WarehouseManagement.BackendServer.Controllers
                     x.ProductVariantId,
                     x.Quantity,
                     UnitCost = x.UnitCost,
-                    TotalPrice = x.TotalPrice
+                    TotalPrice = x.TotalPrice,
+                    WarehouseLocation = x.WarehouseLocation
                 }).ToList()
             };
 
@@ -348,11 +351,23 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             var utcNow = DateTime.UtcNow;
             var localTime = TimeZoneInfo.ConvertTimeFromUtc(utcNow, TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time"));
-            var ym = localTime.ToString("yyyyMM");
-
-            var sequence = await _context.Purchases.CountAsync(p => p.CreateDate.Year == utcNow.Year && p.CreateDate.Month == utcNow.Month) + 1;
             var prefix = isExport ? "SO" : "PO";
-            var receiptCode = $"{prefix}-{ym}-{sequence:000}";
+            var datePart = localTime.ToString("yyyyMMdd");
+
+            var lastCode = await _context.Purchases
+                .Where(p => p.ReceiptCode.StartsWith($"{prefix}-{datePart}"))
+                .OrderByDescending(p => p.ReceiptCode)
+                .Select(p => p.ReceiptCode)
+                .FirstOrDefaultAsync();
+
+            int sequence = 1;   
+
+            if (lastCode != null)
+            {
+                sequence = int.Parse(lastCode.Split('-')[2]) + 1;
+            }
+
+            var receiptCode = $"{prefix}-{datePart}-{sequence:000}";
 
             var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
@@ -369,7 +384,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                 ReferenceCode = request.ReferenceCode,
                 Note = request.Note,
                 CreateDate = utcNow,
-                Status = Data.Enums.PurchaseStatus.Pending,
+                Status = Data.Enums.PurchaseStatus.None,
                 CreatedBy = currentUserId,
                 IsCanceled = false
             };
@@ -400,6 +415,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                     ProductId = item.ProductId,
                     Quantity = item.Quantity,
                     UnitCost = item.UnitCost,
+                    WarehouseLocation = item.WarehouseLocation,
                     CreateDate = utcNow,
                     TotalPrice = item.UnitCost * item.Quantity
                 };
@@ -439,7 +455,8 @@ namespace WarehouseManagement.BackendServer.Controllers
                             x.ProductVariantId,
                             x.Quantity,
                             UnitCost = x.UnitCost,
-                            TotalPrice = x.TotalPrice
+                            TotalPrice = x.TotalPrice,
+                            WarehouseLocation = x.WarehouseLocation
                         })
                     };
                     return CreatedAtAction(nameof(GetPurchaseById), new { id = purchase.Id }, response);
@@ -538,6 +555,7 @@ namespace WarehouseManagement.BackendServer.Controllers
             purchase.PurchaseDate = request.ReceiptDate == default ? request.PurchaseDate : request.ReceiptDate;
             purchase.ReferenceCode = request.ReferenceCode;
             purchase.Note = request.Note;
+            purchase.Status = (Data.Enums.PurchaseStatus)request.Status;
             purchase.LastModifiedDate = DateTime.UtcNow;
 
             decimal totalCost = 0m;
@@ -562,12 +580,13 @@ namespace WarehouseManagement.BackendServer.Controllers
                         return BadRequest($"No product variant found for product {item.ProductId}");
                     }
 
-                    var pi = new PurchaseItem
+                var pi = new PurchaseItem
                     {
                         ProductVariantId = variant.Id,
                         ProductId = item.ProductId,
                         Quantity = item.Quantity,
-                        UnitCost = item.UnitCost,
+                    UnitCost = item.UnitCost,
+                    WarehouseLocation = item.WarehouseLocation,
                         CreateDate = DateTime.UtcNow,
                         TotalPrice = item.UnitCost * item.Quantity
                     };
@@ -809,6 +828,16 @@ namespace WarehouseManagement.BackendServer.Controllers
                 existPurchase.TotalCost = totalPrice;
             }
 
+            // mark who confirmed
+            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrEmpty(currentUserId))
+            {
+                existPurchase.ApprovedBy = currentUserId;
+                existPurchase.ApprovedDate = DateTime.UtcNow;
+                existPurchase.LastModifiedDate = DateTime.UtcNow;
+                existPurchase.Status = Data.Enums.PurchaseStatus.Completed;
+            }
+
             try
             {
                 var result = await _context.SaveChangesAsync();
@@ -819,6 +848,55 @@ namespace WarehouseManagement.BackendServer.Controllers
             {
                 _logger.LogError(ex, "Database error while confirming purchase id = {id}", id);
                 return StatusCode(500, "An error occurred while confirming the purchase.");
+            }
+        }
+
+        /// <summary>
+        /// Cancel the purchase by id (mark as canceled) and save the user who cancelled
+        /// </summary>
+        [HttpPost("{id}/cancel")]
+        public async Task<IActionResult> CancelPurchase(int id, [FromBody] WarehouseManagement.ViewModels.Contents.Purchases.PurchaseCancelRequest? request)
+        {
+            _logger.LogInformation("Begin CancelPurchase API");
+
+            var purchase = await _context.Purchases.FindAsync(id);
+            if (purchase == null)
+            {
+                _logger.LogWarning("Cannot find the purchase with id = {id} to cancel", id);
+                return NotFound();
+            }
+
+            if (purchase.IsCanceled)
+            {
+                _logger.LogWarning("Purchase already canceled. Id = {id}", id);
+                return BadRequest("Purchase is already canceled");
+            }
+
+            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            purchase.IsCanceled = true;
+            purchase.CancelReason = request?.Reason;
+            purchase.CanceledBy = currentUserId;
+            purchase.CanceledDate = DateTime.UtcNow;
+            purchase.LastModifiedDate = DateTime.UtcNow;
+            purchase.Status = Data.Enums.PurchaseStatus.Canceled;
+
+            try
+            {
+                var result = await _context.SaveChangesAsync();
+                if (result > 0)
+                {
+                    _logger.LogInformation("CancelPurchase success. Id = {id}", id);
+                    return Ok();
+                }
+
+                _logger.LogWarning("CancelPurchase failed to save changes. Id = {id}", id);
+                return BadRequest();
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Database error while canceling purchase id = {id}", id);
+                return StatusCode(500, "An error occurred while canceling the purchase.");
             }
         }
 
@@ -975,6 +1053,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                 ProductVariantId = request.ProductVariantId,
                 Quantity = request.Quantity,
                 UnitCost = request.UnitCost,
+                WarehouseLocation = request.WarehouseLocation,
                 CreateDate = request.CreateDate,
                 LastModifiedDate = request.LastModifiedDate,
             };

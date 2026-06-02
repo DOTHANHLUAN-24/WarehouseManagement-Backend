@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 
 namespace WarehouseManagement.ViewModels.Contents.Products
 {
@@ -14,7 +14,7 @@ namespace WarehouseManagement.ViewModels.Contents.Products
 
             RuleFor(x => x.InitialStock)
                 .NotNull().WithMessage("Initial Stock in product is required")
-                .GreaterThan(0).WithMessage("Initial Stock must be greater than 0.");
+                .GreaterThanOrEqualTo(0).WithMessage("Initial Stock must be greater than or equal to 0.");
         }
     }
 }

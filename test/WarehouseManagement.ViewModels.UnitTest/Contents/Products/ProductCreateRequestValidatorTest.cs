@@ -1,4 +1,4 @@
-﻿using WarehouseManagement.ViewModels.Contents.Products;
+using WarehouseManagement.ViewModels.Contents.Products;
 
 namespace WarehouseManagement.ViewModels.UnitTest.Contents.Products
 {
@@ -36,9 +36,9 @@ namespace WarehouseManagement.ViewModels.UnitTest.Contents.Products
         }
 
         [Theory]
-        [InlineData(0)]
         [InlineData(-1)]
-        public void Should_Have_Error_When_Initial_Stock_Is_Invalid(int data)
+        [InlineData(-5)]
+        public void Should_Have_Error_When_Initial_Stock_Is_Negative(int data)
         {
             _request.InitialStock = data;
 

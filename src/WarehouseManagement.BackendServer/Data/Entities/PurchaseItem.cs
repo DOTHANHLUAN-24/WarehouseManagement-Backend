@@ -27,6 +27,10 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         [Precision(18, 2)]
         public decimal UnitCost { get; set; }
 
+        // Warehouse location or bin for this item (optional)
+        [MaxLength(200)]
+        public string? WarehouseLocation { get; set; }
+
         public DateTime CreateDate { get; set; }
 
         public DateTime? LastModifiedDate { get; set; }
