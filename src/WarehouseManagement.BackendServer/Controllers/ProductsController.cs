@@ -204,7 +204,17 @@ namespace WarehouseManagement.BackendServer.Controllers
                 .Take(pageSize)
                 .ToListAsync();
 
-            var data = items.Select(x => new ProductViewModel
+            var productsSorted = await _context.Products
+                .Where(p => !p.IsDeleted)
+                .OrderByDescending(p => p.CreateDate)
+                .Select(p => p.Id)
+                .ToListAsync();
+
+            var itemsSorted = items
+                .OrderBy(x => productsSorted.IndexOf(x.ProductId))
+                .ToList();
+
+            var data = itemsSorted.Select(x => new ProductViewModel
             {
                 Id = x.ProductId,
                 Name = x.Name,
@@ -255,6 +265,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                    && !pi.IsDeleted
                    && pi.IsDefault
                    && pv.IsActive
+                orderby p.CreateDate descending
                 select new ProductViewModel
                 {
                     Id = p.Id,

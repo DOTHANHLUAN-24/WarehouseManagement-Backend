@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.AspNetCore.Identity;
 
@@ -27,7 +27,7 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         [MaxLength(50)]
         public string LastName { get; set; } = string.Empty;
 
-        public bool IsActive { get; set; } = true;
+        public bool IsActive { get; set; } = false;
 
         public string? RefreshToken { get; set; }
 

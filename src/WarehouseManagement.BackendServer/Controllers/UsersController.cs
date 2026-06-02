@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.BackendServer.Data.Entities;
@@ -84,7 +84,8 @@ namespace WarehouseManagement.BackendServer.Controllers
                 Email = user.Email!,
                 PhoneNumber = user.PhoneNumber!,
                 FirstName = user.FirstName,
-                LastName = user.LastName
+                LastName = user.LastName,
+                IsActive = user.IsActive
             };
 
             _logger.LogInformation("User with id {UserId} retrieved successfully", id);
@@ -109,7 +110,8 @@ namespace WarehouseManagement.BackendServer.Controllers
                     PhoneNumber = u.PhoneNumber!,
                     FirstName = u.FirstName,
                     LastName = u.LastName,
-                    UserName = u.UserName!
+                    UserName = u.UserName!,
+                    IsActive = u.IsActive
                 })
                 .ToListAsync();
 
@@ -164,7 +166,8 @@ namespace WarehouseManagement.BackendServer.Controllers
                     PhoneNumber = u.PhoneNumber!,
                     FirstName = u.FirstName,
                     LastName = u.LastName,
-                    UserName = u.UserName!
+                    UserName = u.UserName!,
+                    IsActive = u.IsActive
                 }).ToListAsync();
 
             var pagination = new Pagination<UserViewModel>
@@ -320,6 +323,30 @@ namespace WarehouseManagement.BackendServer.Controllers
             _logger.LogInformation("Retrieved {RoleCount} roles for user id: {UserId}", roles.Count, id);
 
             return Ok(roles);
+        }
+        [HttpPut("{id}/toggle-active")]
+        public async Task<IActionResult> ToggleActive(string id)
+        {
+            _logger.LogInformation("Toggling IsActive for user with id: {UserId}", id);
+
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                _logger.LogWarning("User with id {UserId} not found", id);
+                return NotFound("Can't find the user.");
+            }
+
+            user.IsActive = !user.IsActive;
+
+            var result = await _userManager.UpdateAsync(user);
+            if (result.Succeeded)
+            {
+                _logger.LogInformation("User with id {UserId} IsActive toggled successfully to {IsActive}", id, user.IsActive);
+                return Ok(new { id = user.Id, isActive = user.IsActive });
+            }
+
+            _logger.LogError("Failed to toggle IsActive for user with id {UserId}. Errors: {Errors}", id, string.Join(", ", result.Errors.Select(e => e.Description)));
+            return BadRequest("Failed to toggle active status");
         }
     }
 }

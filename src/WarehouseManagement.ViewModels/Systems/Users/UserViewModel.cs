@@ -1,7 +1,8 @@
-﻿namespace WarehouseManagement.ViewModels.Systems.User
+namespace WarehouseManagement.ViewModels.Systems.User
 {
     public class UserViewModel : UserBase
     {
         public string Id { get; set; } = string.Empty;
+        public bool IsActive { get; set; }
     }
 }

@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.BackendServer.Data;
 using WarehouseManagement.BackendServer.Data.Entities;
@@ -26,6 +26,7 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             var listWarehouses = await _context.Warehouses
                 .Where(w => !w.IsDeleted)
+                .OrderByDescending(w => w.CreateDate)
                 .Select(w => new WarehouseViewModel
                 {
                     Id = w.Id,
@@ -183,7 +184,7 @@ namespace WarehouseManagement.BackendServer.Controllers
             _logger.LogInformation("Total warehouses after filtering: {TotalRecords}", totalRecords);
 
             var items = await query
-                .OrderByDescending(x => x.Id)
+                .OrderByDescending(x => x.CreateDate)
                 .Skip((pageIndex - 1) * pageSize)
                 .Take(pageSize)
                 .Select(x => new WarehouseViewModel

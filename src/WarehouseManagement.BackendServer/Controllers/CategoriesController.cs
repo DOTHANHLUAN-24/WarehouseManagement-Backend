@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.BackendServer.Data;
 using WarehouseManagement.BackendServer.Data.Entities;
@@ -90,6 +90,7 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             var categories = _context.Categories;
             var categoryViewModels = await categories
+                .OrderByDescending(x => x.CreateDate)
                 .Select(category => CreateCategoryViewModel(category)).ToListAsync();
 
             _logger.LogInformation("GetCategories API success to get all categories in system.");
@@ -179,7 +180,9 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             var totalRecords = await query.CountAsync();
 
-            var items = await query.Skip((pageIndex - 1) * pageSize)
+            var items = await query
+                .OrderByDescending(x => x.CreateDate)
+                .Skip((pageIndex - 1) * pageSize)
                 .Take(pageSize).ToListAsync();
 
             var data = items.Select(category => CreateCategoryViewModel(category)).ToList();

@@ -107,6 +107,7 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             var customers = _context.Customers.Where(x => !x.IsDeleted);
             var customerViewModels = await customers
+                .OrderByDescending(x => x.CreateDate)
                 .Select(customer => CreateCustomerViewModel(customer))
                 .ToListAsync();
 
@@ -141,7 +142,9 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             var totalRecords = await query.CountAsync();
 
-            var items = await query.Skip((pageIndex - 1) * pageSize)
+            var items = await query
+                .OrderByDescending(x => x.CreateDate)
+                .Skip((pageIndex - 1) * pageSize)
                 .Take(pageSize).ToListAsync();
 
             var data = items.Select(customer => CreateCustomerViewModel(customer)).ToList();
@@ -395,7 +398,7 @@ namespace WarehouseManagement.BackendServer.Controllers
 
         /// <summary>
         /// Permanently delete a customer. Customer must be soft-deleted first and must have
-        /// no related Orders, Purchases (export receipts) or CustomerAddresses.
+        /// no related Orders or Purchases (phiếu xuất).
         /// </summary>
         [HttpDelete("{id}/permanent-delete")]
         public async Task<IActionResult> PermanentDeleteCustomer(int id)
@@ -415,28 +418,20 @@ namespace WarehouseManagement.BackendServer.Controllers
                 return BadRequest(new { Message = "Khách hàng phải được xóa mềm trước khi xóa vĩnh viễn." });
             }
 
-            // Check Orders (đơn hàng bán)
+            // Kiểm tra đơn hàng liên quan
             var hasOrders = await _context.Orders.AnyAsync(o => o.CustomerId == id);
             if (hasOrders)
             {
                 _logger.LogWarning("PermanentDeleteCustomer rejected. Customer has related orders. Id={Id}", id);
-                return BadRequest(new { Message = "Không thể xóa vĩnh viễn: khách hàng đã có đơn hàng liên quan." });
+                return BadRequest(new { Message = "Không thể xóa vĩnh viễn: khách hàng đã xuất hiện trong đơn hàng." });
             }
 
-            // Check Purchases (phiếu xuất kho gắn với khách hàng)
+            // Kiểm tra phiếu xuất kho liên quan
             var hasPurchases = await _context.Purchases.AnyAsync(p => p.CustomerId == id);
             if (hasPurchases)
             {
-                _logger.LogWarning("PermanentDeleteCustomer rejected. Customer has related purchase/export receipts. Id={Id}", id);
-                return BadRequest(new { Message = "Không thể xóa vĩnh viễn: khách hàng đã có phiếu xuất kho liên quan." });
-            }
-
-            // Check CustomerAddresses
-            var hasAddresses = await _context.CustomerAddresses.AnyAsync(a => a.CustomerId == id);
-            if (hasAddresses)
-            {
-                _logger.LogWarning("PermanentDeleteCustomer rejected. Customer has saved addresses. Id={Id}", id);
-                return BadRequest(new { Message = "Không thể xóa vĩnh viễn: khách hàng còn địa chỉ lưu trữ. Vui lòng xóa địa chỉ trước." });
+                _logger.LogWarning("PermanentDeleteCustomer rejected. Customer has related export receipts. Id={Id}", id);
+                return BadRequest(new { Message = "Không thể xóa vĩnh viễn: khách hàng đã xuất hiện trong phiếu xuất kho." });
             }
 
             _context.Customers.Remove(customer);
