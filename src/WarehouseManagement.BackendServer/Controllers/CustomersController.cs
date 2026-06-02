@@ -273,6 +273,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                 return BadRequest("Customer already deleted");
             }
 
+            // Keep legacy behaviour: mark status inactive
             customer.Status = CustomerStatus.Inactive;
             customer.LastModifiedDate = DateTime.Now;
 
@@ -307,21 +308,13 @@ namespace WarehouseManagement.BackendServer.Controllers
                 return NotFound();
             }
 
-            if (customer.Status == CustomerStatus.Banned)
+            if (!customer.IsDeleted)
             {
-                _logger.LogWarning("RestoreCustomer API failed. Banned customer cannot be restored. Id={Id}", id);
-
-                return BadRequest("Banned customer cannot be restored");
+                _logger.LogWarning("RestoreCustomer API failed. Customer is not in trash. Id={Id}", id);
+                return BadRequest("Customer is not in trash");
             }
 
-            if (customer.Status == CustomerStatus.Active)
-            {
-                _logger.LogWarning("RestoreCustomer API failed. Customer already active. Id={Id}", id);
-
-                return BadRequest("Customer already active");
-            }
-
-            customer.Status = CustomerStatus.Active;
+            customer.IsDeleted = false;
             customer.LastModifiedDate = DateTime.Now;
 
             var result = await _context.SaveChangesAsync();
@@ -334,6 +327,100 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             _logger.LogError("RestoreCustomer API failed to save changes. Id={Id}", id);
 
+            return BadRequest();
+        }
+
+        /// <summary>
+        /// Get customers in trash (soft-deleted)
+        /// </summary>
+        [HttpGet("trash")]
+        public async Task<IActionResult> GetCustomersInTrash()
+        {
+            _logger.LogInformation("Begin GetCustomersInTrash API");
+
+            var customers = await _context.Customers
+                .Where(x => x.IsDeleted)
+                .ToListAsync();
+
+            var data = customers.Select(CreateCustomerViewModel).ToList();
+
+            _logger.LogInformation("GetCustomersInTrash API success. Count={Count}", data.Count);
+            return Ok(data);
+        }
+
+        /// <summary>
+        /// Soft delete the customer by id (mark IsDeleted = true)
+        /// </summary>
+        [HttpDelete("{id}/soft-delete")]
+        public async Task<IActionResult> SoftDeleteCustomer(int id)
+        {
+            _logger.LogInformation("Begin SoftDeleteCustomer API. Id={Id}", id);
+
+            var customer = await _context.Customers.FindAsync(id);
+            if (customer == null)
+            {
+                _logger.LogWarning("SoftDeleteCustomer API failed. Customer not found. Id={Id}", id);
+                return NotFound();
+            }
+
+            if (customer.IsDeleted)
+            {
+                _logger.LogWarning("SoftDeleteCustomer API failed. Customer already in trash. Id={Id}", id);
+                return BadRequest("Customer is already in trash");
+            }
+
+            customer.IsDeleted = true;
+            customer.LastModifiedDate = DateTime.Now;
+
+            var result = await _context.SaveChangesAsync();
+            if (result > 0)
+            {
+                _logger.LogInformation("SoftDeleteCustomer API success. Id={Id}", id);
+                return NoContent();
+            }
+
+            _logger.LogError("SoftDeleteCustomer API failed to save changes. Id={Id}", id);
+            return BadRequest();
+        }
+
+        /// <summary>
+        /// Permanently delete a customer. Customer must be soft-deleted first and have no related orders.
+        /// </summary>
+        [HttpDelete("{id}/permanent-delete")]
+        public async Task<IActionResult> PermanentDeleteCustomer(int id)
+        {
+            _logger.LogInformation("Begin PermanentDeleteCustomer API. Id={Id}", id);
+
+            var customer = await _context.Customers.FindAsync(id);
+            if (customer == null)
+            {
+                _logger.LogWarning("PermanentDeleteCustomer failed. Customer not found. Id={Id}", id);
+                return NotFound();
+            }
+
+            if (!customer.IsDeleted)
+            {
+                _logger.LogWarning("PermanentDeleteCustomer rejected. Customer is not soft-deleted. Id={Id}", id);
+                return BadRequest("Customer must be soft-deleted before permanent deletion.");
+            }
+
+            var hasOrders = await _context.Orders.AnyAsync(o => o.CustomerId == id);
+            if (hasOrders)
+            {
+                _logger.LogWarning("PermanentDeleteCustomer rejected. Customer has related orders. Id={Id}", id);
+                return BadRequest("Cannot permanently delete customer: existing related orders.");
+            }
+
+            _context.Customers.Remove(customer);
+            var result = await _context.SaveChangesAsync();
+            if (result > 0)
+            {
+                _logger.LogInformation("PermanentDeleteCustomer success. Id={Id}", id);
+                var vm = CreateCustomerViewModel(customer);
+                return Ok(vm);
+            }
+
+            _logger.LogError("PermanentDeleteCustomer failed to save changes. Id={Id}", id);
             return BadRequest();
         }
 
