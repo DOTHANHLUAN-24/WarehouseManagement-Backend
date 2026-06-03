@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.BackendServer.Data.Entities;
 using WarehouseManagement.BackendServer.Data.Enums;
@@ -47,85 +47,75 @@ namespace WarehouseManagement.BackendServer.Data
         /// <returns>Chuỗi ID của tài khoản Admin.</returns>
         private async Task<string> SeedRolesAndUsersAsync()
         {
-            if (!roleManager.Roles.Any())
+            var roles = new[] { AdminRoleName, UserRoleName };
+            foreach (var roleName in roles)
             {
-                var roles = new[]
+                if (!await roleManager.RoleExistsAsync(roleName))
                 {
-                    AdminRoleName,
-                    UserRoleName
-                };
-
-                foreach (var roleName in roles)
-                {
-                    await roleManager.CreateAsync
-                    (
-                        new IdentityRole
-                        {
-                            Id = roleName,
-                            Name = roleName,
-                            NormalizedName = roleName.ToUpper()
-                        }
-                    );
+                    await roleManager.CreateAsync(new IdentityRole
+                    {
+                        Id = roleName,
+                        Name = roleName,
+                        NormalizedName = roleName.ToUpper()
+                    });
                 }
             }
 
-            if (!userManager.Users.Any())
+            var users = new List<(User user, string password, string role)>
             {
-                var users = new List<(User user, string password, string role)>
+                // ===== ADMIN =====
+                (
+                    new User
+                    {
+                        UserName = "admin",
+                        FirstName = "Quản trị",
+                        LastName = "1",
+                        Email = "admin@gmail.com",
+                        LockoutEnabled = false,
+                        PhoneNumber = "0123456789"
+                    },
+                    "Admin@123$",
+                    AdminRoleName
+                ),
+
+                // ===== USER 1 =====
+                (
+                    new User
+                    {
+                        UserName = "user1",
+                        FirstName = "Người dùng",
+                        LastName = "1",
+                        Email = "user1@gmail.com",
+                        LockoutEnabled = false,
+                        PhoneNumber = "0987654321"
+                    },
+                    "User@123$",
+                    UserRoleName
+                ),
+
+                // ===== USER 2 =====
+                (
+                    new User
+                    {
+                        UserName = "user2",
+                        FirstName = "Người dùng",
+                        LastName = "2",
+                        Email = "user2@gmail.com",
+                        LockoutEnabled = false,
+                        PhoneNumber = "0912345678"
+                    },
+                    "User@123$",
+                    UserRoleName
+                )
+            };
+
+            foreach (var item in users)
+            {
+                var existingUser = await userManager.FindByNameAsync(item.user.UserName!);
+                if (existingUser == null)
                 {
-                    // ===== ADMIN =====
-                    (
-                        new User
-                        {
-                            Id = Guid.NewGuid().ToString(),
-                            UserName = "admin",
-                            FirstName = "Quản trị",
-                            LastName = "1",
-                            Email = "admin@gmail.com",
-                            LockoutEnabled = false,
-                            PhoneNumber = "0123456789"
-                        },
-                        "Admin@123$",
-                        AdminRoleName
-                    ),
-
-                    // ===== USER 1 =====
-                    (
-                        new User
-                        {
-                            Id = Guid.NewGuid().ToString(),
-                            UserName = "user1",
-                            FirstName = "Người dùng",
-                            LastName = "1",
-                            Email = "user1@gmail.com",
-                            LockoutEnabled = false,
-                            PhoneNumber = "0987654321"
-                        },
-                        "User@123$",
-                        UserRoleName
-                    ),
-
-                    // ===== USER 2 =====
-                    (
-                        new User
-                        {
-                            Id = Guid.NewGuid().ToString(),
-                            UserName = "user2",
-                            FirstName = "Người dùng",
-                            LastName = "2",
-                            Email = "user2@gmail.com",
-                            LockoutEnabled = false,
-                            PhoneNumber = "0912345678"
-                        },
-                        "User@123$",
-                        UserRoleName
-                    )
-                };
-
-                foreach (var item in users)
-                {
+                    item.user.Id = Guid.NewGuid().ToString();
                     var result = await userManager.CreateAsync(item.user, item.password);
-
                     if (result.Succeeded)
                     {
                         await userManager.AddToRoleAsync(item.user, item.role);
@@ -134,7 +124,7 @@ namespace WarehouseManagement.BackendServer.Data
             }
 
             var adminUser = await userManager.FindByNameAsync("admin");
-            return adminUser!.Id;
+            return adminUser?.Id ?? string.Empty;
         }
 
         /// <summary>
@@ -155,7 +145,7 @@ namespace WarehouseManagement.BackendServer.Data
                         {
                             UserId = user.Id,
                             FullName = $"{user.FirstName} {user.LastName}",
-                            PhoneNumber = user.PhoneNumber!,
+                            PhoneNumber = user.PhoneNumber ?? string.Empty,
                             Status = CustomerStatus.Active,
                             CreateDate = DateTime.Now
                         }
@@ -353,7 +343,7 @@ namespace WarehouseManagement.BackendServer.Data
                 {
                     context.AuditLogs.Add(new AuditLog
                     {
-                        UserId = adminRole!.Id.ToString(),
+                        UserId = adminRole?.Id?.ToString() ?? AdminRoleName,
                         Action = permission.Action,
                         Entity = "Permission",
                         EntityId = permission.Id.ToString()

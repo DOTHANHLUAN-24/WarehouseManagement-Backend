@@ -1,4 +1,4 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -37,7 +37,7 @@ namespace WarehouseManagement.BackendServer.Services.Implementations.Authenticat
             var issuer = _configuration["JwtConfig:Issuer"];
             var audience = _configuration["JwtConfig:Audience"];
             var key = _configuration["JwtConfig:Key"];
-            var tokenValidityMins = _configuration.GetValue<int>("JwtConfig:TokenValidityMins");
+            var tokenValidityMins = _configuration.GetValue<int>("JwtConfig:TokenValidityMins", 30);
             var tokenExpiryTimeStamp = DateTime.UtcNow.AddMinutes(tokenValidityMins);
 
             var claims = new[]
@@ -117,7 +117,7 @@ namespace WarehouseManagement.BackendServer.Services.Implementations.Authenticat
             var issuer = _configuration["JwtConfig:Issuer"];
             var audience = _configuration["JwtConfig:Audience"];
             var key = _configuration["JwtConfig:Key"];
-            var tokenValidityMins = _configuration.GetValue<int>("JwtConfig:TokenValidityMins");
+            var tokenValidityMins = _configuration.GetValue<int>("JwtConfig:TokenValidityMins", 30);
             var tokenExpiryTimeStamp = DateTime.UtcNow.AddMinutes(tokenValidityMins);
 
             var claims = new[]
@@ -168,7 +168,7 @@ namespace WarehouseManagement.BackendServer.Services.Implementations.Authenticat
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = identity,
-                Expires = DateTime.UtcNow.AddMinutes(_configuration.GetValue<int>("JwtConfig:TokenValidityMins")),
+                Expires = DateTime.UtcNow.AddMinutes(_configuration.GetValue<int>("JwtConfig:TokenValidityMins", 30)),
                 Issuer = _configuration["JwtConfig:Issuer"],
                 Audience = _configuration["JwtConfig:Audience"],
                 SigningCredentials = creds
@@ -219,7 +219,7 @@ namespace WarehouseManagement.BackendServer.Services.Implementations.Authenticat
                 AccessToken = newAccessToken,
                 RefreshToken = newRefreshToken,
                 UserName = username,
-                ExpiresIn = _configuration.GetValue<int>("JwtConfig:TokenValidityMins") * 60,
+                ExpiresIn = _configuration.GetValue<int>("JwtConfig:TokenValidityMins", 30) * 60,
             };
         }
         private ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
