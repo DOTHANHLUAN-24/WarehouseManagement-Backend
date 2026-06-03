@@ -20,9 +20,11 @@ internal class Program
 {
     private static async Task Main(string[] args)
     {
+        AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
         var builder = WebApplication.CreateBuilder(args);
 
-        var frontendUrl = builder.Configuration["FrontendUrl"] ?? "http://localhost:5173";
+        var frontendUrl = builder.Configuration["FrontendUrl"] ?? "https://warehouse-management-front-end.vercel.app";
 
         //
         // =======================
