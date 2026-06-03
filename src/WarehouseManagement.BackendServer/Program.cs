@@ -35,9 +35,9 @@ internal class Program
             options.AddPolicy("AllowFrontend",
                 policy =>
                 {
-                    policy.WithOrigins(frontendUrl)
-                          .AllowAnyHeader()
-                          .AllowAnyMethod();
+                    policy.AllowAnyOrigin()
+                          .AllowAnyMethod()
+                          .AllowAnyHeader();
                 });
         });
 
