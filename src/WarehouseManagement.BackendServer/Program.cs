@@ -160,11 +160,17 @@ internal class Program
             }
         }
 
-        if (app.Environment.IsDevelopment())
+        i// Xóa bỏ hoặc comment block IF này lại
+// if (app.Environment.IsDevelopment())
+// {
+    app.UseSwagger();
+        app.UseSwaggerUI(options =>
         {
-            app.UseSwagger();
-            app.UseSwaggerUI();
-        }
+            // Cấu hình này giúp khi vào thẳng link gốc .onrender.com là giao diện Swagger hiện ra luôn, không cần gõ thêm /swagger
+            options.SwaggerEndpoint("/swagger/v1/swagger.json", "Warehouse Management API v1");
+            options.RoutePrefix = string.Empty;
+        });
+        // }
 
         app.UseMiddleware<ErrorWrappingMiddleware>();
         app.UseHttpsRedirection();
