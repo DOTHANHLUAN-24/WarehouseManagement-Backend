@@ -1,6 +1,6 @@
-﻿using Dapper;
+using Dapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 using WarehouseManagement.ViewModels.Systems.Permissions;
 
 namespace WarehouseManagement.BackendServer.Controllers
@@ -17,7 +17,7 @@ namespace WarehouseManagement.BackendServer.Controllers
         public async Task<IActionResult> GetPermissionViews()
         {
             await using var connection =
-                new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+                new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
 
             var sql = @"
                 SELECT f.Id,

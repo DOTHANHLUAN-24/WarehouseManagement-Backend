@@ -44,7 +44,7 @@ namespace WarehouseManagement.BackendServer.Services.Implementations.Authenticat
             {
                 new Claim(JwtRegisteredClaimNames.Name, user.UserName!),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()) 
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
             };
 
             var identity = new ClaimsIdentity(claims, "Jwt", JwtRegisteredClaimNames.Name, ClaimTypes.Role);
