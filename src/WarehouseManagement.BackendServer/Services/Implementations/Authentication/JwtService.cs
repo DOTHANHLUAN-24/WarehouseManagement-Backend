@@ -34,7 +34,7 @@ namespace WarehouseManagement.BackendServer.Services.Implementations.Authenticat
             if (user == null || !await _userManager.CheckPasswordAsync(user, request.Password))
                 return null;
 
-            if (user.IsActive)
+            if (!user.IsActive)
                 return null;
 
             var issuer = _configuration["JwtConfig:Issuer"];

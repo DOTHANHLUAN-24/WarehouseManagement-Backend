@@ -354,6 +354,20 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             var receiptCode = $"{prefix}-{datePart}-{sequence:000}";
 
+            DateTime purchaseDate;
+            if (request.ReceiptDate != default)
+            {
+                purchaseDate = request.ReceiptDate;
+            }
+            else if (request.PurchaseDate.HasValue && request.PurchaseDate.Value != default)
+            {
+                purchaseDate = request.PurchaseDate.Value;
+            }
+            else
+            {
+                purchaseDate = localTime;
+            }
+
             var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var purchase = new Purchase
             {
@@ -363,11 +377,11 @@ namespace WarehouseManagement.BackendServer.Controllers
                 CustomerName = customerName,
                 IsExport = isExport,
                 Type = request.Type,
-                PurchaseDate = request.ReceiptDate == default ? request.PurchaseDate : request.ReceiptDate,
+                PurchaseDate = purchaseDate,
                 ReceiptCode = receiptCode,
                 ReferenceCode = request.ReferenceCode,
                 Note = request.Note,
-                CreateDate = utcNow,
+                CreateDate = localTime,
                 Status = Data.Enums.PurchaseStatus.None,
                 CreatedBy = currentUserId,
                 IsCanceled = false
@@ -399,7 +413,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                     Quantity = item.Quantity,
                     UnitCost = item.UnitCost,
                     WarehouseLocation = item.WarehouseLocation,
-                    CreateDate = utcNow,
+                    CreateDate = localTime,
                     TotalPrice = item.UnitCost * item.Quantity
                 };
                 purchase.PurchaseItems.Add(pi);
