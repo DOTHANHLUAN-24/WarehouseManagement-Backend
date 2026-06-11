@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.BackendServer.Data.Entities;
 using WarehouseManagement.BackendServer.Data.Enums;
@@ -83,7 +83,8 @@ namespace WarehouseManagement.BackendServer.Data
                             LastName = "1",
                             Email = "admin@gmail.com",
                             LockoutEnabled = false,
-                            PhoneNumber = "0123456789"
+                            PhoneNumber = "0123456789",
+                            IsActive = true
                         },
                         "Admin@123$",
                         AdminRoleName
@@ -99,7 +100,8 @@ namespace WarehouseManagement.BackendServer.Data
                             LastName = "1",
                             Email = "user1@gmail.com",
                             LockoutEnabled = false,
-                            PhoneNumber = "0987654321"
+                            PhoneNumber = "0987654321",
+                            IsActive = true
                         },
                         "User@123$",
                         UserRoleName
@@ -115,7 +117,8 @@ namespace WarehouseManagement.BackendServer.Data
                             LastName = "2",
                             Email = "user2@gmail.com",
                             LockoutEnabled = false,
-                            PhoneNumber = "0912345678"
+                            PhoneNumber = "0912345678",
+                            IsActive = true
                         },
                         "User@123$",
                         UserRoleName
@@ -134,6 +137,23 @@ namespace WarehouseManagement.BackendServer.Data
             }
 
             var adminUser = await userManager.FindByNameAsync("admin");
+            if (adminUser != null && !adminUser.IsActive)
+            {
+                adminUser.IsActive = true;
+                await userManager.UpdateAsync(adminUser);
+            }
+            var user1 = await userManager.FindByNameAsync("user1");
+            if (user1 != null && !user1.IsActive)
+            {
+                user1.IsActive = true;
+                await userManager.UpdateAsync(user1);
+            }
+            var user2 = await userManager.FindByNameAsync("user2");
+            if (user2 != null && !user2.IsActive)
+            {
+                user2.IsActive = true;
+                await userManager.UpdateAsync(user2);
+            }
             return adminUser!.Id;
         }
 

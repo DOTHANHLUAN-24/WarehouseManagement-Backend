@@ -1,4 +1,4 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -32,6 +32,9 @@ namespace WarehouseManagement.BackendServer.Services.Implementations.Authenticat
 
             var user = await _userManager.FindByNameAsync(request.UserName);
             if (user == null || !await _userManager.CheckPasswordAsync(user, request.Password))
+                return null;
+
+            if (!user.IsActive)
                 return null;
 
             var issuer = _configuration["JwtConfig:Issuer"];

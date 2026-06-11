@@ -204,7 +204,17 @@ namespace WarehouseManagement.BackendServer.Controllers
                 .Take(pageSize)
                 .ToListAsync();
 
-            var data = items.Select(x => new ProductViewModel
+            var productsSorted = await _context.Products
+                .Where(p => !p.IsDeleted)
+                .OrderByDescending(p => p.CreateDate)
+                .Select(p => p.Id)
+                .ToListAsync();
+
+            var itemsSorted = items
+                .OrderBy(x => productsSorted.IndexOf(x.ProductId))
+                .ToList();
+
+            var data = itemsSorted.Select(x => new ProductViewModel
             {
                 Id = x.ProductId,
                 Name = x.Name,
@@ -255,6 +265,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                    && !pi.IsDeleted
                    && pi.IsDefault
                    && pv.IsActive
+                orderby p.CreateDate descending
                 select new ProductViewModel
                 {
                     Id = p.Id,
@@ -1077,6 +1088,21 @@ namespace WarehouseManagement.BackendServer.Controllers
                 _logger.LogWarning("Product must be soft-deleted before permanent deletion.");
 
                 return BadRequest("Product must be soft-deleted before permanent deletion.");
+            }
+
+            // Check whether this product is referenced by any PurchaseItems (by ProductId or by ProductVariantId)
+            var variantIds = await _context.ProductVariants
+                .Where(v => v.ProductId == id)
+                .Select(v => v.Id)
+                .ToListAsync();
+
+            var usedByPurchase = await _context.PurchaseItems
+                .AnyAsync(pi => (!pi.IsDeleted && ((pi.ProductId.HasValue && pi.ProductId == id) || variantIds.Contains(pi.ProductVariantId))));
+
+            if (usedByPurchase)
+            {
+                _logger.LogWarning("Cannot permanently delete product id = {id} because it is referenced by purchase items.", id);
+                return BadRequest("Cannot permanently delete product: it is used in purchase records.");
             }
 
             var productImages = await _context.ProductImages
