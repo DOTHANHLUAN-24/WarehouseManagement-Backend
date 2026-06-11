@@ -34,6 +34,21 @@ namespace WarehouseManagement.BackendServer.Controllers
                 .Where(p => !p.IsDeleted)
                 .Include(p => p.PurchaseItems)
                 .ToListAsync();
+
+            var userIds = purchases.Select(x => x.CreatedBy)
+                .Concat(purchases.Select(x => x.ApprovedBy))
+                .Concat(purchases.Select(x => x.CanceledBy))
+                .Where(id => !string.IsNullOrEmpty(id))
+                .Distinct()
+                .ToList();
+
+            var userDict = await _context.Users
+                .Where(u => userIds.Contains(u.Id))
+                .ToDictionaryAsync(
+                    u => u.Id,
+                    u => ((u.LastName + " " + u.FirstName).Trim() != "" ? (u.LastName + " " + u.FirstName).Trim() : u.UserName)
+                );
+
             var response = purchases.Select(x => new
             {
                 x.Id,
@@ -52,7 +67,15 @@ namespace WarehouseManagement.BackendServer.Controllers
                 x.LastModifiedDate,
                 Status = (int)x.Status,
                 x.IsCanceled,
-                NoteCancel = x.Status == Data.Enums.PurchaseStatus.Canceled ? x.NoteCancel : null,
+                NoteCancel = x.NoteCancel,
+                x.CanceledDate,
+                CanceledBy = x.CanceledBy,
+                CanceledByName = !string.IsNullOrEmpty(x.CanceledBy) && userDict.TryGetValue(x.CanceledBy, out var ucName) ? ucName : null,
+                CreatedBy = x.CreatedBy,
+                CreatedByName = !string.IsNullOrEmpty(x.CreatedBy) && userDict.TryGetValue(x.CreatedBy, out var ucrName) ? ucrName : null,
+                ApprovedBy = x.ApprovedBy,
+                ApprovedByName = !string.IsNullOrEmpty(x.ApprovedBy) && userDict.TryGetValue(x.ApprovedBy, out var uaName) ? uaName : null,
+                x.ApprovedDate,
                 Items = x.PurchaseItems.Where(i => !i.IsDeleted).Select(pi => new
                 {
                     pi.ProductId,
@@ -101,6 +124,21 @@ namespace WarehouseManagement.BackendServer.Controllers
                 .Include(p => p.PurchaseItems)
                 .Skip((pageIndex - 1) * pageSize)
                 .Take(pageSize).ToListAsync();
+
+            var userIds = items.Select(x => x.CreatedBy)
+                .Concat(items.Select(x => x.ApprovedBy))
+                .Concat(items.Select(x => x.CanceledBy))
+                .Where(id => !string.IsNullOrEmpty(id))
+                .Distinct()
+                .ToList();
+
+            var userDict = await _context.Users
+                .Where(u => userIds.Contains(u.Id))
+                .ToDictionaryAsync(
+                    u => u.Id,
+                    u => ((u.LastName + " " + u.FirstName).Trim() != "" ? (u.LastName + " " + u.FirstName).Trim() : u.UserName)
+                );
+
             var data = items.Select(x => new
             {
                 x.Id,
@@ -119,7 +157,15 @@ namespace WarehouseManagement.BackendServer.Controllers
                 x.LastModifiedDate,
                 Status = (int)x.Status,
                 x.IsCanceled,
-                NoteCancel = x.Status == Data.Enums.PurchaseStatus.Canceled ? x.NoteCancel : null,
+                NoteCancel = x.NoteCancel,
+                x.CanceledDate,
+                CanceledBy = x.CanceledBy,
+                CanceledByName = !string.IsNullOrEmpty(x.CanceledBy) && userDict.TryGetValue(x.CanceledBy, out var ucName) ? ucName : null,
+                CreatedBy = x.CreatedBy,
+                CreatedByName = !string.IsNullOrEmpty(x.CreatedBy) && userDict.TryGetValue(x.CreatedBy, out var ucrName) ? ucrName : null,
+                ApprovedBy = x.ApprovedBy,
+                ApprovedByName = !string.IsNullOrEmpty(x.ApprovedBy) && userDict.TryGetValue(x.ApprovedBy, out var uaName) ? uaName : null,
+                x.ApprovedDate,
                 Items = x.PurchaseItems.Where(i => !i.IsDeleted).Select(pi => new
                 {
                     pi.ProductId,
@@ -168,6 +214,21 @@ namespace WarehouseManagement.BackendServer.Controllers
             }
 
             var purchases = await query.OrderByDescending(x => x.CreateDate).ToListAsync();
+
+            var userIds = purchases.Select(x => x.CreatedBy)
+                .Concat(purchases.Select(x => x.ApprovedBy))
+                .Concat(purchases.Select(x => x.CanceledBy))
+                .Where(id => !string.IsNullOrEmpty(id))
+                .Distinct()
+                .ToList();
+
+            var userDict = await _context.Users
+                .Where(u => userIds.Contains(u.Id))
+                .ToDictionaryAsync(
+                    u => u.Id,
+                    u => ((u.LastName + " " + u.FirstName).Trim() != "" ? (u.LastName + " " + u.FirstName).Trim() : u.UserName)
+                );
+
             using (var workbook = new XLWorkbook())
             {
                 var worksheet = workbook.Worksheets.Add("Purchases");
@@ -180,6 +241,9 @@ namespace WarehouseManagement.BackendServer.Controllers
                 worksheet.Cell(1, 7).Value = "Created Date";
                 worksheet.Cell(1, 8).Value = "Items Count";
                 worksheet.Cell(1, 9).Value = "Items Details";
+                worksheet.Cell(1, 10).Value = "Created By";
+                worksheet.Cell(1, 11).Value = "Approved By";
+                worksheet.Cell(1, 12).Value = "Note Cancel";
 
                 var headerRow = worksheet.Row(1);
                 headerRow.Style.Fill.BackgroundColor = XLColor.LightGray;
@@ -192,6 +256,9 @@ namespace WarehouseManagement.BackendServer.Controllers
                     var itemsDetails = string.Join("; ", purchase.PurchaseItems
                         .Where(i => !i.IsDeleted)
                         .Select(i => $"ProductVariantId: {i.ProductVariantId}, Qty: {i.Quantity}, Cost: {i.UnitCost}"));
+                    var createdByName = !string.IsNullOrEmpty(purchase.CreatedBy) && userDict.TryGetValue(purchase.CreatedBy, out var ucr) ? ucr : string.Empty;
+                    var approvedByName = !string.IsNullOrEmpty(purchase.ApprovedBy) && userDict.TryGetValue(purchase.ApprovedBy, out var ua) ? ua : string.Empty;
+
                     worksheet.Cell(row, 1).Value = purchase.ReceiptCode;
                     worksheet.Cell(row, 2).Value = purchase.ReferenceCode;
                     worksheet.Cell(row, 3).Value = purchase.SupplierName;
@@ -201,6 +268,9 @@ namespace WarehouseManagement.BackendServer.Controllers
                     worksheet.Cell(row, 7).Value = purchase.CreateDate.ToString("yyyy-MM-dd HH:mm:ss");
                     worksheet.Cell(row, 8).Value = itemsCount;
                     worksheet.Cell(row, 9).Value = itemsDetails;
+                    worksheet.Cell(row, 10).Value = createdByName;
+                    worksheet.Cell(row, 11).Value = approvedByName;
+                    worksheet.Cell(row, 12).Value = purchase.NoteCancel;
 
                     row++;
                 }
@@ -238,6 +308,18 @@ namespace WarehouseManagement.BackendServer.Controllers
                 return NotFound();
             }
 
+            var userIds = new List<string?> { purchase.CreatedBy, purchase.ApprovedBy, purchase.CanceledBy }
+                .Where(id => !string.IsNullOrEmpty(id))
+                .Distinct()
+                .ToList();
+
+            var userDict = await _context.Users
+                .Where(u => userIds.Contains(u.Id))
+                .ToDictionaryAsync(
+                    u => u.Id,
+                    u => ((u.LastName + " " + u.FirstName).Trim() != "" ? (u.LastName + " " + u.FirstName).Trim() : u.UserName)
+                );
+
             var response = new
             {
                 purchase.Id,
@@ -256,11 +338,14 @@ namespace WarehouseManagement.BackendServer.Controllers
                 LastModifiedDate = purchase.LastModifiedDate,
                 Status = (int)purchase.Status,
                 IsCanceled = purchase.IsCanceled,
-                NoteCancel = purchase.Status == Data.Enums.PurchaseStatus.Canceled ? purchase.NoteCancel : null,
+                NoteCancel = purchase.NoteCancel,
                 purchase.CanceledDate,
                 purchase.CanceledBy,
+                CanceledByName = !string.IsNullOrEmpty(purchase.CanceledBy) && userDict.TryGetValue(purchase.CanceledBy, out var ucName) ? ucName : null,
                 purchase.CreatedBy,
+                CreatedByName = !string.IsNullOrEmpty(purchase.CreatedBy) && userDict.TryGetValue(purchase.CreatedBy, out var ucrName) ? ucrName : null,
                 purchase.ApprovedBy,
+                ApprovedByName = !string.IsNullOrEmpty(purchase.ApprovedBy) && userDict.TryGetValue(purchase.ApprovedBy, out var uaName) ? uaName : null,
                 purchase.ApprovedDate,
                 Items = purchase.PurchaseItems.Where(i => !i.IsDeleted).Select(x => new
                 {
@@ -341,7 +426,7 @@ namespace WarehouseManagement.BackendServer.Controllers
             var prefix = isExport ? "SO" : "PO";
             var datePart = localTime.ToString("yyyyMMdd");
             var lastCode = await _context.Purchases
-                .Where(p => p.ReceiptCode.StartsWith($"{prefix}-{datePart}"))
+                .Where(p => p.ReceiptCode != null && p.ReceiptCode.StartsWith($"{prefix}-{datePart}"))
                 .OrderByDescending(p => p.ReceiptCode)
                 .Select(p => p.ReceiptCode)
                 .FirstOrDefaultAsync();
@@ -368,7 +453,12 @@ namespace WarehouseManagement.BackendServer.Controllers
                 purchaseDate = localTime;
             }
 
-            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var currentUserId = request.CreatedBy ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                currentUserId = await _context.Users.Select(u => u.Id).FirstOrDefaultAsync();
+            }
+
             var purchase = new Purchase
             {
                 SupplierId = isExport ? null : request.SupplierId,
@@ -429,6 +519,19 @@ namespace WarehouseManagement.BackendServer.Controllers
                 if (result > 0)
                 {
                     _logger.LogInformation("Success PostPurchase API with id = {id}", purchase.Id);
+
+                    string? createdByName = null;
+                    if (!string.IsNullOrEmpty(currentUserId))
+                    {
+                        var currentUser = await _context.Users.FindAsync(currentUserId);
+                        if (currentUser != null)
+                        {
+                            createdByName = ((currentUser.LastName + " " + currentUser.FirstName).Trim() != ""
+                                ? (currentUser.LastName + " " + currentUser.FirstName).Trim()
+                                : currentUser.UserName);
+                        }
+                    }
+
                     var response = new
                     {
                         purchase.Id,
@@ -444,6 +547,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                         purchase.PurchaseDate,
                         TotalAmount = purchase.TotalCost,
                         purchase.CreatedBy,
+                        CreatedByName = createdByName,
                         Items = purchase.PurchaseItems.Select(x => new
                         {
                             x.ProductId,
@@ -892,17 +996,17 @@ namespace WarehouseManagement.BackendServer.Controllers
                 return BadRequest("Purchase is already canceled");
             }
 
-            // Only Pending purchases can be canceled (same rule as approve requires Pending)
-            if (purchase.Status != Data.Enums.PurchaseStatus.Pending)
+            // Allow canceling if status is None (Draft) or Pending
+            if (purchase.Status != Data.Enums.PurchaseStatus.Pending && purchase.Status != Data.Enums.PurchaseStatus.None)
             {
-                _logger.LogWarning("Purchase must be in Pending state to cancel. Id = {id}, Status = {status}", id, purchase.Status);
-                return BadRequest("Purchase must be in Pending status to cancel.");
+                _logger.LogWarning("Purchase must be in Pending or None state to cancel. Id = {id}, Status = {status}", id, purchase.Status);
+                return BadRequest("Phiếu phải ở trạng thái Mới tạo hoặc Chờ duyệt mới có thể hủy.");
             }
 
             var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             purchase.IsCanceled = true;
             // entity stores cancel note in NoteCancel property
-            purchase.NoteCancel = request?.cancelReason;
+            purchase.NoteCancel = request?.NoteCancel;
             purchase.CanceledBy = currentUserId;
             purchase.CanceledDate = DateTime.UtcNow;
             purchase.LastModifiedDate = DateTime.UtcNow;
@@ -913,7 +1017,34 @@ namespace WarehouseManagement.BackendServer.Controllers
                 if (result > 0)
                 {
                     _logger.LogInformation("CancelPurchase success. Id = {id}", id);
-                    return Ok();
+
+                    var userIds = new List<string?> { purchase.CreatedBy, purchase.ApprovedBy, purchase.CanceledBy }
+                        .Where(uid => !string.IsNullOrEmpty(uid))
+                        .Distinct()
+                        .ToList();
+
+                    var userDict = await _context.Users
+                        .Where(u => userIds.Contains(u.Id))
+                        .ToDictionaryAsync(
+                            u => u.Id,
+                            u => ((u.LastName + " " + u.FirstName).Trim() != "" ? (u.LastName + " " + u.FirstName).Trim() : u.UserName)
+                        );
+
+                    return Ok(new
+                    {
+                        purchase.Id,
+                        Status = (int)purchase.Status,
+                        purchase.IsCanceled,
+                        purchase.NoteCancel,
+                        purchase.CanceledDate,
+                        purchase.CanceledBy,
+                        CanceledByName = !string.IsNullOrEmpty(purchase.CanceledBy) && userDict.TryGetValue(purchase.CanceledBy, out var ucName) ? ucName : null,
+                        purchase.CreatedBy,
+                        CreatedByName = !string.IsNullOrEmpty(purchase.CreatedBy) && userDict.TryGetValue(purchase.CreatedBy, out var ucrName) ? ucrName : null,
+                        purchase.ApprovedBy,
+                        ApprovedByName = !string.IsNullOrEmpty(purchase.ApprovedBy) && userDict.TryGetValue(purchase.ApprovedBy, out var uaName) ? uaName : null,
+                        purchase.ApprovedDate
+                    });
                 }
 
                 _logger.LogWarning("CancelPurchase failed to save changes. Id = {id}", id);
@@ -1024,7 +1155,35 @@ namespace WarehouseManagement.BackendServer.Controllers
                 if (result > 0)
                 {
                     _logger.LogInformation("ApprovePurchase success. Id = {id}", id);
-                    return Ok(new { Message = "Phê duyệt phiếu thành công, kho đã được cập nhật.", Status = 2 });
+
+                    var userIds = new List<string?> { purchase.CreatedBy, purchase.ApprovedBy, purchase.CanceledBy }
+                        .Where(uid => !string.IsNullOrEmpty(uid))
+                        .Distinct()
+                        .ToList();
+
+                    var userDict = await _context.Users
+                        .Where(u => userIds.Contains(u.Id))
+                        .ToDictionaryAsync(
+                            u => u.Id,
+                            u => ((u.LastName + " " + u.FirstName).Trim() != "" ? (u.LastName + " " + u.FirstName).Trim() : u.UserName)
+                        );
+
+                    return Ok(new
+                    {
+                        Message = "Phê duyệt phiếu thành công, kho đã được cập nhật.",
+                        purchase.Id,
+                        Status = (int)purchase.Status,
+                        purchase.IsCanceled,
+                        purchase.NoteCancel,
+                        purchase.CanceledDate,
+                        purchase.CanceledBy,
+                        CanceledByName = !string.IsNullOrEmpty(purchase.CanceledBy) && userDict.TryGetValue(purchase.CanceledBy, out var ucName) ? ucName : null,
+                        purchase.CreatedBy,
+                        CreatedByName = !string.IsNullOrEmpty(purchase.CreatedBy) && userDict.TryGetValue(purchase.CreatedBy, out var ucrName) ? ucrName : null,
+                        purchase.ApprovedBy,
+                        ApprovedByName = !string.IsNullOrEmpty(purchase.ApprovedBy) && userDict.TryGetValue(purchase.ApprovedBy, out var uaName) ? uaName : null,
+                        purchase.ApprovedDate
+                    });
                 }
 
                 _logger.LogWarning("ApprovePurchase failed to save changes. Id = {id}", id);

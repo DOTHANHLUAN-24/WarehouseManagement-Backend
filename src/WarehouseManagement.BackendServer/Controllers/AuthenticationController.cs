@@ -21,18 +21,7 @@ namespace WarehouseManagement.BackendServer.Controllers
         [AllowAnonymous]
         [HttpPost("Login")]
         public async Task<ActionResult<LoginResponseModel>> Login(LoginRequestModel request)
-        {
-            // Hard-code tài khoản test
-            if (request.UserName == "admin123" &&
-                request.Password == "Admin@123")
-            {
-                return Ok(new LoginResponseModel
-                {
-                    AccessToken = "fake-access-token",
-                    RefreshToken = "fake-refresh-token"
-                });
-            }
-
+        {      
             var result = await _jwtService.Authenticate(request);
 
             if (result is null)
