@@ -57,14 +57,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                         .Select(i => i.ImageUrl)
                         .FirstOrDefault()!,
 
-                    WarehouseLocation = _context.Warehouses
-                        .Join(_context.StockTransactions,
-                            w => w.Id,
-                            st => st.WarehouseId,
-                            (w, st) => new { Warehouse = w, StockTransaction = st })
-                        .Where(x => x.StockTransaction.ProductId == p.Id)
-                        .Select(x => x.Warehouse.Location)
-                        .FirstOrDefault()
+                    WarehouseLocation = p.WarehouseLocation
                 }
             ).FirstOrDefaultAsync();
 
@@ -180,6 +173,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                     OriginalPrice = pv.OriginalPrice,
                     Quantity = pv.StockQuantity,
                     Description = p.Description,
+                    WarehouseLocation = p.WarehouseLocation,
                     ImageUrl = _context.ProductImages
                         .Where(i => i.ProductId == p.Id)
                         .OrderBy(i => i.Id)
@@ -223,14 +217,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                 OriginalPrice = x.OriginalPrice,
                 ImageUrl = x.ImageUrl,
                 Quantity = x.Quantity,
-                WarehouseLocation = _context.Warehouses
-                    .Join(_context.StockTransactions,
-                        w => w.Id,
-                        st => st.WarehouseId,
-                        (w, st) => new { Warehouse = w, StockTransaction = st })
-                    .Where(z => z.StockTransaction.ProductId == x.ProductId)
-                    .Select(z => z.Warehouse.Location)
-                    .FirstOrDefault()
+                WarehouseLocation = x.WarehouseLocation
             }).ToList();
 
 
@@ -278,21 +265,10 @@ namespace WarehouseManagement.BackendServer.Controllers
                     IsDefault = pi.IsDefault,
                     SellingPrice = pv.SellingPrice,
                     OriginalPrice = pv.OriginalPrice,
-                    Quantity = pv.StockQuantity
+                    Quantity = pv.StockQuantity,
+                    WarehouseLocation = p.WarehouseLocation
                 }
             ).ToListAsync();
-
-            foreach (var product in productList)
-            {
-                product.WarehouseLocation = await _context.Warehouses
-                    .Join(_context.StockTransactions,
-                        w => w.Id,
-                        st => st.WarehouseId,
-                        (w, st) => new { Warehouse = w, StockTransaction = st })
-                    .Where(x => x.StockTransaction.ProductId == product.Id)
-                    .Select(x => x.Warehouse.Location)
-                    .FirstOrDefaultAsync();
-            }
 
             _logger.LogInformation("GetProducts API success to get all categories in system.");
 
@@ -383,7 +359,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                         .OrderBy(i => i.Id)
                         .Select(i => i.ImageUrl)
                         .FirstOrDefault()!,
-
+                    WarehouseLocation = p.WarehouseLocation,
                     UserId = string.Empty, // Todo: Get user id
                 }
             ).FirstOrDefaultAsync();
@@ -422,6 +398,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                 Description = request.Description,
                 CategoryId = request.CategoryId,
                 Code = request.Code,
+                WarehouseLocation = request.WarehouseLocation,
                 IsActive = request.IsActive,
                 CreateDate = DateTime.UtcNow,
                 IsDeleted = false
@@ -459,7 +436,8 @@ namespace WarehouseManagement.BackendServer.Controllers
                         IsActive = product.IsActive,
                         SellingPrice = request.SellingPrice,
                         OriginalPrice = request.OriginalPrice,
-                        Quantity = variant.StockQuantity
+                        Quantity = variant.StockQuantity,
+                        WarehouseLocation = product.WarehouseLocation
                     });
                 }
                 else
@@ -510,6 +488,7 @@ namespace WarehouseManagement.BackendServer.Controllers
             product.Description = request.Description;
             product.CategoryId = request.CategoryId;
             product.Code = request.Code;
+            product.WarehouseLocation = request.WarehouseLocation;
             product.IsActive = request.IsActive;
             product.LastModifiedDate = DateTime.UtcNow;
 

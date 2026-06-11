@@ -1,4 +1,4 @@
-﻿namespace WarehouseManagement.ViewModels.Contents.Products
+namespace WarehouseManagement.ViewModels.Contents.Products
 {
     public class ProductBase
     {
@@ -9,6 +9,8 @@
         public int CategoryId { get; set; }
 
         public string? Code { get; set; }
+
+        public string? WarehouseLocation { get; set; }
 
         public bool IsActive { get; set; } = true;
     }
