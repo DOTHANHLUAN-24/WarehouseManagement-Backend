@@ -21,6 +21,13 @@ namespace WarehouseManagement.BackendServer.Swagger
             if (!(method == "POST" || method == "PUT"))
                 return;
 
+            // Exclude sub-endpoints (cancel, approve, confirm, convert-type) from showing the purchase receipt creation example
+            if (path.EndsWith("/cancel", System.StringComparison.OrdinalIgnoreCase) || 
+                path.EndsWith("/approve", System.StringComparison.OrdinalIgnoreCase) || 
+                path.EndsWith("/confirm", System.StringComparison.OrdinalIgnoreCase) || 
+                path.EndsWith("/convert-type", System.StringComparison.OrdinalIgnoreCase))
+                return;
+
             if (!operation.RequestBody.Content.TryGetValue("application/json", out var mediaType))
                 return;
 

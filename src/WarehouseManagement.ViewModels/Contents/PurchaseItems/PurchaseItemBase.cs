@@ -10,6 +10,9 @@
 
         public decimal UnitCost { get; set; }
 
+        // Optional warehouse location/bin for the item
+        public string? WarehouseLocation { get; set; }
+
         public DateTime CreateDate { get; set; }
 
         public DateTime? LastModifiedDate { get; set; }

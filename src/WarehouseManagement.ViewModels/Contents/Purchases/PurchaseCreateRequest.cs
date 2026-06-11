@@ -18,6 +18,7 @@ namespace WarehouseManagement.ViewModels.Contents.Purchases
 
         public decimal TotalAmount { get; set; } // Map vào TotalCost của Entity
 
+        public string? CreatedBy { get; set; }
 
         public List<PurchaseItemCreateRequest> Items { get; set; } = new List<PurchaseItemCreateRequest>();
     }
