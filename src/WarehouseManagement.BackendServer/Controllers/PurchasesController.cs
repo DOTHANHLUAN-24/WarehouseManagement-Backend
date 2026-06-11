@@ -453,7 +453,12 @@ namespace WarehouseManagement.BackendServer.Controllers
                 purchaseDate = localTime;
             }
 
-            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var currentUserId = request.CreatedBy ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                currentUserId = await _context.Users.Select(u => u.Id).FirstOrDefaultAsync();
+            }
+
             var purchase = new Purchase
             {
                 SupplierId = isExport ? null : request.SupplierId,
@@ -1000,8 +1005,8 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             purchase.IsCanceled = true;
-            // entity stores cancel note in NoteCancel property; support both cancelReason and noteCancel properties
-            purchase.NoteCancel = request?.noteCancel ?? request?.cancelReason;
+            // entity stores cancel note in NoteCancel property
+            purchase.NoteCancel = request?.NoteCancel;
             purchase.CanceledBy = currentUserId;
             purchase.CanceledDate = DateTime.UtcNow;
             purchase.LastModifiedDate = DateTime.UtcNow;
@@ -1012,7 +1017,34 @@ namespace WarehouseManagement.BackendServer.Controllers
                 if (result > 0)
                 {
                     _logger.LogInformation("CancelPurchase success. Id = {id}", id);
-                    return Ok();
+
+                    var userIds = new List<string?> { purchase.CreatedBy, purchase.ApprovedBy, purchase.CanceledBy }
+                        .Where(uid => !string.IsNullOrEmpty(uid))
+                        .Distinct()
+                        .ToList();
+
+                    var userDict = await _context.Users
+                        .Where(u => userIds.Contains(u.Id))
+                        .ToDictionaryAsync(
+                            u => u.Id,
+                            u => ((u.LastName + " " + u.FirstName).Trim() != "" ? (u.LastName + " " + u.FirstName).Trim() : u.UserName)
+                        );
+
+                    return Ok(new
+                    {
+                        purchase.Id,
+                        Status = (int)purchase.Status,
+                        purchase.IsCanceled,
+                        purchase.NoteCancel,
+                        purchase.CanceledDate,
+                        purchase.CanceledBy,
+                        CanceledByName = !string.IsNullOrEmpty(purchase.CanceledBy) && userDict.TryGetValue(purchase.CanceledBy, out var ucName) ? ucName : null,
+                        purchase.CreatedBy,
+                        CreatedByName = !string.IsNullOrEmpty(purchase.CreatedBy) && userDict.TryGetValue(purchase.CreatedBy, out var ucrName) ? ucrName : null,
+                        purchase.ApprovedBy,
+                        ApprovedByName = !string.IsNullOrEmpty(purchase.ApprovedBy) && userDict.TryGetValue(purchase.ApprovedBy, out var uaName) ? uaName : null,
+                        purchase.ApprovedDate
+                    });
                 }
 
                 _logger.LogWarning("CancelPurchase failed to save changes. Id = {id}", id);
@@ -1123,7 +1155,35 @@ namespace WarehouseManagement.BackendServer.Controllers
                 if (result > 0)
                 {
                     _logger.LogInformation("ApprovePurchase success. Id = {id}", id);
-                    return Ok(new { Message = "Phê duyệt phiếu thành công, kho đã được cập nhật.", Status = 2 });
+
+                    var userIds = new List<string?> { purchase.CreatedBy, purchase.ApprovedBy, purchase.CanceledBy }
+                        .Where(uid => !string.IsNullOrEmpty(uid))
+                        .Distinct()
+                        .ToList();
+
+                    var userDict = await _context.Users
+                        .Where(u => userIds.Contains(u.Id))
+                        .ToDictionaryAsync(
+                            u => u.Id,
+                            u => ((u.LastName + " " + u.FirstName).Trim() != "" ? (u.LastName + " " + u.FirstName).Trim() : u.UserName)
+                        );
+
+                    return Ok(new
+                    {
+                        Message = "Phê duyệt phiếu thành công, kho đã được cập nhật.",
+                        purchase.Id,
+                        Status = (int)purchase.Status,
+                        purchase.IsCanceled,
+                        purchase.NoteCancel,
+                        purchase.CanceledDate,
+                        purchase.CanceledBy,
+                        CanceledByName = !string.IsNullOrEmpty(purchase.CanceledBy) && userDict.TryGetValue(purchase.CanceledBy, out var ucName) ? ucName : null,
+                        purchase.CreatedBy,
+                        CreatedByName = !string.IsNullOrEmpty(purchase.CreatedBy) && userDict.TryGetValue(purchase.CreatedBy, out var ucrName) ? ucrName : null,
+                        purchase.ApprovedBy,
+                        ApprovedByName = !string.IsNullOrEmpty(purchase.ApprovedBy) && userDict.TryGetValue(purchase.ApprovedBy, out var uaName) ? uaName : null,
+                        purchase.ApprovedDate
+                    });
                 }
 
                 _logger.LogWarning("ApprovePurchase failed to save changes. Id = {id}", id);
