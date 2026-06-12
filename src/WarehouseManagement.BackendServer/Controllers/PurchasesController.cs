@@ -1008,7 +1008,7 @@ namespace WarehouseManagement.BackendServer.Controllers
             // entity stores cancel note in NoteCancel property
             purchase.NoteCancel = request?.NoteCancel;
             purchase.CanceledBy = currentUserId;
-            purchase.CanceledDate = DateTime.UtcNow;
+            purchase.CanceledDate = DateTime.UtcNow.AddHours(7);
             purchase.LastModifiedDate = DateTime.UtcNow;
             purchase.Status = Data.Enums.PurchaseStatus.Canceled;
             try
@@ -1088,7 +1088,7 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             purchase.ApprovedBy = currentUserId;
-            purchase.ApprovedDate = DateTime.UtcNow;
+            purchase.ApprovedDate = DateTime.UtcNow.AddHours(7);
             purchase.LastModifiedDate = DateTime.UtcNow;
             purchase.Status = Data.Enums.PurchaseStatus.Completed; // status = 2
 

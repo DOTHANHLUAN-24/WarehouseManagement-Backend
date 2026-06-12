@@ -249,7 +249,7 @@ namespace WarehouseManagement.BackendServer.Controllers
                 // 1. Cập nhật trạng thái hủy cho StockTransaction
                 transactionToCancel.IsCanceled = true;
                 transactionToCancel.CancelReason = request.CancelReason;
-                transactionToCancel.CanceledDate = DateTime.UtcNow;
+                transactionToCancel.CanceledDate = DateTime.UtcNow.AddHours(7);
                 transactionToCancel.CanceledBy = request.CanceledBy;
                 transactionToCancel.LastModifiedDate = DateTime.UtcNow;
 
