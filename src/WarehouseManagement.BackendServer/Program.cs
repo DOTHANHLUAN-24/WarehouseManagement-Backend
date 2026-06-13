@@ -175,6 +175,12 @@ internal class Program
         app.UseAuthentication();
         app.UseAuthorization();
 
+        app.MapGet("/", (HttpContext context) =>
+        {
+            context.Response.Redirect("/swagger");
+            return Task.CompletedTask;
+        });
+
         app.MapControllers();
 
         try
