@@ -48,7 +48,7 @@ namespace WarehouseManagement.BackendServer.Services.Implementations
                 LastName = request.LastName,
                 PhoneNumber = request.PhoneNumber,
                 LockoutEnabled = false,
-                IsActive = false
+                IsActive = true
             };
 
             var created = await _userRepository.CreateUser(user, request.Password);

@@ -9,7 +9,7 @@ namespace WarehouseManagement.BackendServer.Data.Entities
     {
         public User() { }
 
-        public User(string id, string userName, string firstName, string lastName, string email, string phoneNumber)
+        public User(string id, string userName, string firstName, string lastName, string email, string phoneNumber, bool isActive)
         {
             Id = id;
             UserName = userName;
@@ -17,6 +17,7 @@ namespace WarehouseManagement.BackendServer.Data.Entities
             LastName = lastName;
             PhoneNumber = phoneNumber;
             Email = email;
+            IsActive = isActive;
         }
 
         [Required]
