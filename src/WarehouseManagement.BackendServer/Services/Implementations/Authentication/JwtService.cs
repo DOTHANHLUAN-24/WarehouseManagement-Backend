@@ -106,7 +106,8 @@ namespace WarehouseManagement.BackendServer.Services.Implementations.Authenticat
                 FirstName = request.FirstName ?? string.Empty,
                 LastName = request.LastName ?? string.Empty,
                 PhoneNumber = request.PhoneNumber,
-                LockoutEnabled = false
+                LockoutEnabled = false,
+                IsActive = true
             };
 
             var createResult = await _userManager.CreateAsync(user, request.Password);

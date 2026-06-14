@@ -32,7 +32,8 @@ namespace WarehouseManagement.BackendServer.Controllers
                 UserName = request.UserName,
                 LastName = request.LastName,
                 FirstName = request.FirstName,
-                PhoneNumber = request.PhoneNumber
+                PhoneNumber = request.PhoneNumber,
+                IsActive = true
             };
 
             var existingUser = await _userManager.FindByEmailAsync(user.Email);
@@ -202,6 +203,7 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             user.FirstName = request.FirstName;
             user.LastName = request.LastName;
+            user.IsActive = request.IsActive;
 
             var result = await _userManager.UpdateAsync(user);
             if (result.Succeeded)
@@ -347,6 +349,66 @@ namespace WarehouseManagement.BackendServer.Controllers
 
             _logger.LogError("Failed to toggle IsActive for user with id {UserId}. Errors: {Errors}", id, string.Join(", ", result.Errors.Select(e => e.Description)));
             return BadRequest("Failed to toggle active status");
+        }
+
+        /// <summary>
+        /// Ban a user (set IsActive to false)
+        /// </summary>
+        /// <param name="id">User id</param>
+        /// <returns>Updated user status</returns>
+        [HttpPut("{id}/ban")]
+        public async Task<IActionResult> BanUser(string id)
+        {
+            _logger.LogInformation("Banning user with id: {UserId}", id);
+
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                _logger.LogWarning("User with id {UserId} not found", id);
+                return NotFound("Can't find the user.");
+            }
+
+            user.IsActive = false;
+
+            var result = await _userManager.UpdateAsync(user);
+            if (result.Succeeded)
+            {
+                _logger.LogInformation("User with id {UserId} banned successfully", id);
+                return Ok(new { id = user.Id, isActive = user.IsActive });
+            }
+
+            _logger.LogError("Failed to ban user with id {UserId}. Errors: {Errors}", id, string.Join(", ", result.Errors.Select(e => e.Description)));
+            return BadRequest("Failed to ban user");
+        }
+
+        /// <summary>
+        /// Unban a user (set IsActive to true)
+        /// </summary>
+        /// <param name="id">User id</param>
+        /// <returns>Updated user status</returns>
+        [HttpPut("{id}/unban")]
+        public async Task<IActionResult> UnbanUser(string id)
+        {
+            _logger.LogInformation("Unbanning user with id: {UserId}", id);
+
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                _logger.LogWarning("User with id {UserId} not found", id);
+                return NotFound("Can't find the user.");
+            }
+
+            user.IsActive = true;
+
+            var result = await _userManager.UpdateAsync(user);
+            if (result.Succeeded)
+            {
+                _logger.LogInformation("User with id {UserId} unbanned successfully", id);
+                return Ok(new { id = user.Id, isActive = user.IsActive });
+            }
+
+            _logger.LogError("Failed to unban user with id {UserId}. Errors: {Errors}", id, string.Join(", ", result.Errors.Select(e => e.Description)));
+            return BadRequest("Failed to unban user");
         }
     }
 }

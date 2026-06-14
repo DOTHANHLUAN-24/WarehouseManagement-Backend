@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -400,7 +400,8 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
                     Email = "test1@gmail.com",
                     FirstName = "Test1",
                     LastName = "David",
-                    PhoneNumber = "0123456787"
+                    PhoneNumber = "0123456787",
+                    IsActive = false
                 }
             );
             await context.SaveChangesAsync();
@@ -412,12 +413,19 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
             var result = await controller.PutUser("1", new UserUpdateRequest
             {
                 FirstName = "update first name",
-                LastName = "update last name"
+                LastName = "update last name",
+                IsActive = true
             });
 
             // Assert
             Assert.NotNull(result);
             Assert.IsType<NoContentResult>(result);
+
+            var updatedUser = await context.Users.FindAsync("1");
+            Assert.NotNull(updatedUser);
+            Assert.Equal("update first name", updatedUser.FirstName);
+            Assert.Equal("update last name", updatedUser.LastName);
+            Assert.True(updatedUser.IsActive);
         }
 
         [Fact]
@@ -515,6 +523,118 @@ namespace WarehouseManagement.BackendServer.UnitTest.Controllers
 
             // Assert
             Assert.IsType<NotFoundResult>(result);
+        }
+
+        // =========================
+        // Ban user
+        // =========================
+
+        [Fact]
+        public async Task BanUser_HasData_ReturnSuccess()
+        {
+            // Arrange
+            var context = _factory.Create();
+
+            context.Users.Add
+            (
+                new User
+                {
+                    Id = "1",
+                    UserName = "testuser1",
+                    Email = "test1@gmail.com",
+                    FirstName = "Test1",
+                    LastName = "David",
+                    PhoneNumber = "0123456787",
+                    IsActive = true
+                }
+            );
+            await context.SaveChangesAsync();
+
+            var userManager = CreateRealUserManager(context);
+            var controller = new UsersController(userManager, _mockLogger.Object);
+
+            // Act
+            var result = await controller.BanUser("1");
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            dynamic data = okResult.Value!;
+            Assert.Equal("1", data.GetType().GetProperty("id").GetValue(data, null));
+            Assert.False(data.GetType().GetProperty("isActive").GetValue(data, null));
+
+            var user = await context.Users.FindAsync("1");
+            Assert.False(user!.IsActive);
+        }
+
+        [Fact]
+        public async Task BanUser_HasNoData_ReturnNotFound()
+        {
+            // Arrange
+            var context = _factory.Create();
+            var userManager = CreateRealUserManager(context);
+            var controller = new UsersController(userManager, _mockLogger.Object);
+
+            // Act
+            var result = await controller.BanUser("1");
+
+            // Assert
+            Assert.IsType<NotFoundObjectResult>(result);
+        }
+
+        // =========================
+        // Unban user
+        // =========================
+
+        [Fact]
+        public async Task UnbanUser_HasData_ReturnSuccess()
+        {
+            // Arrange
+            var context = _factory.Create();
+
+            context.Users.Add
+            (
+                new User
+                {
+                    Id = "1",
+                    UserName = "testuser1",
+                    Email = "test1@gmail.com",
+                    FirstName = "Test1",
+                    LastName = "David",
+                    PhoneNumber = "0123456787",
+                    IsActive = false
+                }
+            );
+            await context.SaveChangesAsync();
+
+            var userManager = CreateRealUserManager(context);
+            var controller = new UsersController(userManager, _mockLogger.Object);
+
+            // Act
+            var result = await controller.UnbanUser("1");
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            dynamic data = okResult.Value!;
+            Assert.Equal("1", data.GetType().GetProperty("id").GetValue(data, null));
+            Assert.True(data.GetType().GetProperty("isActive").GetValue(data, null));
+
+            var user = await context.Users.FindAsync("1");
+            Assert.True(user!.IsActive);
+        }
+
+        [Fact]
+        public async Task UnbanUser_HasNoData_ReturnNotFound()
+        {
+            // Arrange
+            var context = _factory.Create();
+            var userManager = CreateRealUserManager(context);
+            var controller = new UsersController(userManager, _mockLogger.Object);
+
+            // Act
+            var result = await controller.UnbanUser("1");
+
+            // Assert
+            Assert.IsType<NotFoundObjectResult>(result);
         }
     }
 }
