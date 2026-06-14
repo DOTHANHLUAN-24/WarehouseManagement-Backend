@@ -50,6 +50,11 @@ namespace WarehouseManagement.BackendServer.Controllers
             {
                 _logger.LogInformation("User with email {Email} created successfully", user.Email);
 
+                if (request.Roles != null && request.Roles.Any())
+                {
+                    await _userManager.AddToRolesAsync(user, request.Roles);
+                }
+
                 return CreatedAtAction(nameof(GetById), new { id = user.Id }, request);
             }
             else
@@ -86,7 +91,8 @@ namespace WarehouseManagement.BackendServer.Controllers
                 PhoneNumber = user.PhoneNumber!,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
-                IsActive = user.IsActive
+                IsActive = user.IsActive,
+                Roles = await _userManager.GetRolesAsync(user)
             };
 
             _logger.LogInformation("User with id {UserId} retrieved successfully", id);
@@ -115,6 +121,15 @@ namespace WarehouseManagement.BackendServer.Controllers
                     IsActive = u.IsActive
                 })
                 .ToListAsync();
+
+            foreach (var userVM in users)
+            {
+                var user = await _userManager.FindByIdAsync(userVM.Id);
+                if (user != null)
+                {
+                    userVM.Roles = await _userManager.GetRolesAsync(user);
+                }
+            }
 
             _logger.LogInformation("Total users retrieved: {UserCount}", users.Count);
 
@@ -171,6 +186,15 @@ namespace WarehouseManagement.BackendServer.Controllers
                     IsActive = u.IsActive
                 }).ToListAsync();
 
+            foreach (var userVM in items)
+            {
+                var user = await _userManager.FindByIdAsync(userVM.Id);
+                if (user != null)
+                {
+                    userVM.Roles = await _userManager.GetRolesAsync(user);
+                }
+            }
+
             var pagination = new Pagination<UserViewModel>
             {
                 Items = items,
@@ -209,6 +233,13 @@ namespace WarehouseManagement.BackendServer.Controllers
             if (result.Succeeded)
             {
                 _logger.LogInformation("User with id {UserId} updated successfully", id);
+
+                if (request.Roles != null)
+                {
+                    var currentRoles = await _userManager.GetRolesAsync(user);
+                    await _userManager.RemoveFromRolesAsync(user, currentRoles);
+                    await _userManager.AddToRolesAsync(user, request.Roles);
+                }
 
                 return NoContent();
             }

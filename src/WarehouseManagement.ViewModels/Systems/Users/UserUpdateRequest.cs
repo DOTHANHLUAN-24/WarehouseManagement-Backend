@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace WarehouseManagement.ViewModels.Systems.User
 {
@@ -8,5 +9,6 @@ namespace WarehouseManagement.ViewModels.Systems.User
 
         public bool IsActive { get; set; } = true;
 
+        public List<string> Roles { get; set; } = new();
     }
 }
