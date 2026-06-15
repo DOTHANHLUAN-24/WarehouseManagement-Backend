@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -10,20 +10,15 @@ namespace WarehouseManagement.BackendServer.Data.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "WarehouseLocation",
-                table: "PurchaseItems",
-                type: "nvarchar(200)",
-                maxLength: 200,
-                nullable: true);
+            // Disabled: This is an obsolete SQL Server migration that ran before InitialCreate.
+            // Since we migrated to PostgreSQL, InitialCreate handles table creation and a later
+            // migration handles adding WarehouseLocation using character varying(200).
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "WarehouseLocation",
-                table: "PurchaseItems");
+            // Disabled: No-op
         }
     }
 }

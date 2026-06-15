@@ -69,17 +69,18 @@ namespace WarehouseManagement.BackendServer.Data
 
             var users = new List<(User user, string password, string role)>
             {
-<<<<<<< HEAD
                 // ===== ADMIN =====
                 (
                     new User
                     {
+                        Id = Guid.NewGuid().ToString(),
                         UserName = "admin",
                         FirstName = "Quản trị",
                         LastName = "1",
                         Email = "admin@gmail.com",
                         LockoutEnabled = false,
-                        PhoneNumber = "0123456789"
+                        PhoneNumber = "0123456789",
+                        IsActive = true
                     },
                     "Admin@123$",
                     AdminRoleName
@@ -89,12 +90,14 @@ namespace WarehouseManagement.BackendServer.Data
                 (
                     new User
                     {
+                        Id = Guid.NewGuid().ToString(),
                         UserName = "user1",
                         FirstName = "Người dùng",
                         LastName = "1",
                         Email = "user1@gmail.com",
                         LockoutEnabled = false,
-                        PhoneNumber = "0987654321"
+                        PhoneNumber = "0987654321",
+                        IsActive = true
                     },
                     "User@123$",
                     UserRoleName
@@ -104,12 +107,14 @@ namespace WarehouseManagement.BackendServer.Data
                 (
                     new User
                     {
+                        Id = Guid.NewGuid().ToString(),
                         UserName = "user2",
                         FirstName = "Người dùng",
                         LastName = "2",
                         Email = "user2@gmail.com",
                         LockoutEnabled = false,
-                        PhoneNumber = "0912345678"
+                        PhoneNumber = "0912345678",
+                        IsActive = true
                     },
                     "User@123$",
                     UserRoleName
@@ -120,65 +125,7 @@ namespace WarehouseManagement.BackendServer.Data
             {
                 var existingUser = await userManager.FindByNameAsync(item.user.UserName!);
                 if (existingUser == null)
-=======
-                var users = new List<(User user, string password, string role)>
                 {
-                    // ===== ADMIN =====
-                    (
-                        new User
-                        {
-                            Id = Guid.NewGuid().ToString(),
-                            UserName = "admin",
-                            FirstName = "Quản trị",
-                            LastName = "1",
-                            Email = "admin@gmail.com",
-                            LockoutEnabled = false,
-                            PhoneNumber = "0123456789",
-                            IsActive = true
-                        },
-                        "Admin@123$",
-                        AdminRoleName
-                    ),
-
-                    // ===== USER 1 =====
-                    (
-                        new User
-                        {
-                            Id = Guid.NewGuid().ToString(),
-                            UserName = "user1",
-                            FirstName = "Người dùng",
-                            LastName = "1",
-                            Email = "user1@gmail.com",
-                            LockoutEnabled = false,
-                            PhoneNumber = "0987654321",
-                            IsActive = true
-                        },
-                        "User@123$",
-                        UserRoleName
-                    ),
-
-                    // ===== USER 2 =====
-                    (
-                        new User
-                        {
-                            Id = Guid.NewGuid().ToString(),
-                            UserName = "user2",
-                            FirstName = "Người dùng",
-                            LastName = "2",
-                            Email = "user2@gmail.com",
-                            LockoutEnabled = false,
-                            PhoneNumber = "0912345678",
-                            IsActive = true
-                        },
-                        "User@123$",
-                        UserRoleName
-                    )
-                };
-
-                foreach (var item in users)
->>>>>>> master
-                {
-                    item.user.Id = Guid.NewGuid().ToString();
                     var result = await userManager.CreateAsync(item.user, item.password);
                     if (result.Succeeded)
                     {
@@ -188,9 +135,6 @@ namespace WarehouseManagement.BackendServer.Data
             }
 
             var adminUser = await userManager.FindByNameAsync("admin");
-<<<<<<< HEAD
-            return adminUser?.Id ?? string.Empty;
-=======
             if (adminUser != null && !adminUser.IsActive)
             {
                 adminUser.IsActive = true;
@@ -208,8 +152,7 @@ namespace WarehouseManagement.BackendServer.Data
                 user2.IsActive = true;
                 await userManager.UpdateAsync(user2);
             }
-            return adminUser!.Id;
->>>>>>> master
+            return adminUser?.Id ?? string.Empty;
         }
 
         /// <summary>
