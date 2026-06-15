@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.AspNetCore.Identity;
 
@@ -9,7 +9,7 @@ namespace WarehouseManagement.BackendServer.Data.Entities
     {
         public User() { }
 
-        public User(string id, string userName, string firstName, string lastName, string email, string phoneNumber)
+        public User(string id, string userName, string firstName, string lastName, string email, string phoneNumber, bool isActive)
         {
             Id = id;
             UserName = userName;
@@ -17,6 +17,7 @@ namespace WarehouseManagement.BackendServer.Data.Entities
             LastName = lastName;
             PhoneNumber = phoneNumber;
             Email = email;
+            IsActive = isActive;
         }
 
         [Required]
@@ -27,7 +28,7 @@ namespace WarehouseManagement.BackendServer.Data.Entities
         [MaxLength(50)]
         public string LastName { get; set; } = string.Empty;
 
-        public bool IsActive { get; set; } = true;
+        public bool IsActive { get; set; } = false;
 
         public string? RefreshToken { get; set; }
 

@@ -83,8 +83,8 @@ internal class Program
             {
         { jwtSecurityScheme, Array.Empty<string>() }
             });
-            // Add example operation filter for purchase request bodies
-            options.OperationFilter<PurchaseRequestExampleOperationFilter>();
+            // Add example operation filters for all request bodies and responses
+            options.OperationFilter<SwaggerExamplesOperationFilter>();
         });
 
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -178,6 +178,12 @@ internal class Program
 
         app.UseAuthentication();
         app.UseAuthorization();
+
+        app.MapGet("/", (HttpContext context) =>
+        {
+            context.Response.Redirect("/swagger");
+            return Task.CompletedTask;
+        });
 
         app.MapControllers();
 

@@ -34,6 +34,9 @@ namespace WarehouseManagement.BackendServer.Services.Implementations.Authenticat
             if (user == null || !await _userManager.CheckPasswordAsync(user, request.Password))
                 return null;
 
+            if (!user.IsActive)
+                return null;
+
             var issuer = _configuration["JwtConfig:Issuer"];
             var audience = _configuration["JwtConfig:Audience"];
             var key = _configuration["JwtConfig:Key"];
@@ -103,7 +106,8 @@ namespace WarehouseManagement.BackendServer.Services.Implementations.Authenticat
                 FirstName = request.FirstName ?? string.Empty,
                 LastName = request.LastName ?? string.Empty,
                 PhoneNumber = request.PhoneNumber,
-                LockoutEnabled = false
+                LockoutEnabled = false,
+                IsActive = true
             };
 
             var createResult = await _userManager.CreateAsync(user, request.Password);

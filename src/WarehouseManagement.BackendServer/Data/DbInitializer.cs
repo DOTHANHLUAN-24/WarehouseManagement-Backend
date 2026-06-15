@@ -37,6 +37,12 @@ namespace WarehouseManagement.BackendServer.Data
             // 6. Khởi tạo dữ liệu Kho hàng
             await SeedWarehousesAsync();
 
+            // 6.5 Khởi tạo dữ liệu Nhà cung cấp
+            await SeedSuppliersAsync();
+
+            // 6.6 Khởi tạo dữ liệu Phiếu mua/bán hàng
+            await SeedPurchasesAsync();
+
             // 7. Khởi tạo dữ liệu Lịch sử Giao dịch Kho (Stock Transactions)
             await SeedStockTransactionsAsync();
         }
@@ -63,6 +69,7 @@ namespace WarehouseManagement.BackendServer.Data
 
             var users = new List<(User user, string password, string role)>
             {
+<<<<<<< HEAD
                 // ===== ADMIN =====
                 (
                     new User
@@ -113,6 +120,63 @@ namespace WarehouseManagement.BackendServer.Data
             {
                 var existingUser = await userManager.FindByNameAsync(item.user.UserName!);
                 if (existingUser == null)
+=======
+                var users = new List<(User user, string password, string role)>
+                {
+                    // ===== ADMIN =====
+                    (
+                        new User
+                        {
+                            Id = Guid.NewGuid().ToString(),
+                            UserName = "admin",
+                            FirstName = "Quản trị",
+                            LastName = "1",
+                            Email = "admin@gmail.com",
+                            LockoutEnabled = false,
+                            PhoneNumber = "0123456789",
+                            IsActive = true
+                        },
+                        "Admin@123$",
+                        AdminRoleName
+                    ),
+
+                    // ===== USER 1 =====
+                    (
+                        new User
+                        {
+                            Id = Guid.NewGuid().ToString(),
+                            UserName = "user1",
+                            FirstName = "Người dùng",
+                            LastName = "1",
+                            Email = "user1@gmail.com",
+                            LockoutEnabled = false,
+                            PhoneNumber = "0987654321",
+                            IsActive = true
+                        },
+                        "User@123$",
+                        UserRoleName
+                    ),
+
+                    // ===== USER 2 =====
+                    (
+                        new User
+                        {
+                            Id = Guid.NewGuid().ToString(),
+                            UserName = "user2",
+                            FirstName = "Người dùng",
+                            LastName = "2",
+                            Email = "user2@gmail.com",
+                            LockoutEnabled = false,
+                            PhoneNumber = "0912345678",
+                            IsActive = true
+                        },
+                        "User@123$",
+                        UserRoleName
+                    )
+                };
+
+                foreach (var item in users)
+>>>>>>> master
                 {
                     item.user.Id = Guid.NewGuid().ToString();
                     var result = await userManager.CreateAsync(item.user, item.password);
@@ -124,7 +188,28 @@ namespace WarehouseManagement.BackendServer.Data
             }
 
             var adminUser = await userManager.FindByNameAsync("admin");
+<<<<<<< HEAD
             return adminUser?.Id ?? string.Empty;
+=======
+            if (adminUser != null && !adminUser.IsActive)
+            {
+                adminUser.IsActive = true;
+                await userManager.UpdateAsync(adminUser);
+            }
+            var user1 = await userManager.FindByNameAsync("user1");
+            if (user1 != null && !user1.IsActive)
+            {
+                user1.IsActive = true;
+                await userManager.UpdateAsync(user1);
+            }
+            var user2 = await userManager.FindByNameAsync("user2");
+            if (user2 != null && !user2.IsActive)
+            {
+                user2.IsActive = true;
+                await userManager.UpdateAsync(user2);
+            }
+            return adminUser!.Id;
+>>>>>>> master
         }
 
         /// <summary>
@@ -732,6 +817,218 @@ namespace WarehouseManagement.BackendServer.Data
                             Action = "CREATE",
                             Entity = "StockTransaction",
                             EntityId = tx.Id.ToString()
+                        });
+                    }
+                    await context.SaveChangesAsync();
+                }
+            }
+        }
+
+        private async Task SeedSuppliersAsync()
+        {
+            if (!context.Suppliers.Any())
+            {
+                context.Suppliers.AddRange(
+                    new Supplier
+                    {
+                        SupplierName = "Công ty TNHH Linh kiện Phong Vũ",
+                        Address = "125 Cách Mạng Tháng 8, Quận 1, TP. HCM",
+                        Phone = "02839250707",
+                        Email = "phongvu@gmail.com",
+                        IsActive = true,
+                        IsDeleted = false
+                    },
+                    new Supplier
+                    {
+                        SupplierName = "Tổng kho Điện tử Thế Giới Di Động",
+                        Address = "Lô T2-1.2 đường D1, Khu Công Nghệ Cao, Quận 9, TP. HCM",
+                        Phone = "18001060",
+                        Email = "tgdd_supplier@thegioididong.com",
+                        IsActive = true,
+                        IsDeleted = false
+                    }
+                );
+                await context.SaveChangesAsync();
+
+                var allSuppliers = context.Suppliers.ToList();
+                foreach (var supplier in allSuppliers)
+                {
+                    context.AuditLogs.Add(new AuditLog
+                    {
+                        UserId = AdminRoleName,
+                        Action = "CREATE",
+                        Entity = "Supplier",
+                        EntityId = supplier.Id.ToString()
+                    });
+                }
+                await context.SaveChangesAsync();
+            }
+        }
+
+        private async Task SeedPurchasesAsync()
+        {
+            if (!context.Purchases.Any())
+            {
+                var adminUser = await userManager.FindByNameAsync("admin");
+                var user1 = await userManager.FindByNameAsync("user1");
+                var user2 = await userManager.FindByNameAsync("user2");
+
+                var adminId = adminUser?.Id;
+                var u1Id = user1?.Id;
+                var u2Id = user2?.Id;
+
+                var supplier = await context.Suppliers.FirstOrDefaultAsync();
+                var customer = await context.Customers.FirstOrDefaultAsync();
+                var variants = await context.ProductVariants.Take(3).ToListAsync();
+
+                if (supplier != null && customer != null && variants.Count >= 2)
+                {
+                    var now = DateTime.Now;
+
+                    // 1. Phiếu nhập kho đã duyệt (Completed)
+                    var p1 = new Purchase
+                    {
+                        SupplierId = supplier.Id,
+                        SupplierName = supplier.SupplierName,
+                        IsExport = false,
+                        Type = 1,
+                        PurchaseDate = now.AddDays(-5),
+                        Status = PurchaseStatus.Completed,
+                        ReceiptCode = "PO-" + now.AddDays(-5).ToString("yyyyMMdd") + "-001",
+                        ReferenceCode = "REF-PO-001",
+                        Note = "Nhập kho linh kiện định kỳ hàng tháng",
+                        IsCanceled = false,
+                        CreateDate = now.AddDays(-5),
+                        CreatedBy = u1Id,
+                        ApprovedBy = adminId,
+                        ApprovedDate = now.AddDays(-4),
+                        LastModifiedDate = now.AddDays(-4)
+                    };
+                    p1.PurchaseItems.Add(new PurchaseItem
+                    {
+                        ProductVariantId = variants[0].Id,
+                        ProductId = variants[0].ProductId,
+                        Quantity = 50,
+                        UnitCost = 150000,
+                        TotalPrice = 7500000,
+                        WarehouseLocation = "Kệ A1",
+                        CreateDate = now.AddDays(-5)
+                    });
+                    p1.PurchaseItems.Add(new PurchaseItem
+                    {
+                        ProductVariantId = variants[1].Id,
+                        ProductId = variants[1].ProductId,
+                        Quantity = 30,
+                        UnitCost = 250000,
+                        TotalPrice = 7500000,
+                        WarehouseLocation = "Kệ A2",
+                        CreateDate = now.AddDays(-5)
+                    });
+                    p1.TotalCost = 15000000;
+
+                    // 2. Phiếu xuất kho chờ duyệt (Pending)
+                    var p2 = new Purchase
+                    {
+                        CustomerId = customer.Id,
+                        CustomerName = customer.FullName,
+                        IsExport = true,
+                        Type = 2,
+                        PurchaseDate = now.AddDays(-2),
+                        Status = PurchaseStatus.Pending,
+                        ReceiptCode = "SO-" + now.AddDays(-2).ToString("yyyyMMdd") + "-001",
+                        ReferenceCode = "REF-SO-001",
+                        Note = "Xuất kho trả hàng mẫu khách hàng",
+                        IsCanceled = false,
+                        CreateDate = now.AddDays(-2),
+                        CreatedBy = u2Id,
+                        LastModifiedDate = now.AddDays(-2)
+                    };
+                    p2.PurchaseItems.Add(new PurchaseItem
+                    {
+                        ProductVariantId = variants[0].Id,
+                        ProductId = variants[0].ProductId,
+                        Quantity = 5,
+                        UnitCost = 180000,
+                        TotalPrice = 900000,
+                        WarehouseLocation = "Kệ A1",
+                        CreateDate = now.AddDays(-2)
+                    });
+                    p2.TotalCost = 900000;
+
+                    // 3. Phiếu nhập kho đã hủy (Canceled)
+                    var p3 = new Purchase
+                    {
+                        SupplierId = supplier.Id,
+                        SupplierName = supplier.SupplierName,
+                        IsExport = false,
+                        Type = 1,
+                        PurchaseDate = now.AddDays(-3),
+                        Status = PurchaseStatus.Canceled,
+                        ReceiptCode = "PO-" + now.AddDays(-3).ToString("yyyyMMdd") + "-001",
+                        ReferenceCode = "REF-PO-002",
+                        Note = "Nhập thử linh kiện mới từ đối tác",
+                        IsCanceled = true,
+                        NoteCancel = "Nhà cung cấp báo hết hàng tạm thời",
+                        CanceledBy = adminId,
+                        CanceledDate = now.AddDays(-2),
+                        CreateDate = now.AddDays(-3),
+                        CreatedBy = u1Id,
+                        LastModifiedDate = now.AddDays(-2)
+                    };
+                    p3.PurchaseItems.Add(new PurchaseItem
+                    {
+                        ProductVariantId = variants[1].Id,
+                        ProductId = variants[1].ProductId,
+                        Quantity = 10,
+                        UnitCost = 260000,
+                        TotalPrice = 2600000,
+                        WarehouseLocation = "Kệ A2",
+                        CreateDate = now.AddDays(-3)
+                    });
+                    p3.TotalCost = 2600000;
+
+                    // 4. Phiếu xuất kho mới tạo (None/Draft)
+                    var p4 = new Purchase
+                    {
+                        CustomerId = customer.Id,
+                        CustomerName = customer.FullName,
+                        IsExport = true,
+                        Type = 2,
+                        PurchaseDate = now,
+                        Status = PurchaseStatus.None,
+                        ReceiptCode = "SO-" + now.ToString("yyyyMMdd") + "-002",
+                        ReferenceCode = "REF-SO-002",
+                        Note = "Đơn xuất nháp ngày mới",
+                        IsCanceled = false,
+                        CreateDate = now,
+                        CreatedBy = u2Id,
+                        LastModifiedDate = now
+                    };
+                    p4.PurchaseItems.Add(new PurchaseItem
+                    {
+                        ProductVariantId = variants[0].Id,
+                        ProductId = variants[0].ProductId,
+                        Quantity = 2,
+                        UnitCost = 180000,
+                        TotalPrice = 360000,
+                        WarehouseLocation = "Kệ A1",
+                        CreateDate = now
+                    });
+                    p4.TotalCost = 360000;
+
+                    context.Purchases.AddRange(p1, p2, p3, p4);
+                    await context.SaveChangesAsync();
+
+                    // Seed Audit logs
+                    var allPurchases = context.Purchases.ToList();
+                    foreach (var p in allPurchases)
+                    {
+                        context.AuditLogs.Add(new AuditLog
+                        {
+                            UserId = p.CreatedBy ?? AdminRoleName,
+                            Action = "CREATE",
+                            Entity = "Purchase",
+                            EntityId = p.Id.ToString()
                         });
                     }
                     await context.SaveChangesAsync();
